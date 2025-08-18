@@ -1,0 +1,294 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ContinuousTimePicker.Header" xml:space="preserve">
+    <value>连续使用时长提醒</value>
+  </data>
+  <data name="ContinuousReminderText1" xml:space="preserve">
+    <value>您已连续使用电脑 </value>
+  </data>
+  <data name="ContinuousReminderText2" xml:space="preserve">
+    <value> ，建议您休息一会儿。</value>
+  </data>
+  <data name="ExitApp.Text" xml:space="preserve">
+    <value>退出应用</value>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>时</value>
+  </data>
+  <data name="Minute" xml:space="preserve">
+    <value>分</value>
+  </data>
+  <data name="Home.Content" xml:space="preserve">
+    <value>主页</value>
+  </data>
+  <data name="Refresh.Content" xml:space="preserve">
+    <value>刷新</value>
+  </data>
+  <data name="ShowWindow.Text" xml:space="preserve">
+    <value>显示窗口</value>
+  </data>
+  <data name="TaskbarIcon.ToolTipText" xml:space="preserve">
+    <value>Trackora - 高效管理您的时间</value>
+  </data>
+  <data name="UsedTimeReminderTitle" xml:space="preserve">
+    <value>使用时长提醒</value>
+  </data>
+  <data name="EndUsingReminderTitle" xml:space="preserve">
+    <value>时间到了</value>
+  </data>
+  <data name="EndUsingReminderText1" xml:space="preserve">
+    <value>现在是 </value>
+  </data>
+  <data name="EndUsingReminderText2" xml:space="preserve">
+    <value> ，已经到了您指定的停止时间，请您立即休息。</value>
+  </data>
+  <data name="PastTime" xml:space="preserve">
+    <value>您选定的时间已经过去了，请重新选择</value>
+  </data>
+  <data name="RightTime" xml:space="preserve">
+    <value>这个时间是正确的。我们将会在那时提醒您</value>
+  </data>
+  <data name="Reset.Content" xml:space="preserve">
+    <value>重置</value>
+  </data>
+  <data name="HomeHeader" xml:space="preserve">
+    <value>今日使用时长</value>
+  </data>
+  <data name="SettingsHeader" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="ContinuousSoundPicker.Header" xml:space="preserve">
+    <value>连续使用时长提醒的提示音：</value>
+  </data>
+  <data name="EndUsingSoundPicker.Header" xml:space="preserve">
+    <value>结束使用时间提醒的提示音：</value>
+  </data>
+  <data name="EndUsingTimePicker.Header" xml:space="preserve">
+    <value>结束使用时间提醒</value>
+  </data>
+  <data name="Test.Content" xml:space="preserve">
+    <value>测试</value>
+  </data>
+  <data name="TestContent" xml:space="preserve">
+    <value>选择的提示音：</value>
+  </data>
+  <data name="ThemePicker.Header" xml:space="preserve">
+    <value>应用当前主题（更改主题后重启应用生效）：</value>
+  </data>
+  <data name="LightTheme" xml:space="preserve">
+    <value>浅色主题</value>
+  </data>
+  <data name="DarkTheme" xml:space="preserve">
+    <value>深色主题</value>
+  </data>
+  <data name="SystemTheme" xml:space="preserve">
+    <value>跟随系统</value>
+  </data>
+  <data name="ThemeTitle.Text" xml:space="preserve">
+    <value>主题</value>
+  </data>
+  <data name="RingerTitle.Text" xml:space="preserve">
+    <value>提示音</value>
+  </data>
+  <data name="DevelopTitle.Text" xml:space="preserve">
+    <value>开发者工具</value>
+  </data>
+  <data name="FilterNames.Header" xml:space="preserve">
+    <value>需要过滤的进程名称：</value>
+  </data>
+  <data name="OK.Content" xml:space="preserve">
+    <value>确定</value>
+  </data>
+  <data name="ErrorOrWarningTitle" xml:space="preserve">
+    <value>提示</value>
+  </data>
+  <data name="ECanNotGetRecord" xml:space="preserve">
+    <value>我们无法获取今天的记录。详细信息请查阅日志（见 设置 页面）。</value>
+  </data>
+  <data name="ECanNotInitTimer" xml:space="preserve">
+    <value>应用的核心部分无法运行，请联系作者以获取帮助。</value>
+  </data>
+  <data name="ECanNotSetRecord" xml:space="preserve">
+    <value>我们无法管理今天的记录。详细信息请查阅日志（见 设置 页面）。</value>
+  </data>
+  <data name="CanNotSend.Title" xml:space="preserve">
+    <value>遇到了一些问题</value>
+  </data>
+  <data name="CanNotSend.Message" xml:space="preserve">
+    <value>我们无法发送某些通知。详细信息请查阅日志。</value>
+  </data>
+  <data name="InputReminder.Text" xml:space="preserve">
+    <value>以英文逗号分隔，无特殊需求不修改。不要让两个逗号连在一起。</value>
+  </data>
+  <data name="ECanNotRecordTime" xml:space="preserve">
+    <value>我们无法记录使用时长。详细信息请查阅日志（见 设置 页面）。</value>
+  </data>
+  <data name="ResetContinuousTimePicker.Header" xml:space="preserve">
+    <value>连续使用时长的重置时间</value>
+  </data>
+  <data name="CheckLog.Content" xml:space="preserve">
+    <value>查看日志</value>
+  </data>
+  <data name="ECanNotGetInfo" xml:space="preserve">
+    <value>我们无法获取进程的信息。详细信息请查阅日志（见 设置 页面）。</value>
+  </data>
+  <data name="TotalReminderText2" xml:space="preserve">
+    <value> ，建议您减少电脑的使用。</value>
+  </data>
+  <data name="TotalReminderText1" xml:space="preserve">
+    <value>您今天已使用电脑 </value>
+  </data>
+  <data name="TotalTimePicker.Header" xml:space="preserve">
+    <value>总使用时长提醒</value>
+  </data>
+  <data name="TotalSoundPicker.Header" xml:space="preserve">
+    <value>总使用时长提醒的提示音：</value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  <data name="ECanNotWriteInfo" xml:space="preserve">
+    <value>我们无法写入进程的信息。详细信息请查阅日志（见 设置 页面）。</value>
+  </data>
+  <data name="AboutTitle.Text" xml:space="preserve">
+    <value>关于</value>
+  </data>
+  <data name="CacheFolderSize" xml:space="preserve">
+    <value>缓存文件夹大小：</value>
+  </data>
+  <data name="ECanNotGetSize" xml:space="preserve">
+    <value>我们无法获取缓存文件夹大小。详细信息请查阅日志。</value>
+  </data>
+  <data name="ECanNotCleanCache" xml:space="preserve">
+    <value>我们无法完全清理缓存。详细信息请查阅日志。</value>
+  </data>
+  <data name="CleanCache.Content" xml:space="preserve">
+    <value>清理缓存</value>
+  </data>
+  <data name="CleanReminder.Text" xml:space="preserve">
+    <value>清理缓存后某些应用的信息需要您使用时后才会加载出来。</value>
+  </data>
+  <data name="PersonalizeTitle.Text" xml:space="preserve">
+    <value>个性化</value>
+  </data>
+  <data name="ListTitle.Text" xml:space="preserve">
+    <value>使用时长排名</value>
+  </data>
+</root>

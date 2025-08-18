@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "Trackora (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "Trackora (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

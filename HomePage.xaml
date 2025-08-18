@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+	x:Class="Zscno.Trackora.HomePage"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:local="using:Zscno.Trackora"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	Loaded="Page_Loaded"
+	mc:Ignorable="d">
+
+	<Page.Resources>
+		<DataTemplate x:Key="processesListTemplate" x:DataType="local:ProcessInfo">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition/>
+				</Grid.ColumnDefinitions>
+
+				<Image
+					Grid.Column="0"
+					Width="32"
+					Height="32"
+					Margin="8,8,8,16"
+					VerticalAlignment="Center"
+					Stretch="Uniform">
+					<Image.Source>
+						<BitmapImage UriSource="{x:Bind IconUri}"/>
+					</Image.Source>
+				</Image>
+				<StackPanel Grid.Column="1">
+					<TextBlock Text="{x:Bind DisplayName}" TextWrapping="WrapWholeWords"/>
+					<TextBlock Text="{x:Bind UsedTime}"/>
+				</StackPanel>
+			</Grid>
+		</DataTemplate>
+	</Page.Resources>
+
+	<Grid Margin="36,0" ColumnSpacing="16">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition/>
+			<ColumnDefinition/>
+		</Grid.ColumnDefinitions>
+
+		<!--<TextBox
+			x:Name="CachePath"
+			VerticalAlignment="Center"
+			IsReadOnly="True"
+			TextWrapping="Wrap"/>-->
+		<ScrollViewer>
+			<Grid Grid.Column="0" RowSpacing="16">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition/>
+					<RowDefinition/>
+					<RowDefinition/>
+					<RowDefinition/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+
+				<TextBlock
+					Name="TotalUsedTime"
+					Grid.Row="0"
+					FontSize="35"
+					Style="{StaticResource DisplayTextBlockStyle}"/>
+				<Button
+					x:Uid="Refresh"
+					Grid.Row="0"
+					HorizontalAlignment="Right"
+					VerticalAlignment="Center"
+					Click="Refresh_Click"/>
+				<TimePicker
+					Name="Total"
+					x:Uid="TotalTimePicker"
+					Grid.Row="1"
+					ClockIdentifier="24HourClock"
+					MinuteIncrement="5"
+					TimeChanged="Total_TimeChanged"/>
+				<TimePicker
+					Name="Continuous"
+					x:Uid="ContinuousTimePicker"
+					Grid.Row="2"
+					ClockIdentifier="24HourClock"
+					MinuteIncrement="5"
+					TimeChanged="Continuous_TimeChanged"/>
+				<TimePicker
+					Name="ResetContinuous"
+					x:Uid="ResetContinuousTimePicker"
+					Grid.Row="3"
+					ClockIdentifier="24HourClock"
+					MinuteIncrement="1"
+					TimeChanged="ResetContinuous_TimeChanged"/>
+				<TimePicker
+					Name="EndUsing"
+					x:Uid="EndUsingTimePicker"
+					Grid.Row="4"
+					ClockIdentifier="24HourClock"
+					MinuteIncrement="1"
+					TimeChanged="EndUsing_TimeChanged"/>
+				<Button
+					x:Uid="Reset"
+					Grid.Row="4"
+					HorizontalAlignment="Right"
+					Click="Reset_Click"/>
+				<TextBlock Name="TimePickReminder" Grid.Row="5"/>
+			</Grid>
+		</ScrollViewer>
+
+		<ProgressRing
+			x:Name="LoadingRing"
+			Grid.ColumnSpan="2"
+			HorizontalAlignment="Center"
+			VerticalAlignment="Center"
+			IsActive="False"/>
+
+		<RelativePanel Grid.Column="1">
+			<TextBlock
+				Name="ListTitle"
+				x:Uid="ListTitle"
+				Style="{StaticResource SubtitleTextBlockStyle}"/>
+			<ListView
+				x:Name="ProcessesList"
+				ItemTemplate="{StaticResource processesListTemplate}"
+				RelativePanel.Below="ListTitle"
+				SelectionMode="None"/>
+		</RelativePanel>
+	</Grid>
+</Page>
