@@ -291,4 +291,10 @@
   <data name="ListTitle.Text" xml:space="preserve">
     <value>使用时长排名</value>
   </data>
+  <data name="All.Content" xml:space="preserve">
+    <value>查看所有应用</value>
+  </data>
+  <data name="Retract" xml:space="preserve">
+    <value>收起</value>
+  </data>
 </root>
