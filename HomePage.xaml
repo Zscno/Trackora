@@ -10,7 +10,7 @@
 	mc:Ignorable="d">
 
 	<Page.Resources>
-		<DataTemplate x:Key="processesListTemplate" x:DataType="local:ProcessInfo">
+		<DataTemplate x:Key="ProcessesList" x:DataType="local:ProcessInfo">
 			<Grid>
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
@@ -113,16 +113,29 @@
 			VerticalAlignment="Center"
 			IsActive="False"/>
 
-		<RelativePanel Grid.Column="1">
+		<Grid Grid.Column="1">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition/>
+			</Grid.RowDefinitions>
 			<TextBlock
 				Name="ListTitle"
 				x:Uid="ListTitle"
+				Grid.Row="0"
 				Style="{StaticResource SubtitleTextBlockStyle}"/>
-			<ListView
-				x:Name="ProcessesList"
-				ItemTemplate="{StaticResource processesListTemplate}"
-				RelativePanel.Below="ListTitle"
-				SelectionMode="None"/>
-		</RelativePanel>
+			<ScrollViewer Grid.Row="1">
+				<StackPanel>
+					<ListView
+						Name="ProcessesList"
+						ItemTemplate="{StaticResource ProcessesList}"
+						SelectionMode="None"/>
+					<HyperlinkButton
+						Name="All"
+						x:Uid="All"
+						HorizontalAlignment="Center"
+						Click="All_Click"/>
+				</StackPanel>
+			</ScrollViewer>
+		</Grid>
 	</Grid>
 </Page>

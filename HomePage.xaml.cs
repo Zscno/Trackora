@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Zscno.Trackora.App;
 
@@ -25,6 +26,7 @@ namespace Zscno.Trackora
 			ProcessesList.ItemsSource = null;
 			LoadingRing.IsActive = true;
 			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
+
 			try
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
@@ -35,6 +37,8 @@ namespace Zscno.Trackora
 				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
+			All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+
 			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
 				WindowTracker.EndUsingTime <= _timeNow ?
 				null : WindowTracker.EndUsingTime;
@@ -81,6 +85,7 @@ namespace Zscno.Trackora
 				Loader.GetString("PastTime") : string.Empty;
 			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
 			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
+
 			try
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
@@ -91,6 +96,8 @@ namespace Zscno.Trackora
 				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
+			All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+
 			_isFirstLoad = false;
 			LoadingRing.IsActive = false;
 		}
@@ -131,6 +138,30 @@ namespace Zscno.Trackora
 					WindowTracker.HasTotalReminded = false;
 				}
 			}
+		}
+
+		private async void All_Click(object sender, RoutedEventArgs e)
+		{
+			LoadingRing.IsActive = true;
+			All.IsEnabled = false;
+			bool isRetract = (string) All.Content == Loader.GetString("Retract");
+
+			try
+			{
+				int count =  isRetract? 
+					6 : WindowTracker.WindowsUsedTime.Count;
+				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
+			}
+			catch (Exception ex)
+			{
+				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
+				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetInfo"));
+			}
+			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
+
+			All.IsEnabled = true;
+			LoadingRing.IsActive = false;
 		}
 	}
 }
