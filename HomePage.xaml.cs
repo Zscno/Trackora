@@ -16,6 +16,7 @@ namespace Zscno.Trackora
 	{
 		private static TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 		private static bool _isFirstLoad;
+
 		public HomePage()
 		{
 			InitializeComponent();
@@ -26,6 +27,7 @@ namespace Zscno.Trackora
 			ProcessesList.ItemsSource = null;
 			LoadingRing.IsActive = true;
 			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
+			All.Content = Loader.GetString("All/Content");
 
 			try
 			{

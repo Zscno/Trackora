@@ -1,4 +1,4 @@
-﻿using Microsoft.UI.Xaml;//整理xaml文件和主页
+﻿using Microsoft.UI.Xaml;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -112,7 +112,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 记录同一进程的连续使用时长以保证使用时长不超过 5 秒的进程不被记录。
 	/// </summary>
-	private TimeSpan _lastContinuousUsedTime;
+	private TimeSpan _singleContinuousUsedTime;
 
 	/// <summary>
 	/// 用于过滤进程名称的字符串数组。
@@ -797,15 +797,11 @@ internal class WindowTracker
 
 		// 更新总使用时长和连续使用时长。
 		TotalUsedTime += _oneSecond;
-		if (_lastContinuousUsedTime <= TimeSpan.FromSeconds(5))
+		// 如果窗口被激活时长超过 5 秒则记录。
+		if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
 		{
-			// 如果窗口被激活时长不超过 5 秒则不记录。
-			_continuousUsedTime += TimeSpan.Zero;
-		}
-		else
-		{
-			// 如果时长到达 6 秒则把之前的 5 秒全部加上。 一般情况加 1 秒。
-			_continuousUsedTime += _lastContinuousUsedTime == TimeSpan.FromSeconds(6) ?
+			// 如果时长到达 6 秒则把之前的 6 秒全部加上。 一般情况加 1 秒。
+			_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6) ?
 			TimeSpan.FromSeconds(6) : _oneSecond;
 		}
 		_lastRecordTime = DateTime.Now;
@@ -831,11 +827,12 @@ internal class WindowTracker
 			// 如果上次有记录：
 			if (_lastProcess.ProcessName == processName)
 			{
-				// 如果被激活窗口没有变化，则不记录。
+				// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
+				_singleContinuousUsedTime += _oneSecond;
 				return;
 			}
 
-			_lastContinuousUsedTime = TimeSpan.Zero;
+			_singleContinuousUsedTime = TimeSpan.Zero;
 			try
 			{
 				RecordUsedTime();
