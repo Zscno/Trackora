@@ -210,8 +210,8 @@
   <data name="DevelopTitle.Text" xml:space="preserve">
     <value>开发者工具</value>
   </data>
-  <data name="FilterNames.Header" xml:space="preserve">
-    <value>需要过滤的进程名称：</value>
+  <data name="NoInfoNames.Header" xml:space="preserve">
+    <value>仅记录使用时长而不显示在主页的进程名称：</value>
   </data>
   <data name="OK.Content" xml:space="preserve">
     <value>确定</value>
@@ -296,5 +296,8 @@
   </data>
   <data name="Retract" xml:space="preserve">
     <value>收起</value>
+  </data>
+  <data name="NoTimeNames.Header" xml:space="preserve">
+    <value>不记录任何信息的进程名称：</value>
   </data>
 </root>

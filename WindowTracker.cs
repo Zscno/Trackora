@@ -117,12 +117,22 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于过滤进程名称的字符串数组。
 	/// </summary>
-	private string[] _lastFilterNamesArr;
+	private string[] _lastNoTimeNamesArr;
 
 	/// <summary>
 	/// 用于过滤进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private string _lastFilterNamesStr;
+	private string _lastNoTimeNamesStr;
+
+	/// <summary>
+	/// 用于过滤只记录时间的进程名称的字符串数组
+	/// </summary>
+	private string[] _lastNotInfoNamesArr;
+
+	/// <summary>
+	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
+	/// </summary>
+	private string _lastNoInfoNamesStr;
 
 	/// <summary>
 	/// 上一个检测到的被激活的进程。
@@ -697,27 +707,27 @@ internal class WindowTracker
 			return;
 		}
 
-		string processName = process.ProcessName;
+		string name = process.ProcessName;
 
 		// 过滤无需记录的进程。
-		string[] filterNamesArray;
-		string filterNamesString = (string) LocalSettings["FilterNames"];
-		if (_lastFilterNamesStr != filterNamesString)
+		string[] noTimeNamesArr;
+		string noTimeNamesStr = (string) LocalSettings["NoTimeNames"];
+		if (_lastNoTimeNamesStr != noTimeNamesStr)
 		{
 			// 如果过滤字符串有更新，则更新缓存。
-			_lastFilterNamesArr = filterNamesString.Split(',');
-			_lastFilterNamesStr = filterNamesString;
+			_lastNoTimeNamesArr = noTimeNamesStr.Split(',');
+			_lastNoTimeNamesStr = noTimeNamesStr;
 		}
-		filterNamesArray = _lastFilterNamesArr;
+		noTimeNamesArr = _lastNoTimeNamesArr;
 
-		if (filterNamesArray.Contains(processName))
+		if (noTimeNamesArr.Contains(name))
 		{
 			// 如果是无需记录的进程：
 			NoProcessNow();
 			return;
 		}
 
-		if (processName == "explorer")
+		if (name == "explorer")
 		{
 			// 判断是桌面还是用户打开的窗口：
 
@@ -756,7 +766,7 @@ internal class WindowTracker
 			// 如果是用户打开的窗口，则继续记录。
 		}
 
-		if (processName == "ApplicationFrameHost")
+		if (name == "ApplicationFrameHost")
 		{
 			// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
 
@@ -825,7 +835,7 @@ internal class WindowTracker
 		if (_lastProcess != null)
 		{
 			// 如果上次有记录：
-			if (_lastProcess.ProcessName == processName)
+			if (_lastProcess.ProcessName == name)
 			{
 				// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
 				_singleContinuousUsedTime += _oneSecond;
@@ -849,6 +859,21 @@ internal class WindowTracker
 		//记录这次的进程实例、信息和激活时间。
 		_lastProcess = process;
 		_lastActivationTime = DateTime.Now;
-		_ = Task.Run(RecordProcessInfo);
+
+		// 过滤无需记录的进程。
+		string[] noInfoNamesArr;
+		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
+		if (_lastNoTimeNamesStr != noInfoNamesStr)
+		{
+			// 如果过滤字符串有更新，则更新缓存。
+			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
+			_lastNoInfoNamesStr = noInfoNamesStr;
+		}
+		noInfoNamesArr = _lastNotInfoNamesArr;
+		if (!noInfoNamesArr.Contains(name))
+		{
+			// 如果进程不是只记录使用时长的则记录信息。
+			_ = Task.Run(RecordProcessInfo);
+		}
 	}
 }

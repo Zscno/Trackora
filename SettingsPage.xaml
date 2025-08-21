@@ -167,12 +167,14 @@
 						<Grid.RowDefinitions>
 							<RowDefinition Height="Auto"/>
 							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
+							<RowDefinition Height="Auto"/>
 							<RowDefinition/>
 						</Grid.RowDefinitions>
 
 						<TextBox
-							Name="FilterNames"
-							x:Uid="FilterNames"
+							Name="NoInfoNames"
+							x:Uid="NoInfoNames"
 							Grid.RowSpan="2"
 							Grid.Column="0"
 							HorizontalAlignment="Stretch"
@@ -181,17 +183,34 @@
 							x:Uid="Reset"
 							Grid.Row="0"
 							Grid.Column="1"
-							Click="Reset_Click"/>
+							Click="NoInfoReset_Click"/>
 						<Button
-							Name="OK"
 							x:Uid="OK"
 							Grid.Row="1"
-							Grid.Column="2"
-							Click="OK_Click"/>
+							Grid.Column="1"
+							Click="NoInfoOK_Click"/>
+						<TextBox
+							Name="NoTimeNames"
+							x:Uid="NoTimeNames"
+							Grid.Row="2"
+							Grid.RowSpan="2"
+							Grid.Column="0"
+							HorizontalAlignment="Stretch"
+							TextWrapping="Wrap"/>
+						<Button
+							x:Uid="Reset"
+							Grid.Row="2"
+							Grid.Column="1"
+							Click="NoTimeReset_Click"/>
+						<Button
+							x:Uid="OK"
+							Grid.Row="3"
+							Grid.Column="1"
+							Click="NoTimeOK_Click"/>
 						<TextBlock
 							Name="InputReminder"
 							x:Uid="InputReminder"
-							Grid.Row="2"
+							Grid.Row="4"
 							Grid.ColumnSpan="3"
 							TextWrapping="WrapWholeWords"/>
 					</Grid>

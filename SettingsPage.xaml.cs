@@ -91,13 +91,13 @@ namespace Zscno.Trackora
 			button.IsEnabled = true;
 		}
 
-		private void OK_Click(object sender, RoutedEventArgs e)
+		private void NoInfoOK_Click(object sender, RoutedEventArgs e)
 		{
 			Button button = sender as Button;
 			button.IsEnabled = false;
 			try
 			{
-				string[] strings = FilterNames.Text.Split(',');
+				string[] strings = NoInfoNames.Text.Split(',');
 				foreach (string item in strings)
 				{
 					if (string.IsNullOrWhiteSpace(item))
@@ -108,11 +108,11 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={FilterNames.Text}] ：{ex}");
-				FilterNames.Text = (string) LocalSettings["FilterNames"];
+				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoInfoNames.Text}] ：{ex}");
+				NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
 				return;
 			}
-			LocalSettings["FilterNames"] = FilterNames.Text;
+			LocalSettings["NoInfoNames"] = NoInfoNames.Text;
 			button.IsEnabled = true;
 		}
 
@@ -127,7 +127,8 @@ namespace Zscno.Trackora
 			ContinuousSoundPicker.SelectedItem = (string) LocalSettings["ContinuousUsedTimeSound"];
 			EndUsingSoundPicker.SelectedItem = (string) LocalSettings["EndUsingTimeSound"];
 			ThemePicker.SelectedItem = Loader.GetString((string) LocalSettings["Theme"]);
-			FilterNames.Text = (string) LocalSettings["FilterNames"];
+			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
+			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
 			PackageVersion version = Package.Current.Id.Version;
 			Version.Text = $"{version.Major}.{version.Minor}.{version.Build}";
 			try
@@ -144,11 +145,11 @@ namespace Zscno.Trackora
 			}
 		}
 
-		private void Reset_Click(object sender, RoutedEventArgs e)
+		private void NoInfoReset_Click(object sender, RoutedEventArgs e)
 		{
 			Button button = sender as Button;
 			button.IsEnabled = false;
-			FilterNames.Text = (string) LocalSettings["FilterNames"];
+			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
 			button.IsEnabled = true;
 		}
 
@@ -167,6 +168,39 @@ namespace Zscno.Trackora
 			Button button = sender as Button;
 			button.IsEnabled = false;
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeSoundTest);
+			button.IsEnabled = true;
+		}
+
+		private void NoTimeOK_Click(object sender, RoutedEventArgs e)
+		{
+			Button button = sender as Button;
+			button.IsEnabled = false;
+			try
+			{
+				string[] strings = NoTimeNames.Text.Split(',');
+				foreach (string item in strings)
+				{
+					if (string.IsNullOrWhiteSpace(item))
+					{
+						throw new ArgumentException("用户的输入中有空格、空或 null 。");
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoTimeNames.Text}] ：{ex}");
+				NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
+				return;
+			}
+			LocalSettings["NoTimeNames"] = NoTimeNames.Text;
+			button.IsEnabled = true;
+		}
+
+		private void NoTimeReset_Click(object sender, RoutedEventArgs e)
+		{
+			Button button = sender as Button;
+			button.IsEnabled = false;
+			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
 			button.IsEnabled = true;
 		}
 	}

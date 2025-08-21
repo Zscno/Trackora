@@ -140,10 +140,16 @@ namespace Zscno.Trackora
 			{
 				LocalSettings["Theme"] = "SystemTheme";
 			}
-			if (!LocalSettings.ContainsKey("FilterNames"))
+			if (!LocalSettings.ContainsKey("NoInfoNames"))
 			{
-				LocalSettings["FilterNames"] = "StartMenuExperienceHost,dwm,SearchHost,LockApp," +
-					"ShellExperienceHost,ServiceHub.ThreadedWaitDialog,PickerHost,consent,OpenWith";
+				// 开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图，只记录时间不记录信息。
+				LocalSettings["NoInfoNames"] = "StartMenuExperienceHost,SearchHost," +
+					"PickerHost,consent,OpenWith,Widgets,ShellExperienceHost";
+			}
+			if (!LocalSettings.ContainsKey("NoTimeNames"))
+			{
+				// 桌面管理器，锁屏，线程等待对话框，什么都不记录。
+				LocalSettings["NoTimeNames"] = "dwm,LockApp,ServiceHub.ThreadedWaitDialog";
 			}
 			if (!LocalSettings.ContainsKey("ContinuousUsedResetTime"))
 			{
