@@ -606,10 +606,37 @@ internal class WindowTracker
 	}
 
 	/// <summary>
+	/// 获取一个 <see langword="bool"/> 值，指示是否需要 <paramref name="processName"/> 进程的信息。
+	/// </summary>
+	/// <param name="processName">进程的名称。</param>
+	/// <returns>指示是否需要 <paramref name="processName"/> 进程的信息。</returns>
+	private bool WhetherNeedInfo(string processName)
+	{
+		string[] noInfoNamesArr;
+		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
+		if (_lastNoTimeNamesStr != noInfoNamesStr)
+		{
+			// 如果过滤字符串有更新，则更新缓存。
+			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
+			_lastNoInfoNamesStr = noInfoNamesStr;
+		}
+		noInfoNamesArr = _lastNotInfoNamesArr;
+		return !noInfoNamesArr.Contains(processName);
+	}
+
+	/// <summary>
 	/// 记录上次被激活窗口的使用时长。
 	/// </summary>
 	private void RecordUsedTime()
 	{
+		string name = _lastProcess.ProcessName;
+
+		if (!WhetherNeedInfo(name))
+		{
+			// 如果不需要信息则不在 WindowsUsedTime 和记录文件中记录时长。
+			return;
+		}
+
 		TimeSpan usedTime;
 		TimeSpan totalUsedTime;
 
@@ -617,16 +644,16 @@ internal class WindowTracker
 		try
 		{
 			usedTime = DateTime.Now - _lastActivationTime;
-			totalUsedTime = WindowsUsedTime.TryGetValue(_lastProcess.ProcessName,
-				out TimeSpan previousUsedTime) ? previousUsedTime + usedTime : usedTime;
-			WindowsUsedTime[_lastProcess.ProcessName] = totalUsedTime;
+			totalUsedTime = WindowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
+				pastUsedTime + usedTime : usedTime;
+			WindowsUsedTime[name] = totalUsedTime;
 		}
 		catch (Exception ex)
 		{
 			throw new Exception("在记录上次被激活窗口的使用时长到 WindowsUsedTime 中时触发了异常。", ex);
 		}
 
-		// 将使用时长记录到文本文件中：
+		// 将使用时长记录到记录文件中：
 		try
 		{
 			// 获取记录文件的所有行。
@@ -636,10 +663,10 @@ internal class WindowTracker
 
 			foreach (string line in lines)
 			{
-				if (line.StartsWith(_lastProcess.ProcessName))
+				if (line.StartsWith(name))
 				{
 					// 如果在文件中找到了进程，则更新记录。
-					_ = writeLines.AppendLine($"{_lastProcess.ProcessName}|{totalUsedTime.TotalSeconds}");
+					_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
 					hasFound = true;
 				}
 				else if (!string.IsNullOrWhiteSpace(line))
@@ -652,7 +679,7 @@ internal class WindowTracker
 			if (!hasFound)
 			{
 				// 如果没找着则追加记录。
-				_ = writeLines.AppendLine($"{_lastProcess.ProcessName}|{totalUsedTime.TotalSeconds}");
+				_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
 			}
 
 			using FileStream fstream = new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
@@ -860,17 +887,7 @@ internal class WindowTracker
 		_lastProcess = process;
 		_lastActivationTime = DateTime.Now;
 
-		// 过滤无需记录的进程。
-		string[] noInfoNamesArr;
-		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
-		if (_lastNoTimeNamesStr != noInfoNamesStr)
-		{
-			// 如果过滤字符串有更新，则更新缓存。
-			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
-			_lastNoInfoNamesStr = noInfoNamesStr;
-		}
-		noInfoNamesArr = _lastNotInfoNamesArr;
-		if (!noInfoNamesArr.Contains(name))
+		if (WhetherNeedInfo(name))
 		{
 			// 如果进程不是只记录使用时长的则记录信息。
 			_ = Task.Run(RecordProcessInfo);
