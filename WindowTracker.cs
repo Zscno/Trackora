@@ -13,8 +13,11 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
+using Windows.ApplicationModel.Core;
+using Windows.Graphics.Imaging;
 using Windows.Management.Deployment;
 using Windows.Storage;
+using Windows.Storage.Streams;
 using static Zscno.Trackora.App;
 using static Zscno.Trackora.LogSystem;
 
@@ -421,7 +424,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 记录进程信息到 JSON 文件中。
 	/// </summary>
-	private void RecordProcessInfo()
+	private async Task RecordProcessInfo()
 	{
 		Process process = _lastProcess;
 		string name = process.ProcessName;
@@ -506,10 +509,10 @@ internal class WindowTracker
 
 				if (icon != null)
 				{
-					// 加载图标并将图标保存到数据文件夹中。
+					// 加载图标并将图标保存到缓存文件夹中。
 					string iconPath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
 						"Icons", $"{name}.png");
-					using FileStream iconStream = new(iconPath, FileMode.OpenOrCreate,
+					using FileStream iconStream = new(iconPath, FileMode.Create,
 						FileAccess.ReadWrite, FileShare.None);
 					icon.ToBitmap().Save(iconStream, ImageFormat.Png);
 					icon.Dispose();
@@ -518,13 +521,9 @@ internal class WindowTracker
 				}
 				else
 				{
-					throw new NullReferenceException($"未获取到进程 {name} 的图标。");
+					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到进程 {name} 的图标。");
+					iconUri = defaultIconUri;
 				}
-			}
-			catch (NullReferenceException ex) when (ex.Message == $"未获取进程 {name} 的图标。")
-			{
-				WriteLog(LogLevel.Warning, ex.Message);
-				iconUri = defaultIconUri;
 			}
 			catch (Exception ex)
 			{
@@ -567,18 +566,124 @@ internal class WindowTracker
 				{
 					WriteLog(LogLevel.Warning, $"出于未知原因，未找到进程 {name} 的包信息。");
 					info = GetDefaultInfo(process);
+					goto Finish;
 				}
-				else
+
+				IReadOnlyList<AppListEntry> appListEntries = await package.GetAppListEntriesAsync();
+				AppListEntry appListEntry = appListEntries.Count > 0 ? appListEntries[0] : null;
+				if (appListEntries == null)
 				{
-					info = new()
-					{
-						ProcessName = name,
-						DisplayName = string.IsNullOrWhiteSpace(package.DisplayName) ?
-						(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name :
-						process.MainWindowTitle) : package.DisplayName,
-						IconUri = package.Logo.ToString()
-					};
+					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的显示信息。");
+					info = GetDefaultInfo(process);
+					goto Finish;
 				}
+
+				AppDisplayInfo displayinfo = appListEntry.DisplayInfo;
+				RandomAccessStreamReference iconStreamRef = displayinfo.GetLogo(new(32, 32));
+				if (iconStreamRef == null)
+				{
+					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的图标。");
+					info = GetDefaultInfo(process);
+					goto Finish;
+				}
+
+				// 加载图标并将图标保存到缓存文件夹中。
+				string iconUri;
+				try
+				{
+					IRandomAccessStreamWithContentType iconStream = await iconStreamRef.OpenReadAsync();
+
+					// 获取图标的实际内容范围。
+					BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
+					PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
+					byte[] pixels = pixelData.DetachPixelData();
+					uint width = decoder.PixelWidth, height = decoder.PixelHeight;
+					uint x = 0, y = 0, w = 0, h = 0;
+					for (uint i = 0; i < height; i++)
+					{
+						for (uint j = 0; j < width; j++)
+						{
+							if (pixels[(i * width + j) * 4 + 3] >= 20)
+							{
+								if (x == 0 || i < x)
+								{
+									x = i;
+								}
+								if (y == 0 || j < y)
+								{
+									y = j;
+								}
+								if (w == 0 || i > w)
+								{
+									w = i;
+								}
+								if (h == 0 || j > h)
+								{
+									h = j;
+								}
+							}
+						}
+					}
+
+					// 图标实际内容的宽和高至少为 32 像素且必须是正方形。
+					uint cropWidth = w - x + 1, cropHeight = h - y + 1;
+					if (cropWidth < 32 || cropHeight < 32)
+					{
+						cropWidth = cropHeight = 32;
+						x = (width - cropWidth) / 2;
+						y = (height - cropHeight) / 2;
+					}
+					else if (cropWidth > cropHeight)
+					{
+						cropHeight = cropWidth;
+						y = (height - cropHeight) / 2;
+					}
+					else if (cropHeight > cropWidth)
+					{
+						cropWidth = cropHeight;
+						x = (width - cropWidth) / 2;
+					}
+					x = x < 0 ? 0 : x;
+					y = y < 0 ? 0 : y;
+
+					//裁剪图标。
+					InMemoryRandomAccessStream croppedStream = new();
+					BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
+					encoder.BitmapTransform.Bounds = new()
+					{
+						X = x,
+						Y = y,
+						Width = cropWidth,
+						Height = cropHeight,
+					};
+					await encoder.FlushAsync();
+					croppedStream.Seek(0);
+
+					// 保存图标。
+					StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
+						Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Icons"));
+					StorageFile iconFile = await iconfolder.CreateFileAsync(
+						$"{name}.png", CreationCollisionOption.ReplaceExisting);
+					_ = await RandomAccessStream.CopyAndCloseAsync(
+						croppedStream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
+
+					iconUri = new Uri(Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
+						"Icons", $"{name}.png")).ToString();
+				}
+				catch (Exception ex)
+				{
+					WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
+					iconUri = "ms-appx:///Assets/DefaultIcon.png";
+				}
+
+				info = new()
+				{
+					ProcessName = name,
+					DisplayName = string.IsNullOrWhiteSpace(package.DisplayName) ?
+					(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name :
+					process.MainWindowTitle) : package.DisplayName,
+					IconUri = iconUri
+				};
 			}
 		}
 		else

@@ -11,7 +11,7 @@
 
 	<Page.Resources>
 		<DataTemplate x:Key="ProcessesList" x:DataType="local:ProcessInfo">
-			<Grid>
+			<Grid Margin="0, 0, 0, 8">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="Auto"/>
 					<ColumnDefinition/>
@@ -21,9 +21,8 @@
 					Grid.Column="0"
 					Width="32"
 					Height="32"
-					Margin="8,8,8,16"
-					VerticalAlignment="Center"
-					Stretch="Uniform">
+					Margin="8,8,8,8"
+					VerticalAlignment="Center">
 					<Image.Source>
 						<BitmapImage UriSource="{x:Bind IconUri}"/>
 					</Image.Source>
