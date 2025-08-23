@@ -15,14 +15,15 @@
     <AssemblyName>Trackora</AssemblyName>
     <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
     <AppxPackageSigningEnabled>True</AppxPackageSigningEnabled>
-    <PackageCertificateThumbprint>C3E7C12BB7F92D4E02E873A0716ED70A6B69751F</PackageCertificateThumbprint>
     <AppxPackageSigningTimestampDigestAlgorithm>SHA256</AppxPackageSigningTimestampDigestAlgorithm>
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxSymbolPackageEnabled>False</AppxSymbolPackageEnabled>
     <GenerateTestArtifacts>True</GenerateTestArtifacts>
-    <AppxBundle>Never</AppxBundle>
+    <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>x86|x64</AppxBundlePlatforms>
     <HoursBetweenUpdateChecks>0</HoursBetweenUpdateChecks>
+    <PackageCertificateKeyFile>Zscno.Trackora_TemporaryKey.pfx</PackageCertificateKeyFile>
+    <AppxPackageDir>D:\Code\Zscno.Trackora\Publish\</AppxPackageDir>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="SettingsPage.xaml" />
@@ -77,6 +78,9 @@
     <Page Update="Strings\zh-CN\Day.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Publish\" />
   </ItemGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
