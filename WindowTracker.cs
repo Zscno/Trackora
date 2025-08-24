@@ -646,18 +646,18 @@ internal class WindowTracker
 					if (cropWidth < 32 || cropHeight < 32)
 					{
 						cropWidth = cropHeight = 32;
-						x = (uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
-						y = (uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
+						x = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
+						y = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
 					}
 					else if (cropWidth > cropHeight)
 					{
 						cropHeight = cropWidth;
-						y = (uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
+						y = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
 					}
 					else if (cropHeight > cropWidth)
 					{
 						cropWidth = cropHeight;
-						x = (uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
+						x = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
 					}
 					x = x < 0 ? 0 : x;
 					y = y < 0 ? 0 : y;

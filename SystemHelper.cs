@@ -258,6 +258,17 @@ internal static class SystemHelper
 	}
 
 	/// <summary>
+	/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
+	/// </summary>
+	/// <param name="value">要操作的 <see langword="double"/> 值。</param>
+	/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
+	public static uint Round(double value)
+	{
+		uint intValue = (uint) value;
+		return (value - intValue) < 0.5 ? intValue : intValue - 1;
+	}
+
+	/// <summary>
 	/// 将创建指定窗口的线程引入前台并激活窗口。键盘输入将定向到窗口，并为用户更改各种视觉提示。
 	/// </summary>
 	/// <param name="hWnd">应激活并带到前台的窗口的句柄。</param>
