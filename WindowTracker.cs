@@ -69,7 +69,11 @@ internal class WindowTracker
 	{
 		get => (TimeSpan) LocalSettings["TotalUsedTime"];
 
-		private set => LocalSettings["TotalUsedTime"] = value;
+		private set
+		{
+			LocalSettings["TotalUsedTime"] = value;
+			_totalUsedTime = value;
+		}
 	}
 
 	/// <summary>
@@ -90,7 +94,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于触发提醒的总使用时长。
 	/// </summary>
-	private TimeSpan _totalUsedTime;
+	private static TimeSpan _totalUsedTime;
 
 	/// <summary>
 	/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -164,8 +168,7 @@ internal class WindowTracker
 		WindowsUsedTime = new();
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
-		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset)
-			LocalSettings["Today"] != currentDate)
+		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
 		{
 			// 如果今天的记录不存在或不是今天，则重置记录。
 			LocalSettings["Today"] = currentDate;
@@ -195,6 +198,7 @@ internal class WindowTracker
 			}
 
 			// 获取记录的使用时长。
+			_totalUsedTime = TotalUsedTime;
 			try
 			{
 				string[] lines = GetUsedTime();
@@ -252,28 +256,35 @@ internal class WindowTracker
 	/// 获取本地化时间 / 时长。
 	/// </summary>
 	/// <param name="time">一个时间 / 时长。</param>
+	/// <param name="useRemindTotal">指示是否使用用于触发提醒的总时长。</param>
 	/// <returns>本地化时间 / 时长字符串。</returns>
-	public static string GetLocalTime(TimeSpan time)
+	public static string GetLocalTime(TimeSpan time, bool useRemindTotal = false)
 	{
-		if (time.Days == 0 && time.Hours == 0 && time.Minutes == 0)
+		// 如果使用用于触发提醒的总时长则忽略传入的 time 参数。
+		TimeSpan realTime = useRemindTotal ? _totalUsedTime : time;
+
+		// 根据本地化设置返回时间字符串。
+		string result;
+		if (realTime.Days == 0 && realTime.Hours == 0 && realTime.Minutes == 0)
 		{
-			return "< 1" + Loader.GetString("Minute");
+			result = "< 1" + Loader.GetString("Minute");
 		}
-		else if (time.Days == 0 && time.Hours == 0)
+		else if (realTime.Days == 0 && realTime.Hours == 0)
 		{
-			return time.Minutes + Loader.GetString("Minute");
+			result = realTime.Minutes + Loader.GetString("Minute");
 		}
-		else if (time.Days == 0)
+		else if (realTime.Days == 0)
 		{
-			return time.Hours + Loader.GetString("Hour")
-				+ time.Minutes + Loader.GetString("Minute");
+			result = realTime.Hours + Loader.GetString("Hour")
+				+ realTime.Minutes + Loader.GetString("Minute");
 		}
 		else
 		{
-			return time.Days + Loader.GetString("Day")
-				+ time.Hours + Loader.GetString("Hour")
-				+ time.Minutes + Loader.GetString("Minute");
+			result = realTime.Days + Loader.GetString("Day")
+				+ realTime.Hours + Loader.GetString("Hour")
+				+ realTime.Minutes + Loader.GetString("Minute");
 		}
+		return result;
 	}
 
 	/// <summary>
