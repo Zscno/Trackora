@@ -63,7 +63,7 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 总使用时长。
+	/// 用于显示的总使用时长。
 	/// </summary>
 	public static TimeSpan TotalUsedTime
 	{
@@ -86,6 +86,11 @@ internal class WindowTracker
 
 		set => LocalSettings["HasTotalReminded"] = value;
 	}
+
+	/// <summary>
+	/// 用于触发提醒的总使用时长。
+	/// </summary>
+	private TimeSpan _totalUsedTime;
 
 	/// <summary>
 	/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -745,13 +750,14 @@ internal class WindowTracker
 		TimeSpan usedTime;
 		TimeSpan totalUsedTime;
 
-		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。
+		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。在 TotalUsedTime 中记录总使用时长。
 		try
 		{
 			usedTime = DateTime.Now - _lastActivationTime;
 			totalUsedTime = WindowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
 				pastUsedTime + usedTime : usedTime;
 			WindowsUsedTime[name] = totalUsedTime;
+			TotalUsedTime += usedTime;
 		}
 		catch (Exception ex)
 		{
@@ -938,7 +944,7 @@ internal class WindowTracker
 		}
 
 		// 更新总使用时长和连续使用时长。
-		TotalUsedTime += _oneSecond;
+		_totalUsedTime += _oneSecond;
 		// 如果窗口被激活时长超过 5 秒则记录。
 		if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
 		{
@@ -951,7 +957,7 @@ internal class WindowTracker
 		//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
 
 		// 检查是否需要显示提醒通知。
-		if (TotalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
+		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
 			&& !HasTotalReminded)
 		{
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
