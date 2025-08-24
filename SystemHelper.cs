@@ -301,7 +301,7 @@ internal class ReminderHelper
 				logError = "在发送 总使用时间提醒通知 时触发异常：";
 				title = Loader.GetString("UsedTimeReminderTitle");
 				content = Loader.GetString("TotalReminderText1") +
-					WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime) +
+					WindowTracker.GetLocalTime(TimeSpan.Zero, true) +
 					Loader.GetString("TotalReminderText2");
 				audio.Src = new(CommonSounds[(string) LocalSettings["TotalUsedTimeSound"]]);
 				break;

@@ -63,13 +63,17 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 总使用时长。
+	/// 用于显示的总使用时长。
 	/// </summary>
 	public static TimeSpan TotalUsedTime
 	{
 		get => (TimeSpan) LocalSettings["TotalUsedTime"];
 
-		private set => LocalSettings["TotalUsedTime"] = value;
+		private set
+		{
+			LocalSettings["TotalUsedTime"] = value;
+			_totalUsedTime = value;
+		}
 	}
 
 	/// <summary>
@@ -86,6 +90,11 @@ internal class WindowTracker
 
 		set => LocalSettings["HasTotalReminded"] = value;
 	}
+
+	/// <summary>
+	/// 用于触发提醒的总使用时长。
+	/// </summary>
+	private static TimeSpan _totalUsedTime;
 
 	/// <summary>
 	/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -159,8 +168,7 @@ internal class WindowTracker
 		WindowsUsedTime = new();
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
-		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset)
-			LocalSettings["Today"] != currentDate)
+		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
 		{
 			// 如果今天的记录不存在或不是今天，则重置记录。
 			LocalSettings["Today"] = currentDate;
@@ -190,6 +198,7 @@ internal class WindowTracker
 			}
 
 			// 获取记录的使用时长。
+			_totalUsedTime = TotalUsedTime;
 			try
 			{
 				string[] lines = GetUsedTime();
@@ -247,28 +256,35 @@ internal class WindowTracker
 	/// 获取本地化时间 / 时长。
 	/// </summary>
 	/// <param name="time">一个时间 / 时长。</param>
+	/// <param name="useRemindTotal">指示是否使用用于触发提醒的总时长。</param>
 	/// <returns>本地化时间 / 时长字符串。</returns>
-	public static string GetLocalTime(TimeSpan time)
+	public static string GetLocalTime(TimeSpan time, bool useRemindTotal = false)
 	{
-		if (time.Days == 0 && time.Hours == 0 && time.Minutes == 0)
+		// 如果使用用于触发提醒的总时长则忽略传入的 time 参数。
+		TimeSpan realTime = useRemindTotal ? _totalUsedTime : time;
+
+		// 根据本地化设置返回时间字符串。
+		string result;
+		if (realTime.Days == 0 && realTime.Hours == 0 && realTime.Minutes == 0)
 		{
-			return "< 1" + Loader.GetString("Minute");
+			result = "< 1" + Loader.GetString("Minute");
 		}
-		else if (time.Days == 0 && time.Hours == 0)
+		else if (realTime.Days == 0 && realTime.Hours == 0)
 		{
-			return time.Minutes + Loader.GetString("Minute");
+			result = realTime.Minutes + Loader.GetString("Minute");
 		}
-		else if (time.Days == 0)
+		else if (realTime.Days == 0)
 		{
-			return time.Hours + Loader.GetString("Hour")
-				+ time.Minutes + Loader.GetString("Minute");
+			result = realTime.Hours + Loader.GetString("Hour")
+				+ realTime.Minutes + Loader.GetString("Minute");
 		}
 		else
 		{
-			return time.Days + Loader.GetString("Day")
-				+ time.Hours + Loader.GetString("Hour")
-				+ time.Minutes + Loader.GetString("Minute");
+			result = realTime.Days + Loader.GetString("Day")
+				+ realTime.Hours + Loader.GetString("Hour")
+				+ realTime.Minutes + Loader.GetString("Minute");
 		}
+		return result;
 	}
 
 	/// <summary>
@@ -745,13 +761,14 @@ internal class WindowTracker
 		TimeSpan usedTime;
 		TimeSpan totalUsedTime;
 
-		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。
+		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。在 TotalUsedTime 中记录总使用时长。
 		try
 		{
 			usedTime = DateTime.Now - _lastActivationTime;
 			totalUsedTime = WindowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
 				pastUsedTime + usedTime : usedTime;
 			WindowsUsedTime[name] = totalUsedTime;
+			TotalUsedTime += usedTime;
 		}
 		catch (Exception ex)
 		{
@@ -938,7 +955,7 @@ internal class WindowTracker
 		}
 
 		// 更新总使用时长和连续使用时长。
-		TotalUsedTime += _oneSecond;
+		_totalUsedTime += _oneSecond;
 		// 如果窗口被激活时长超过 5 秒则记录。
 		if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
 		{
@@ -951,7 +968,7 @@ internal class WindowTracker
 		//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
 
 		// 检查是否需要显示提醒通知。
-		if (TotalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
+		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
 			&& !HasTotalReminded)
 		{
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
