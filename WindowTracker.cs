@@ -191,12 +191,6 @@ internal class WindowTracker
 		}
 		else
 		{
-			if (HasTotalReminded)
-			{
-				// 如果已经达到了今日使用时长，则每次启动都提醒。
-				CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
-			}
-
 			// 获取记录的使用时长。
 			_totalUsedTime = TotalUsedTime;
 			try
@@ -231,6 +225,12 @@ internal class WindowTracker
 				CanSend = ReminderHelper.SendReminder("提示用户无法获取今天的记录",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetRecord"), true);
+			}
+
+			if (HasTotalReminded)
+			{
+				// 如果已经达到了今日使用时长，则每次启动都提醒。
+				CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
 			}
 		}
 
