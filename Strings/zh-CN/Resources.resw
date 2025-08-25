@@ -241,7 +241,7 @@
     <value>我们无法记录使用时长。详细信息请查阅日志（见 设置 页面）。</value>
   </data>
   <data name="ResetContinuousTimePicker.Header" xml:space="preserve">
-    <value>连续使用时长的重置时间</value>
+    <value>连续使用时长的重置时长</value>
   </data>
   <data name="CheckLog.Content" xml:space="preserve">
     <value>查看日志</value>

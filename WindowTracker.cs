@@ -63,19 +63,31 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 总使用时长。
+	/// 用于显示的总使用时长。
 	/// </summary>
 	public static TimeSpan TotalUsedTime
 	{
 		get => (TimeSpan) LocalSettings["TotalUsedTime"];
 
-		private set => LocalSettings["TotalUsedTime"] = value;
+		private set
+		{
+			LocalSettings["TotalUsedTime"] = value;
+			_totalUsedTime = value;
+		}
 	}
 
 	/// <summary>
-	/// 所有检测到的前台进程的名称及其使用时长。
+	/// 用于显示的所有检测到进程的名称及其使用时长（不包含只记录时间的进程）。
 	/// </summary>
-	public static Dictionary<string, TimeSpan> WindowsUsedTime { get; private set; }
+	public static Dictionary<string, TimeSpan> WindowsUsedTime
+	{
+		get
+		{
+			return _windowsUsedTime
+				.Where(pair => !GetNoInfoArr().Contains(pair.Key))
+				.ToDictionary(pair => pair.Key, pair => pair.Value);
+		}
+	}
 
 	/// <summary>
 	/// 指示总使用时长提醒是否已经显示。
@@ -86,6 +98,16 @@ internal class WindowTracker
 
 		set => LocalSettings["HasTotalReminded"] = value;
 	}
+
+	/// <summary>
+	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
+	/// </summary>
+	private static Dictionary<string, TimeSpan> _windowsUsedTime;
+
+	/// <summary>
+	/// 用于触发提醒的总使用时长。
+	/// </summary>
+	private static TimeSpan _totalUsedTime;
 
 	/// <summary>
 	/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -130,12 +152,12 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串数组
 	/// </summary>
-	private string[] _lastNotInfoNamesArr;
+	private static string[] _lastNotInfoNamesArr;
 
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private string _lastNoInfoNamesStr;
+	private static string _lastNoInfoNamesStr;
 
 	/// <summary>
 	/// 上一个检测到的被激活的进程。
@@ -156,11 +178,10 @@ internal class WindowTracker
 	{
 		_recordFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
-		WindowsUsedTime = new();
+		_windowsUsedTime = new();
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
-		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset)
-			LocalSettings["Today"] != currentDate)
+		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
 		{
 			// 如果今天的记录不存在或不是今天，则重置记录。
 			LocalSettings["Today"] = currentDate;
@@ -183,13 +204,8 @@ internal class WindowTracker
 		}
 		else
 		{
-			if (HasTotalReminded)
-			{
-				// 如果已经达到了今日使用时长，则每次启动都提醒。
-				CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
-			}
-
 			// 获取记录的使用时长。
+			_totalUsedTime = TotalUsedTime;
 			try
 			{
 				string[] lines = GetUsedTime();
@@ -213,7 +229,7 @@ internal class WindowTracker
 						WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
 						continue;
 					}
-					WindowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
+					_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
 				}
 			}
 			catch (Exception ex)
@@ -222,6 +238,12 @@ internal class WindowTracker
 				CanSend = ReminderHelper.SendReminder("提示用户无法获取今天的记录",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetRecord"), true);
+			}
+
+			if (HasTotalReminded)
+			{
+				// 如果已经达到了今日使用时长，则每次启动都提醒。
+				CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
 			}
 		}
 
@@ -247,28 +269,35 @@ internal class WindowTracker
 	/// 获取本地化时间 / 时长。
 	/// </summary>
 	/// <param name="time">一个时间 / 时长。</param>
+	/// <param name="useRemindTotal">指示是否使用用于触发提醒的总时长。</param>
 	/// <returns>本地化时间 / 时长字符串。</returns>
-	public static string GetLocalTime(TimeSpan time)
+	public static string GetLocalTime(TimeSpan time, bool useRemindTotal = false)
 	{
-		if (time.Days == 0 && time.Hours == 0 && time.Minutes == 0)
+		// 如果使用用于触发提醒的总时长则忽略传入的 time 参数。
+		TimeSpan realTime = useRemindTotal ? _totalUsedTime : time;
+
+		// 根据本地化设置返回时间字符串。
+		string result;
+		if (realTime.Days == 0 && realTime.Hours == 0 && realTime.Minutes == 0)
 		{
-			return "< 1" + Loader.GetString("Minute");
+			result = "< 1" + Loader.GetString("Minute");
 		}
-		else if (time.Days == 0 && time.Hours == 0)
+		else if (realTime.Days == 0 && realTime.Hours == 0)
 		{
-			return time.Minutes + Loader.GetString("Minute");
+			result = realTime.Minutes + Loader.GetString("Minute");
 		}
-		else if (time.Days == 0)
+		else if (realTime.Days == 0)
 		{
-			return time.Hours + Loader.GetString("Hour")
-				+ time.Minutes + Loader.GetString("Minute");
+			result = realTime.Hours + Loader.GetString("Hour")
+				+ realTime.Minutes + Loader.GetString("Minute");
 		}
 		else
 		{
-			return time.Days + Loader.GetString("Day")
-				+ time.Hours + Loader.GetString("Hour")
-				+ time.Minutes + Loader.GetString("Minute");
+			result = realTime.Days + Loader.GetString("Day")
+				+ realTime.Hours + Loader.GetString("Hour")
+				+ realTime.Minutes + Loader.GetString("Minute");
 		}
+		return result;
 	}
 
 	/// <summary>
@@ -278,12 +307,12 @@ internal class WindowTracker
 	/// <returns>使用时长最长的 <paramref name="count"/> 个进程名称、图标和时长。</returns>
 	public static List<ProcessInfo> GetProcessesInfo(int count)
 	{
-		// 获取使用时长最长的六个进程的名称。
+		// 获取使用时长最长的六个进程的名称（排除无需记录信息的进程）。
 		List<string> processNames = WindowsUsedTime
-				.OrderByDescending(x => x.Value)
-				.Take(count)
-				.Select(x => x.Key)
-				.ToList();
+			.OrderByDescending(x => x.Value)
+			.Take(count)
+			.Select(x => x.Key)
+			.ToList();
 
 		string processesListText;
 		try
@@ -569,90 +598,97 @@ internal class WindowTracker
 					goto Finish;
 				}
 
-				IReadOnlyList<AppListEntry> appListEntries = await package.GetAppListEntriesAsync();
-				AppListEntry appListEntry = appListEntries.Count > 0 ? appListEntries[0] : null;
-				if (appListEntries == null)
-				{
-					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的显示信息。");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
-
-				AppDisplayInfo displayinfo = appListEntry.DisplayInfo;
-				RandomAccessStreamReference iconStreamRef = displayinfo.GetLogo(new(32, 32));
-				if (iconStreamRef == null)
-				{
-					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的图标。");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
-
 				// 加载图标并将图标保存到缓存文件夹中。
 				string iconUri;
 				try
 				{
-					IRandomAccessStreamWithContentType iconStream = await iconStreamRef.OpenReadAsync();
+					string iconPath = package.Logo.LocalPath;
+					StorageFile iconFile1 = await StorageFile.GetFileFromPathAsync(iconPath);
+					IRandomAccessStreamWithContentType iconStream = await iconFile1.OpenReadAsync();
 
 					// 获取图标的实际内容范围。
 					BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
 					PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
 					byte[] pixels = pixelData.DetachPixelData();
 					uint width = decoder.PixelWidth, height = decoder.PixelHeight;
-					uint x = 0, y = 0, w = 0, h = 0;
-					for (uint i = 0; i < height; i++)
+					uint minX = 0, minY = 0, maxX = 0, maxY = 0;
+					bool exit;
+
+					// 从左向右遍历每一列，找到最左边有内容的像素列。
+					exit = false;
+					for (uint column = 0; column < width && !exit; column++)
 					{
-						for (uint j = 0; j < width; j++)
+						for (uint pixel = 0; pixel < height && !exit; pixel++)
 						{
-							if (pixels[(i * width + j) * 4 + 3] >= 20)
+							if (pixels[(pixel * width + column) * 4 + 3] > 0)
 							{
-								if (x == 0 || i < x)
-								{
-									x = i;
-								}
-								if (y == 0 || j < y)
-								{
-									y = j;
-								}
-								if (w == 0 || i > w)
-								{
-									w = i;
-								}
-								if (h == 0 || j > h)
-								{
-									h = j;
-								}
+								minX = column;
+								exit = true;
 							}
 						}
 					}
 
-					// 图标实际内容的宽和高至少为 32 像素且必须是正方形。
-					uint cropWidth = w - x + 1, cropHeight = h - y + 1;
-					if (cropWidth < 32 || cropHeight < 32)
+					// 从右向左遍历每一列，找到最右边有内容的像素列。
+					exit = false;
+					for (uint column = width - 1; column >= 0 && !exit; column--)
+					{
+						for (uint pixel = 0; pixel < height && !exit; pixel++)
+						{
+							if (pixels[(pixel * width + column) * 4 + 3] > 0)
+							{
+								maxX = column;
+								exit = true;
+							}
+						}
+					}
+
+					// 从上向下遍历每一行，找到最上边有内容的像素行。
+					exit = false;
+					for (uint row = 0; row < height && !exit; row++)
+					{
+						for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
+						{
+							if (pixels[(row * width + pixel) * 4 + 3] > 0)
+							{
+								minY = row;
+								exit = true;
+							}
+						}
+					}
+
+					// 从下向上遍历每一行，找到最下边有内容的像素行。
+					exit = false;
+					for (uint row = height - 1; row >= 0 && !exit; row--)
+					{
+						for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
+						{
+							if (pixels[(row * width + pixel) * 4 + 3] > 0)
+							{
+								maxY = row;
+								exit = true;
+							}
+						}
+					}
+
+					uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
+
+					// 图标裁剪区域至少为 32 * 32 像素，且裁剪区域坐标不能为负。
+					if (cropWidth < 32 && cropHeight < 32)
 					{
 						cropWidth = cropHeight = 32;
-						x = (width - cropWidth) / 2;
-						y = (height - cropHeight) / 2;
+						minX = SystemHelper.Round((width - cropWidth) / 2);
+						minY = SystemHelper.Round((width - cropHeight) / 2);
 					}
-					else if (cropWidth > cropHeight)
-					{
-						cropHeight = cropWidth;
-						y = (height - cropHeight) / 2;
-					}
-					else if (cropHeight > cropWidth)
-					{
-						cropWidth = cropHeight;
-						x = (width - cropWidth) / 2;
-					}
-					x = x < 0 ? 0 : x;
-					y = y < 0 ? 0 : y;
+					minX = minX < 0 ? 0 : minX;
+					minY = minY < 0 ? 0 : minY;
 
 					//裁剪图标。
 					InMemoryRandomAccessStream croppedStream = new();
 					BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
 					encoder.BitmapTransform.Bounds = new()
 					{
-						X = x,
-						Y = y,
+						X = minX,
+						Y = minY,
 						Width = cropWidth,
 						Height = cropHeight,
 					};
@@ -711,22 +747,20 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 获取一个 <see langword="bool"/> 值，指示是否需要 <paramref name="processName"/> 进程的信息。
+	/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
 	/// </summary>
-	/// <param name="processName">进程的名称。</param>
-	/// <returns>指示是否需要 <paramref name="processName"/> 进程的信息。</returns>
-	private bool WhetherNeedInfo(string processName)
+	/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
+	private static HashSet<string> GetNoInfoArr()
 	{
-		string[] noInfoNamesArr;
 		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
-		if (_lastNoTimeNamesStr != noInfoNamesStr)
+		if (_lastNoInfoNamesStr != noInfoNamesStr)
 		{
 			// 如果过滤字符串有更新，则更新缓存。
 			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
 			_lastNoInfoNamesStr = noInfoNamesStr;
 		}
-		noInfoNamesArr = _lastNotInfoNamesArr;
-		return !noInfoNamesArr.Contains(processName);
+
+		return new(_lastNotInfoNamesArr);
 	}
 
 	/// <summary>
@@ -736,22 +770,17 @@ internal class WindowTracker
 	{
 		string name = _lastProcess.ProcessName;
 
-		if (!WhetherNeedInfo(name))
-		{
-			// 如果不需要信息则不在 WindowsUsedTime 和记录文件中记录时长。
-			return;
-		}
-
 		TimeSpan usedTime;
 		TimeSpan totalUsedTime;
 
-		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。
+		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。在 TotalUsedTime 中记录总使用时长。
 		try
 		{
 			usedTime = DateTime.Now - _lastActivationTime;
-			totalUsedTime = WindowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
+			totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
 				pastUsedTime + usedTime : usedTime;
-			WindowsUsedTime[name] = totalUsedTime;
+			_windowsUsedTime[name] = totalUsedTime;
+			TotalUsedTime += usedTime;
 		}
 		catch (Exception ex)
 		{
@@ -938,7 +967,7 @@ internal class WindowTracker
 		}
 
 		// 更新总使用时长和连续使用时长。
-		TotalUsedTime += _oneSecond;
+		_totalUsedTime += _oneSecond;
 		// 如果窗口被激活时长超过 5 秒则记录。
 		if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
 		{
@@ -951,7 +980,7 @@ internal class WindowTracker
 		//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
 
 		// 检查是否需要显示提醒通知。
-		if (TotalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
+		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
 			&& !HasTotalReminded)
 		{
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
@@ -992,7 +1021,7 @@ internal class WindowTracker
 		_lastProcess = process;
 		_lastActivationTime = DateTime.Now;
 
-		if (WhetherNeedInfo(name))
+		if (!GetNoInfoArr().Contains(name))
 		{
 			// 如果进程不是只记录使用时长的则记录信息。
 			_ = Task.Run(RecordProcessInfo);

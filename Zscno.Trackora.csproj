@@ -25,9 +25,6 @@
     <PackageCertificateKeyFile>Zscno.Trackora_TemporaryKey.pfx</PackageCertificateKeyFile>
     <AppxPackageDir>D:\Code\Zscno.Trackora\Publish\</AppxPackageDir>
   </PropertyGroup>
-  <ItemGroup>
-    <None Remove="SettingsPage.xaml" />
-  </ItemGroup>
 	
   <ItemGroup>
     <Content Include="Assets\SplashScreen.scale-200.png" />
@@ -88,15 +85,18 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x86'">
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+		<ApplicationManifest>app.publish.manifest</ApplicationManifest>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+		<ApplicationManifest>app.publish.manifest</ApplicationManifest>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|arm64'">
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|arm64'">
 		<DefineConstants>DISABLE_XAML_GENERATED_MAIN</DefineConstants>
+		<ApplicationManifest>app.publish.manifest</ApplicationManifest>
 	</PropertyGroup>
 	
   <!-- 
