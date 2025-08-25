@@ -702,14 +702,17 @@ internal class WindowTracker
 					//	}
 					//}
 
-					// 图标实际内容的宽和高至少为 32 像素。
 					uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
-					if (cropWidth < 32 || cropHeight < 32)
+
+					// 图标实际内容的宽和高至少为 32 像素，且裁剪区域坐标不能为负。
+					if (cropWidth < 32 && cropHeight < 32)
 					{
 						cropWidth = cropHeight = 32;
 						minX = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
 						minY = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
 					}
+					minX = minX < 0 ? 0 : minX;
+					minY = minY < 0 ? 0 : minY;
 					//else if (cropWidth > cropHeight)
 					//{
 					//	cropHeight = cropWidth;
@@ -720,8 +723,6 @@ internal class WindowTracker
 					//	cropWidth = cropHeight;
 					//	x = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
 					//}
-					minX = minX < 0 ? 0 : minX;
-					minY = minY < 0 ? 0 : minY;
 
 					//裁剪图标。
 					InMemoryRandomAccessStream croppedStream = new();
