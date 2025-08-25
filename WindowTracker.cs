@@ -139,12 +139,12 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串数组
 	/// </summary>
-	private string[] _lastNotInfoNamesArr;
+	private static string[] _lastNotInfoNamesArr;
 
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private string _lastNoInfoNamesStr;
+	private static string _lastNoInfoNamesStr;
 
 	/// <summary>
 	/// 上一个检测到的被激活的进程。
@@ -294,12 +294,14 @@ internal class WindowTracker
 	/// <returns>使用时长最长的 <paramref name="count"/> 个进程名称、图标和时长。</returns>
 	public static List<ProcessInfo> GetProcessesInfo(int count)
 	{
-		// 获取使用时长最长的六个进程的名称。
+		// 获取使用时长最长的六个进程的名称（排除无需记录信息的进程）。
+		HashSet<string> noInfoSet = new(GetNoInfoArr());
 		List<string> processNames = WindowsUsedTime
-				.OrderByDescending(x => x.Value)
-				.Take(count)
-				.Select(x => x.Key)
-				.ToList();
+			.Where(pair => !noInfoSet.Contains(pair.Key))
+			.OrderByDescending(x => x.Value)
+			.Take(count)
+			.Select(x => x.Key)
+			.ToList();
 
 		string processesListText;
 		try
@@ -734,22 +736,20 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 获取一个 <see langword="bool"/> 值，指示是否需要 <paramref name="processName"/> 进程的信息。
+	/// 获取用于过滤只记录时间的进程名称的字符串数组。
 	/// </summary>
-	/// <param name="processName">进程的名称。</param>
-	/// <returns>指示是否需要 <paramref name="processName"/> 进程的信息。</returns>
-	private bool WhetherNeedInfo(string processName)
+	/// <returns>用于过滤只记录时间的进程名称的字符串数组。</returns>
+	private static string[] GetNoInfoArr()
 	{
-		string[] noInfoNamesArr;
 		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
-		if (_lastNoTimeNamesStr != noInfoNamesStr)
+		if (_lastNoInfoNamesStr != noInfoNamesStr)
 		{
 			// 如果过滤字符串有更新，则更新缓存。
 			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
 			_lastNoInfoNamesStr = noInfoNamesStr;
 		}
-		noInfoNamesArr = _lastNotInfoNamesArr;
-		return !noInfoNamesArr.Contains(processName);
+
+		return _lastNotInfoNamesArr;
 	}
 
 	/// <summary>
@@ -758,12 +758,6 @@ internal class WindowTracker
 	private void RecordUsedTime()
 	{
 		string name = _lastProcess.ProcessName;
-
-		if (!WhetherNeedInfo(name))
-		{
-			// 如果不需要信息则不在 WindowsUsedTime 和记录文件中记录时长。
-			return;
-		}
 
 		TimeSpan usedTime;
 		TimeSpan totalUsedTime;
@@ -1016,7 +1010,7 @@ internal class WindowTracker
 		_lastProcess = process;
 		_lastActivationTime = DateTime.Now;
 
-		if (WhetherNeedInfo(name))
+		if (!GetNoInfoArr().Contains(name))
 		{
 			// 如果进程不是只记录使用时长的则记录信息。
 			_ = Task.Run(RecordProcessInfo);
