@@ -24,29 +24,31 @@ namespace Zscno.Trackora
 
 		public async Task Refresh()
 		{
-			ProcessesList.ItemsSource = null;
 			LoadingRing.IsActive = true;
+
 			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
 			All.Content = Loader.GetString("All/Content");
-
-			try
-			{
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
-			}
-			All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
-
 			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
 				WindowTracker.EndUsingTime <= _timeNow ?
 				null : WindowTracker.EndUsingTime;
 			TimePickReminder.Text = EndUsing.SelectedTime != null &&
 				WindowTracker.EndUsingTime <= _timeNow ?
 				Loader.GetString("PastTime") : string.Empty;
+
+			try
+			{
+				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
+				All.Visibility = ((List<ProcessInfo>) ProcessesList.ItemsSource).Count > 6 ?
+					Visibility.Visible : Visibility.Collapsed;
+			}
+			catch (Exception ex)
+			{
+				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
+				All.Visibility = Visibility.Collapsed;
+				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetInfo"));
+			}
+
 			LoadingRing.IsActive = false;
 		}
 
@@ -76,6 +78,7 @@ namespace Zscno.Trackora
 		{
 			LoadingRing.IsActive = true;
 			_isFirstLoad = true;
+
 			Total.Time = (TimeSpan) LocalSettings["TotalUsedRemindTime"];
 			Continuous.Time = (TimeSpan) LocalSettings["ContinuousUsedRemindTime"];
 			ResetContinuous.Time = (TimeSpan) LocalSettings["ContinuousUsedResetTime"];
@@ -91,14 +94,16 @@ namespace Zscno.Trackora
 			try
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
+				All.Visibility = ((List<ProcessInfo>) ProcessesList.ItemsSource).Count > 6 ?
+					Visibility.Visible : Visibility.Collapsed;
 			}
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
+				All.Visibility = Visibility.Collapsed;
 				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
-			All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
 
 			_isFirstLoad = false;
 			LoadingRing.IsActive = false;
