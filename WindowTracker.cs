@@ -585,69 +585,130 @@ internal class WindowTracker
 					goto Finish;
 				}
 
-				IReadOnlyList<AppListEntry> appListEntries = await package.GetAppListEntriesAsync();
-				AppListEntry appListEntry = appListEntries.Count > 0 ? appListEntries[0] : null;
-				if (appListEntries == null)
-				{
-					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的显示信息。");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
+				//IReadOnlyList<AppListEntry> appListEntries = await package.GetAppListEntriesAsync();
+				//AppListEntry appListEntry = appListEntries.Count > 0 ? appListEntries[0] : null;
+				//if (appListEntries == null)
+				//{
+				//	WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的显示信息。");
+				//	info = GetDefaultInfo(process);
+				//	goto Finish;
+				//}
 
-				AppDisplayInfo displayinfo = appListEntry.DisplayInfo;
-				RandomAccessStreamReference iconStreamRef = displayinfo.GetLogo(new(32, 32));
-				if (iconStreamRef == null)
-				{
-					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的图标。");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
+				//AppDisplayInfo displayinfo = appListEntry.DisplayInfo;
+				//RandomAccessStreamReference iconStreamRef = displayinfo.GetLogo(new(32, 32));
+				//if (iconStreamRef == null)
+				//{
+				//	WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的图标。");
+				//	info = GetDefaultInfo(process);
+				//	goto Finish;
+				//}
 
 				// 加载图标并将图标保存到缓存文件夹中。
 				string iconUri;
 				try
 				{
-					IRandomAccessStreamWithContentType iconStream = await iconStreamRef.OpenReadAsync();
+					//IRandomAccessStreamWithContentType iconStream = await iconStreamRef.OpenReadAsync();
+					string iconPath = package.Logo.LocalPath;
+					StorageFile iconFile1 = await StorageFile.GetFileFromPathAsync(iconPath);
+					IRandomAccessStreamWithContentType iconStream = await iconFile1.OpenReadAsync();
 
 					// 获取图标的实际内容范围。
 					BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
 					PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
 					byte[] pixels = pixelData.DetachPixelData();
 					uint width = decoder.PixelWidth, height = decoder.PixelHeight;
-					uint x = 0, y = 0, w = 0, h = 0;
-					for (uint i = 0; i < height; i++)
+					uint minX = 0, minY = 0, maxX = 0, maxY = 0;
+					bool exit;
+
+					// 从左向右遍历每一列，找到最左边有内容的像素列。
+					exit = false;
+					for (uint column = 0; column < width && !exit; column++)
 					{
-						for (uint j = 0; j < width; j++)
+						for (uint pixel = 0; pixel < height && !exit; pixel++)
 						{
-							if (pixels[(i * width + j) * 4 + 3] >= 20)
+							if (pixels[(pixel * width + column) * 4 + 3] > 0)
 							{
-								if (x == 0 || i < x)
-								{
-									x = i;
-								}
-								if (y == 0 || j < y)
-								{
-									y = j;
-								}
-								if (w == 0 || i > w)
-								{
-									w = i;
-								}
-								if (h == 0 || j > h)
-								{
-									h = j;
-								}
+								minX = column;
+								exit = true;
 							}
 						}
 					}
 
+					// 从右向左遍历每一列，找到最右边有内容的像素列。
+					exit = false;
+					for (uint column = width - 1; column >= 0 && !exit; column--)
+					{
+						for (uint pixel = 0; pixel < height && !exit; pixel++)
+						{
+							if (pixels[(pixel * width + column) * 4 + 3] > 0)
+							{
+								maxX = column;
+								exit = true;
+							}
+						}
+					}
+
+					// 从上向下遍历每一行，找到最上边有内容的像素行。
+					exit = false;
+					for (uint row = 0; row < height && !exit; row++)
+					{
+						for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
+						{
+							if (pixels[(row * width + pixel) * 4 + 3] > 0)
+							{
+								minY = row;
+								exit = true;
+							}
+						}
+					}
+
+					// 从下向上遍历每一行，找到最下边有内容的像素行。
+					exit = false;
+					for (uint row = height - 1; row >= 0 && !exit; row--)
+					{
+						for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
+						{
+							if (pixels[(row * width + pixel) * 4 + 3] > 0)
+							{
+								maxY = row;
+								exit = true;
+							}
+						}
+					}
+
+					//for (uint i = 0; i < height; i++)
+					//{
+					//	for (uint j = 0; j < width; j++)
+					//	{
+					//		if (pixels[(i * width + j) * 4 + 3] > 0)
+					//		{
+					//			if (x == 0 || i < x)
+					//			{
+					//				x = i;
+					//			}
+					//			if (y == 0 || j < y)
+					//			{
+					//				y = j;
+					//			}
+					//			if (w == 0 || i > w)
+					//			{
+					//				w = i;
+					//			}
+					//			if (h == 0 || j > h)
+					//			{
+					//				h = j;
+					//			}
+					//		}
+					//	}
+					//}
+
 					// 图标实际内容的宽和高至少为 32 像素。
-					uint cropWidth = w - x + 1, cropHeight = h - y + 1;
+					uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
 					if (cropWidth < 32 || cropHeight < 32)
 					{
 						cropWidth = cropHeight = 32;
-						x = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
-						y = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
+						minX = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
+						minY = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
 					}
 					//else if (cropWidth > cropHeight)
 					//{
@@ -659,16 +720,16 @@ internal class WindowTracker
 					//	cropWidth = cropHeight;
 					//	x = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
 					//}
-					x = x < 0 ? 0 : x;
-					y = y < 0 ? 0 : y;
+					minX = minX < 0 ? 0 : minX;
+					minY = minY < 0 ? 0 : minY;
 
 					//裁剪图标。
 					InMemoryRandomAccessStream croppedStream = new();
 					BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
 					encoder.BitmapTransform.Bounds = new()
 					{
-						X = x,
-						Y = y,
+						X = minX,
+						Y = minY,
 						Width = cropWidth,
 						Height = cropHeight,
 					};
