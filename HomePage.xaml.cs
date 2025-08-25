@@ -38,7 +38,7 @@ namespace Zscno.Trackora
 			try
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = ((List<ProcessInfo>) ProcessesList.ItemsSource).Count > 6 ?
+				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
 					Visibility.Visible : Visibility.Collapsed;
 			}
 			catch (Exception ex)
@@ -94,7 +94,7 @@ namespace Zscno.Trackora
 			try
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = ((List<ProcessInfo>) ProcessesList.ItemsSource).Count > 6 ?
+				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
 					Visibility.Visible : Visibility.Collapsed;
 			}
 			catch (Exception ex)
@@ -155,8 +155,7 @@ namespace Zscno.Trackora
 
 			try
 			{
-				int count =  isRetract? 
-					6 : WindowTracker.WindowsUsedTime.Count;
+				int count =  isRetract? 6 : WindowTracker.WindowsUsedTime.Count;
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
 			}
 			catch (Exception ex)
