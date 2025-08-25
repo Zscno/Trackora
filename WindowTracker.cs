@@ -77,9 +77,17 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 所有检测到的前台进程的名称及其使用时长。
+	/// 用于显示的所有检测到进程的名称及其使用时长（不包含只记录时间的进程）。
 	/// </summary>
-	public static Dictionary<string, TimeSpan> WindowsUsedTime { get; private set; }
+	public static Dictionary<string, TimeSpan> WindowsUsedTime
+	{
+		get
+		{
+			return _windowsUsedTime
+				.Where(pair => !GetNoInfoArr().Contains(pair.Key))
+				.ToDictionary(pair => pair.Key, pair => pair.Value);
+		}
+	}
 
 	/// <summary>
 	/// 指示总使用时长提醒是否已经显示。
@@ -90,6 +98,11 @@ internal class WindowTracker
 
 		set => LocalSettings["HasTotalReminded"] = value;
 	}
+
+	/// <summary>
+	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
+	/// </summary>
+	private static Dictionary<string, TimeSpan> _windowsUsedTime;
 
 	/// <summary>
 	/// 用于触发提醒的总使用时长。
@@ -165,7 +178,7 @@ internal class WindowTracker
 	{
 		_recordFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
-		WindowsUsedTime = new();
+		_windowsUsedTime = new();
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
 		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
@@ -216,7 +229,7 @@ internal class WindowTracker
 						WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
 						continue;
 					}
-					WindowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
+					_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
 				}
 			}
 			catch (Exception ex)
@@ -295,9 +308,7 @@ internal class WindowTracker
 	public static List<ProcessInfo> GetProcessesInfo(int count)
 	{
 		// 获取使用时长最长的六个进程的名称（排除无需记录信息的进程）。
-		HashSet<string> noInfoSet = new(GetNoInfoArr());
 		List<string> processNames = WindowsUsedTime
-			.Where(pair => !noInfoSet.Contains(pair.Key))
 			.OrderByDescending(x => x.Value)
 			.Take(count)
 			.Select(x => x.Key)
@@ -736,10 +747,10 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 获取用于过滤只记录时间的进程名称的字符串数组。
+	/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
 	/// </summary>
-	/// <returns>用于过滤只记录时间的进程名称的字符串数组。</returns>
-	private static string[] GetNoInfoArr()
+	/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
+	private static HashSet<string> GetNoInfoArr()
 	{
 		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
 		if (_lastNoInfoNamesStr != noInfoNamesStr)
@@ -749,7 +760,7 @@ internal class WindowTracker
 			_lastNoInfoNamesStr = noInfoNamesStr;
 		}
 
-		return _lastNotInfoNamesArr;
+		return new(_lastNotInfoNamesArr);
 	}
 
 	/// <summary>
@@ -766,9 +777,9 @@ internal class WindowTracker
 		try
 		{
 			usedTime = DateTime.Now - _lastActivationTime;
-			totalUsedTime = WindowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
+			totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
 				pastUsedTime + usedTime : usedTime;
-			WindowsUsedTime[name] = totalUsedTime;
+			_windowsUsedTime[name] = totalUsedTime;
 			TotalUsedTime += usedTime;
 		}
 		catch (Exception ex)
