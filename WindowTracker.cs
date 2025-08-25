@@ -585,29 +585,10 @@ internal class WindowTracker
 					goto Finish;
 				}
 
-				//IReadOnlyList<AppListEntry> appListEntries = await package.GetAppListEntriesAsync();
-				//AppListEntry appListEntry = appListEntries.Count > 0 ? appListEntries[0] : null;
-				//if (appListEntries == null)
-				//{
-				//	WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的显示信息。");
-				//	info = GetDefaultInfo(process);
-				//	goto Finish;
-				//}
-
-				//AppDisplayInfo displayinfo = appListEntry.DisplayInfo;
-				//RandomAccessStreamReference iconStreamRef = displayinfo.GetLogo(new(32, 32));
-				//if (iconStreamRef == null)
-				//{
-				//	WriteLog(LogLevel.Warning, $"出于未知原因，未获取到包 {name} 的图标。");
-				//	info = GetDefaultInfo(process);
-				//	goto Finish;
-				//}
-
 				// 加载图标并将图标保存到缓存文件夹中。
 				string iconUri;
 				try
 				{
-					//IRandomAccessStreamWithContentType iconStream = await iconStreamRef.OpenReadAsync();
 					string iconPath = package.Logo.LocalPath;
 					StorageFile iconFile1 = await StorageFile.GetFileFromPathAsync(iconPath);
 					IRandomAccessStreamWithContentType iconStream = await iconFile1.OpenReadAsync();
@@ -676,53 +657,17 @@ internal class WindowTracker
 						}
 					}
 
-					//for (uint i = 0; i < height; i++)
-					//{
-					//	for (uint j = 0; j < width; j++)
-					//	{
-					//		if (pixels[(i * width + j) * 4 + 3] > 0)
-					//		{
-					//			if (x == 0 || i < x)
-					//			{
-					//				x = i;
-					//			}
-					//			if (y == 0 || j < y)
-					//			{
-					//				y = j;
-					//			}
-					//			if (w == 0 || i > w)
-					//			{
-					//				w = i;
-					//			}
-					//			if (h == 0 || j > h)
-					//			{
-					//				h = j;
-					//			}
-					//		}
-					//	}
-					//}
-
 					uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
 
-					// 图标实际内容的宽和高至少为 32 像素，且裁剪区域坐标不能为负。
+					// 图标裁剪区域至少为 32 * 32 像素，且裁剪区域坐标不能为负。
 					if (cropWidth < 32 && cropHeight < 32)
 					{
 						cropWidth = cropHeight = 32;
-						minX = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
-						minY = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
+						minX = SystemHelper.Round((width - cropWidth) / 2);
+						minY = SystemHelper.Round((width - cropHeight) / 2);
 					}
 					minX = minX < 0 ? 0 : minX;
 					minY = minY < 0 ? 0 : minY;
-					//else if (cropWidth > cropHeight)
-					//{
-					//	cropHeight = cropWidth;
-					//	y = SystemHelper.Round((width - cropHeight) / 2);//(uint) Math.Round((double) (height - cropHeight) / 2, MidpointRounding.AwayFromZero);
-					//}
-					//else if (cropHeight > cropWidth)
-					//{
-					//	cropWidth = cropHeight;
-					//	x = SystemHelper.Round((width - cropWidth) / 2);//(uint) Math.Round((double) (width - cropWidth) / 2, MidpointRounding.AwayFromZero);
-					//}
 
 					//裁剪图标。
 					InMemoryRandomAccessStream croppedStream = new();
