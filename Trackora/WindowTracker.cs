@@ -336,7 +336,8 @@ internal class WindowTracker
 		{
 			try
 			{
-				List<ProcessInfo> list = JsonSerializer.Deserialize<List<ProcessInfo>>(processesListText);
+				List<ProcessInfo> list = JsonSerializer.Deserialize(processesListText, 
+					JsonSerializeMetadata.Default.ListProcessInfo);
 				Dictionary<string, ProcessInfo> dict = list.ToDictionary(value => value.ProcessName);
 				return dict;
 			}
@@ -470,7 +471,7 @@ internal class WindowTracker
 			using FileStream textStream = new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
 			// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
 			processesInfo = textStream.Length > 0 ?
-				JsonSerializer.Deserialize<List<ProcessInfo>>(textStream) ?? new() : new();
+				JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo) ?? new() : new();
 		}
 		catch (Exception ex)
 		{
