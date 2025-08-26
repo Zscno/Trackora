@@ -102,7 +102,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
 	/// </summary>
-	private static Dictionary<string, TimeSpan> _windowsUsedTime;
+	private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
 
 	/// <summary>
 	/// 用于触发提醒的总使用时长。
@@ -117,7 +117,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 记录当天进程名称和使用时长的文本文件路径。
 	/// </summary>
-	private readonly string _recordFilePath;
+	private readonly string _recordFilePath = string.Empty;
 
 	/// <summary>
 	/// 连续使用时长。
@@ -127,7 +127,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 当前正在记录信息的进程的名称。
 	/// </summary>
-	private string _currentRecordProcessName;
+	private string _currentRecordProcessName = string.Empty;
 
 	/// <summary>
 	/// 上一个窗口被激活的时间。
@@ -142,27 +142,27 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于过滤进程名称的字符串数组。
 	/// </summary>
-	private string[] _lastNoTimeNamesArr;
+	private string[] _lastNoTimeNamesArr = Array.Empty<string>();
 
 	/// <summary>
 	/// 用于过滤进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private string _lastNoTimeNamesStr;
+	private string _lastNoTimeNamesStr = string.Empty;
 
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串数组
 	/// </summary>
-	private static string[] _lastNotInfoNamesArr;
+	private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
 
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private static string _lastNoInfoNamesStr;
+	private static string _lastNoInfoNamesStr = string.Empty;
 
 	/// <summary>
 	/// 上一个检测到的被激活的进程。
 	/// </summary>
-	private Process _lastProcess;
+	private Process? _lastProcess;
 
 	/// <summary>
 	/// 上次记录连续使用时长的时间。
@@ -172,13 +172,12 @@ internal class WindowTracker
 	/// <summary>
 	/// 计时器。
 	/// </summary>
-	private DispatcherTimer _timer;
+	private DispatcherTimer _timer = new();
 
 	public WindowTracker()
 	{
 		_recordFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
-		_windowsUsedTime = new();
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
 		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
@@ -250,7 +249,6 @@ internal class WindowTracker
 		// 初始化并启动计时器。
 		try
 		{
-			_timer = new();
 			_timer.Tick += Timer_Tick;
 			_timer.Interval = _oneSecond;
 			_timer.Start();
@@ -478,13 +476,13 @@ internal class WindowTracker
 			WriteLog(LogLevel.Error, $"在读取记录文件 [{InfoFilePath}] 时触发异常：{ex}");
 			CanSend = ReminderHelper.SendReminder("提示用户无法读取进程信息",
 				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"), true);
-			_currentRecordProcessName = null;
+			_currentRecordProcessName = string.Empty;
 			return;
 		}
 
 		if (processesInfo.Any(info => info.ProcessName == process.ProcessName))
 		{
-			_currentRecordProcessName = null;
+			_currentRecordProcessName = string.Empty;
 			return;
 		}
 
@@ -743,7 +741,7 @@ internal class WindowTracker
 				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"), true);
 			return;
 		}
-		_currentRecordProcessName = null;
+		_currentRecordProcessName = string.Empty;
 		WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
 	}
 
