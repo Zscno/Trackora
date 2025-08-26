@@ -37,12 +37,12 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 应用主窗口。
 		/// </summary>
-		public static MainWindow AppMainWindow { get; private set; }
+		public static MainWindow? AppMainWindow { get; private set; }
 
 		/// <summary>
 		/// 指示是否能发出各种通知和提醒。
 		/// </summary>
-		public static bool CanSend { get; set; }
+		public static bool CanSend { get; set; } = true;
 
 		/// <summary>
 		/// 一般的通知所有可以选择的提示音。
@@ -59,17 +59,17 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 记录进程信息的文件路径。
 		/// </summary>
-		public static string InfoFilePath { get; private set; }
+		public static string InfoFilePath { get; private set; } = string.Empty;
 
 		/// <summary>
 		/// 用于加载语言资源。
 		/// </summary>
-		public static ResourceLoader Loader { get; private set; }
+		public static ResourceLoader Loader { get; } = new();
 
 		/// <summary>
 		/// 应用本地设置。
 		/// </summary>
-		public static IPropertySet LocalSettings { get; private set; }
+		public static IPropertySet LocalSettings { get; private set; } = new PropertySet();
 
 		/// <summary>
 		/// 所有可选的主题选项。
@@ -99,23 +99,34 @@ namespace Zscno.Trackora
 				WriteLog(LogLevel.Error, $"在注册应用实例激活事件时触发异常：{ex}");
 			}
 
-			// 初始化静态属性。
+			// 初始化信息文件路径。
 			try
 			{
-				Loader = new();
 				InfoFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Info.json");
-				LocalSettings = ApplicationData.Current.LocalSettings.Values;
-				CanSend = true;
 			}
 			catch (Exception ex)
 			{
-				WriteLog(LogLevel.Error,
-					$"在初始化 ResourseLoader / WindowsList.txt / LocalSettings 时触发异常，将在提醒用户退出：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.", true);
+				WriteLog(LogLevel.Error, $"在初始化信息文件路径时触发异常，将在提醒用户退出：{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法加载进程信息",
+					Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotInitInfoFilePath"), true);
+				Current.Exit();
 			}
 
-			// 应用设置的默认值。
+			// 初始化本地设置。
+			try
+			{
+				LocalSettings = ApplicationData.Current.LocalSettings.Values;
+			}
+			catch (Exception ex)
+			{
+				WriteLog(LogLevel.Error, $"在初始化本地设置时触发异常，将使用内存临时存储：{ex}");
+				CanSend = ReminderHelper.SendReminder("提醒用户无法加载设置",
+					Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotInitSettings"), true);
+			}
+
+			// 本地设置的默认值。
 			if (!LocalSettings.ContainsKey("TotalUsedRemindTime"))
 			{
 				LocalSettings["TotalUsedRemindTime"] = TimeSpan.FromHours(2);
@@ -213,11 +224,9 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 在已有应用实例被激活时调用。
 		/// </summary>
-		/// <param name="sender"></param>
-		/// <param name="e"></param>
-		private void AppInstance_Activated(object sender, AppActivationArguments e)
+		private void AppInstance_Activated(object? sender, AppActivationArguments e)
 		{
-			_ = AppMainWindow.DispatcherQueue.TryEnqueue(async () =>
+			_ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () =>
 			{
 				await AppMainWindow.ShowWindow();
 			});

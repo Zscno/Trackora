@@ -300,4 +300,10 @@
   <data name="NoTimeNames.Header" xml:space="preserve">
     <value>不记录任何信息的进程名称：</value>
   </data>
+  <data name="ECanNotInitSettings" xml:space="preserve">
+    <value>我们无法加载设置，请联系作者以获取帮助。</value>
+  </data>
+  <data name="ECanNotInitInfoFilePath" xml:space="preserve">
+    <value>我们无法加载进程信息，请联系作者以获取帮助。</value>
+  </data>
 </root>
