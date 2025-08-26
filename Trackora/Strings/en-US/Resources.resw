@@ -1,0 +1,309 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ContinuousTimePicker.Header" xml:space="preserve">
+    <value>Continuous usage time reminder</value>
+  </data>
+  <data name="ContinuousReminderText1" xml:space="preserve">
+    <value>You have been using the computer continuously for </value>
+  </data>
+  <data name="ContinuousReminderText2" xml:space="preserve">
+    <value> . We suggest you take a break.</value>
+  </data>
+  <data name="ExitApp.Text" xml:space="preserve">
+    <value>Exit the application</value>
+  </data>
+  <data name="Hour" xml:space="preserve">
+    <value>h </value>
+  </data>
+  <data name="Minute" xml:space="preserve">
+    <value>m</value>
+  </data>
+  <data name="Home.Content" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="Refresh.Content" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ShowWindow.Text" xml:space="preserve">
+    <value>Display window</value>
+  </data>
+  <data name="TaskbarIcon.ToolTipText" xml:space="preserve">
+    <value>Trackora - Efficiently manage your time</value>
+  </data>
+  <data name="UsedTimeReminderTitle" xml:space="preserve">
+    <value>Usage time reminder</value>
+  </data>
+  <data name="EndUsingReminderTitle" xml:space="preserve">
+    <value>Time's up</value>
+  </data>
+  <data name="EndUsingReminderText1" xml:space="preserve">
+    <value>It is now </value>
+  </data>
+  <data name="EndUsingReminderText2" xml:space="preserve">
+    <value> , which has reached the designated stop time. Please take a rest immediately.</value>
+  </data>
+  <data name="PastTime" xml:space="preserve">
+    <value>The time you selected has already passed. Please select again.</value>
+  </data>
+  <data name="RightTime" xml:space="preserve">
+    <value>This time is correct. We will remind you at that time.</value>
+  </data>
+  <data name="Reset.Content" xml:space="preserve">
+    <value>Reset</value>
+  </data>
+  <data name="HomeHeader" xml:space="preserve">
+    <value>Today's usage time</value>
+  </data>
+  <data name="SettingsHeader" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="ContinuousSoundPicker.Header" xml:space="preserve">
+    <value>Reminder sound for continuous usage time:</value>
+  </data>
+  <data name="EndUsingSoundPicker.Header" xml:space="preserve">
+    <value>Reminder sound for end-of-use time: </value>
+  </data>
+  <data name="EndUsingTimePicker.Header" xml:space="preserve">
+    <value>End-of-use time reminder</value>
+  </data>
+  <data name="Test.Content" xml:space="preserve">
+    <value>Test</value>
+  </data>
+  <data name="TestContent" xml:space="preserve">
+    <value>Selected reminder sound: </value>
+  </data>
+  <data name="ThemePicker.Header" xml:space="preserve">
+    <value>App current theme (restart the application after changing the theme for it to take effect):</value>
+  </data>
+  <data name="LightTheme" xml:space="preserve">
+    <value>Light theme</value>
+  </data>
+  <data name="DarkTheme" xml:space="preserve">
+    <value>Dark theme</value>
+  </data>
+  <data name="SystemTheme" xml:space="preserve">
+    <value>Follow system</value>
+  </data>
+  <data name="ThemeTitle.Text" xml:space="preserve">
+    <value>Theme</value>
+  </data>
+  <data name="RingerTitle.Text" xml:space="preserve">
+    <value>Reminder Sounds</value>
+  </data>
+  <data name="DevelopTitle.Text" xml:space="preserve">
+    <value>Developer tools</value>
+  </data>
+  <data name="NoInfoNames.Header" xml:space="preserve">
+    <value>The name of the process that only records usage time and does not display it on the homepage:</value>
+  </data>
+  <data name="OK.Content" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ErrorOrWarningTitle" xml:space="preserve">
+    <value>Tip</value>
+  </data>
+  <data name="ECanNotGetRecord" xml:space="preserve">
+    <value>We are unable to get today's records. See the logs for details (see settings page).</value>
+  </data>
+  <data name="ECanNotInitTimer" xml:space="preserve">
+    <value>The core part of the application cannot run. Please contact the author for help.</value>
+  </data>
+  <data name="ECanNotSetRecord" xml:space="preserve">
+    <value>We are unable to manage today's records. See the logs for details (see settings page).</value>
+  </data>
+  <data name="CanNotSend.Title" xml:space="preserve">
+    <value>Met some problems</value>
+  </data>
+  <data name="CanNotSend.Message" xml:space="preserve">
+    <value>We are unable to send certain notifications. See the logs for details.</value>
+  </data>
+  <data name="InputReminder.Text" xml:space="preserve">
+    <value>Separate with ",", and do not modify unless there are special requirements. Do not let two "," be connected together.</value>
+  </data>
+  <data name="ECanNotRecordTime" xml:space="preserve">
+    <value>We are unable to record the usage time.</value>
+  </data>
+  <data name="ResetContinuousTimePicker.Header" xml:space="preserve">
+    <value>Reset duration for continuous usage time</value>
+  </data>
+  <data name="CheckLog.Content" xml:space="preserve">
+    <value>View logs</value>
+  </data>
+  <data name="ECanNotGetInfo" xml:space="preserve">
+    <value>We are unable to get the information of process. See the logs for details (see settings page).</value>
+  </data>
+  <data name="TotalReminderText2" xml:space="preserve">
+    <value> today. We suggest you reduce your computer usage.</value>
+  </data>
+  <data name="TotalReminderText1" xml:space="preserve">
+    <value>You have been using the computer for </value>
+  </data>
+  <data name="TotalTimePicker.Header" xml:space="preserve">
+    <value>Total usage time reminder</value>
+  </data>
+  <data name="TotalSoundPicker.Header" xml:space="preserve">
+    <value>Reminder sound for total usage time: </value>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ECanNotWriteInfo" xml:space="preserve">
+    <value>We are unable to write the information of process. See the logs for details (see settings page).</value>
+  </data>
+  <data name="AboutTitle.Text" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="CacheFolderSize" xml:space="preserve">
+    <value>Cache folder size: </value>
+  </data>
+  <data name="ECanNotGetSize" xml:space="preserve">
+    <value>We are unable to get the cache folder size.</value>
+  </data>
+  <data name="ECanNotCleanCache" xml:space="preserve">
+    <value>We are unable to clear the cache completely. See the logs for details.</value>
+  </data>
+  <data name="CleanCache.Content" xml:space="preserve">
+    <value>Clear cache</value>
+  </data>
+  <data name="CleanReminder.Text" xml:space="preserve">
+    <value>After clearing the cache, some application information will only be loaded after you use it.</value>
+  </data>
+  <data name="PersonalizeTitle.Text" xml:space="preserve">
+    <value>Personalize</value>
+  </data>
+  <data name="ListTitle.Text" xml:space="preserve">
+    <value>Usage time ranking</value>
+  </data>
+  <data name="All.Content" xml:space="preserve">
+    <value>Show all apps</value>
+  </data>
+  <data name="Retract" xml:space="preserve">
+    <value>Fold up</value>
+  </data>
+  <data name="NoTimeNames.Header" xml:space="preserve">
+    <value>The name of the process that does not record any information:</value>
+  </data>
+  <data name="ECanNotInitSettings" xml:space="preserve">
+    <value>We are unable to load the settings. Please contact the author for help.</value>
+  </data>
+  <data name="ECanNotInitInfoFilePath" xml:space="preserve">
+    <value>We are unable to load the information of process. Please contact the author for help.</value>
+  </data>
+</root>
