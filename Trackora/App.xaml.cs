@@ -87,7 +87,21 @@ namespace Zscno.Trackora
 		public App()
 		{
 			InitializeComponent();
-			InitLogFile();
+
+			try
+			{
+				InitLogFile();
+			}
+			catch (Exception ex)
+			{
+				// 如果日志文件初始化失败，就把异常信息写到文档目录下的崩溃日志里，尝试发送通知提醒用户并退出。
+				File.WriteAllText(
+					Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 
+					$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash"), $"{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
+					"We can't launch the app. Contact the author for help please.", true);
+				Current.Exit();
+			}
 
 			try
 			{
