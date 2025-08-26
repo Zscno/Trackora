@@ -24,8 +24,8 @@ namespace Zscno.Trackora
 
 		private void CheckLog_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			if (File.Exists(LogSystem.LogFilePath))
 			{
 				_ = Process.Start("Explorer.exe", $"/select,{LogSystem.LogFilePath}");
@@ -35,8 +35,8 @@ namespace Zscno.Trackora
 
 		private async void CleanCache_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			string basePath = ApplicationData.Current.LocalCacheFolder.Path;
 			try
 			{
@@ -72,8 +72,8 @@ namespace Zscno.Trackora
 
 		private void ContinuousTest_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.ContinuousUsedTimeSoundTest);
 			button.IsEnabled = true;
 		}
@@ -85,16 +85,16 @@ namespace Zscno.Trackora
 
 		private void EndUsingTest_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.EndUsingTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
 		private void NoInfoOK_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			try
 			{
 				string[] strings = NoInfoNames.Text.Split(',');
@@ -147,8 +147,8 @@ namespace Zscno.Trackora
 
 		private void NoInfoReset_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
 			button.IsEnabled = true;
 		}
@@ -165,16 +165,16 @@ namespace Zscno.Trackora
 
 		private void TotalTest_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
 		private void NoTimeOK_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			try
 			{
 				string[] strings = NoTimeNames.Text.Split(',');
@@ -198,8 +198,8 @@ namespace Zscno.Trackora
 
 		private void NoTimeReset_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
 			button.IsEnabled = true;
 		}
