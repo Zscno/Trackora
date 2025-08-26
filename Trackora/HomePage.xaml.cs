@@ -111,16 +111,16 @@ namespace Zscno.Trackora
 
 		private async void Refresh_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			await Refresh();
 			button.IsEnabled = true;
 		}
 
 		private void Reset_Click(object sender, RoutedEventArgs e)
 		{
-			Button button = sender as Button;
-			button.IsEnabled = false;
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
 			EndUsing.SelectedTime = null;
 			WindowTracker.EndUsingTime = TimeSpan.Zero;
 			TimePickReminder.Text = string.Empty;

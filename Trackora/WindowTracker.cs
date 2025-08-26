@@ -31,23 +31,23 @@ internal class ProcessInfo
 	/// <summary>
 	/// 显示给用户的名称。
 	/// </summary>
-	public string DisplayName { get; set; }
+	public string DisplayName { get; set; } = string.Empty;
 
 	/// <summary>
 	/// 图标的Uri。
 	/// </summary>
-	public string IconUri { get; set; }
+	public string IconUri { get; set; } = string.Empty;
 
 	/// <summary>
 	/// 进程名称。
 	/// </summary>
-	public string ProcessName { get; set; }
+	public string ProcessName { get; set; } = string.Empty;
 
 	/// <summary>
 	/// 使用时长。
 	/// </summary>
 	[JsonIgnore]
-	public string UsedTime { get; set; }
+	public string UsedTime { get; set; } = string.Empty;
 }
 
 internal class WindowTracker
@@ -102,7 +102,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
 	/// </summary>
-	private static Dictionary<string, TimeSpan> _windowsUsedTime;
+	private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
 
 	/// <summary>
 	/// 用于触发提醒的总使用时长。
@@ -117,7 +117,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 记录当天进程名称和使用时长的文本文件路径。
 	/// </summary>
-	private readonly string _recordFilePath;
+	private readonly string _recordFilePath = string.Empty;
 
 	/// <summary>
 	/// 连续使用时长。
@@ -127,7 +127,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 当前正在记录信息的进程的名称。
 	/// </summary>
-	private string _currentRecordProcessName;
+	private string _currentRecordProcessName = string.Empty;
 
 	/// <summary>
 	/// 上一个窗口被激活的时间。
@@ -142,27 +142,27 @@ internal class WindowTracker
 	/// <summary>
 	/// 用于过滤进程名称的字符串数组。
 	/// </summary>
-	private string[] _lastNoTimeNamesArr;
+	private string[] _lastNoTimeNamesArr = Array.Empty<string>();
 
 	/// <summary>
 	/// 用于过滤进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private string _lastNoTimeNamesStr;
+	private string _lastNoTimeNamesStr = string.Empty;
 
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串数组
 	/// </summary>
-	private static string[] _lastNotInfoNamesArr;
+	private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
 
 	/// <summary>
 	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private static string _lastNoInfoNamesStr;
+	private static string _lastNoInfoNamesStr = string.Empty;
 
 	/// <summary>
 	/// 上一个检测到的被激活的进程。
 	/// </summary>
-	private Process _lastProcess;
+	private Process? _lastProcess;
 
 	/// <summary>
 	/// 上次记录连续使用时长的时间。
@@ -172,13 +172,12 @@ internal class WindowTracker
 	/// <summary>
 	/// 计时器。
 	/// </summary>
-	private DispatcherTimer _timer;
+	private DispatcherTimer _timer = new();
 
 	public WindowTracker()
 	{
 		_recordFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
-		_windowsUsedTime = new();
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
 		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
@@ -250,7 +249,6 @@ internal class WindowTracker
 		// 初始化并启动计时器。
 		try
 		{
-			_timer = new();
 			_timer.Tick += Timer_Tick;
 			_timer.Interval = _oneSecond;
 			_timer.Start();
@@ -336,9 +334,10 @@ internal class WindowTracker
 		{
 			try
 			{
-				List<ProcessInfo> list = JsonSerializer.Deserialize(processesListText, 
+				List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText, 
 					JsonSerializeMetadata.Default.ListProcessInfo);
-				Dictionary<string, ProcessInfo> dict = list.ToDictionary(value => value.ProcessName);
+				Dictionary<string, ProcessInfo> dict = list?.ToDictionary(value => value.ProcessName)
+					?? new();
 				return dict;
 			}
 			catch (Exception ex)
@@ -349,13 +348,13 @@ internal class WindowTracker
 
 		foreach (string name in processNames)
 		{
-			ProcessInfo info;
+			ProcessInfo? info;
 
 			if (isEmpty)
 			{
 				info = GetDefaultInfo(name);
 			}
-			else if (!processesDict.Value.TryGetValue(name, out info))
+			else if (!processesDict.Value.TryGetValue(name, out info) || info is null)
 			{
 				// 如果 json 文件中已有记录，则反序列化并查找当前进程。
 				WriteLog(LogLevel.Warning, $"在记录文件 [Path={InfoFilePath}] 中未找到进程 {name} 的信息。");
@@ -456,6 +455,12 @@ internal class WindowTracker
 	/// </summary>
 	private async Task RecordProcessInfo()
 	{
+		if (_lastProcess is null)
+		{
+			WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
+			return;
+		}
+
 		Process process = _lastProcess;
 		string name = process.ProcessName;
 		// 如果已经在记录进程则退出，防止重复记录。
@@ -468,23 +473,25 @@ internal class WindowTracker
 		List<ProcessInfo> processesInfo;
 		try
 		{
-			using FileStream textStream = new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+			using FileStream textStream = 
+				new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
 			// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
 			processesInfo = textStream.Length > 0 ?
-				JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo) ?? new() : new();
+				JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo) ??
+				new() : new();
 		}
 		catch (Exception ex)
 		{
 			WriteLog(LogLevel.Error, $"在读取记录文件 [{InfoFilePath}] 时触发异常：{ex}");
 			CanSend = ReminderHelper.SendReminder("提示用户无法读取进程信息",
 				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"), true);
-			_currentRecordProcessName = null;
+			_currentRecordProcessName = string.Empty;
 			return;
 		}
 
 		if (processesInfo.Any(info => info.ProcessName == process.ProcessName))
 		{
-			_currentRecordProcessName = null;
+			_currentRecordProcessName = string.Empty;
 			return;
 		}
 
@@ -493,7 +500,7 @@ internal class WindowTracker
 		long result;
 		try
 		{
-			result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, null);
+			result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, null!);
 		}
 		catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
 		{
@@ -514,7 +521,7 @@ internal class WindowTracker
 			string path;
 			try
 			{
-				path = process.MainModule.FileName;
+				path = process.MainModule!.FileName;
 			}
 			catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
 			{
@@ -533,7 +540,7 @@ internal class WindowTracker
 			string defaultIconUri = "ms-appx:///Icons/Default.png";
 			try
 			{
-				Icon preIcon = Icon.ExtractAssociatedIcon(path);
+				Icon preIcon = Icon.ExtractAssociatedIcon(path)!;
 				Icon icon = new(preIcon, 32, 32);
 				preIcon.Dispose();
 
@@ -561,7 +568,7 @@ internal class WindowTracker
 				iconUri = defaultIconUri;
 			}
 
-			string displayName = process.MainModule.FileVersionInfo.FileDescription;
+			string? displayName = process.MainModule.FileVersionInfo.FileDescription;
 			info = new()
 			{
 				ProcessName = name,
@@ -589,7 +596,7 @@ internal class WindowTracker
 				Package[] packages = packageManager.FindPackagesForUser(string.Empty)
 					.OrderByDescending(pkg => pkg.Id.FullName.Length)
 					.ToArray();
-				Package package = packages.FirstOrDefault(pkg => pkg.Id.FullName
+				Package? package = packages.FirstOrDefault(pkg => pkg.Id.FullName
 				== packageFullName.ToString());
 
 				if (package == null)
@@ -743,7 +750,7 @@ internal class WindowTracker
 				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"), true);
 			return;
 		}
-		_currentRecordProcessName = null;
+		_currentRecordProcessName = string.Empty;
 		WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
 	}
 
@@ -769,8 +776,13 @@ internal class WindowTracker
 	/// </summary>
 	private void RecordUsedTime()
 	{
-		string name = _lastProcess.ProcessName;
+		if (_lastProcess is null)
+		{
+			WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
+			return;
+		}
 
+		string name = _lastProcess.ProcessName;
 		TimeSpan usedTime;
 		TimeSpan totalUsedTime;
 
@@ -828,7 +840,7 @@ internal class WindowTracker
 		//WriteLog(LogLevel.Debug, $"已记录进程 {_lastProcess.ProcessName} 的使用时长：{usedTime:hh\\:mm\\:ss} 。");
 	}
 
-	private void Timer_Tick(object sender, object e)
+	private void Timer_Tick(object? sender, object e)
 	{
 		// 检查是否达到了结束使用时间。
 		TimeSpan currentTimeWithoutSeconds = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
@@ -893,7 +905,7 @@ internal class WindowTracker
 		{
 			// 判断是桌面还是用户打开的窗口：
 
-			IntPtr? childHandle = SystemHelper.FindWindowEx(windowHandle, IntPtr.Zero, null, null);
+			IntPtr? childHandle = SystemHelper.FindWindowEx(windowHandle, IntPtr.Zero, null!, null!);
 
 			if (childHandle == null)
 			{
@@ -932,7 +944,8 @@ internal class WindowTracker
 		{
 			// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
 
-			IntPtr? childHandle = SystemHelper.FindWindowEx(windowHandle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null);
+			IntPtr? childHandle = SystemHelper.FindWindowEx(
+				windowHandle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
 
 			if (childHandle == null)
 			{

@@ -39,8 +39,8 @@ namespace Zscno.Trackora
 		[RelayCommand]
 		public async Task ShowWindow()
 		{
-			Window window = AppMainWindow;
-			if (window == null)
+			Window? window = AppMainWindow;
+			if (window is null)
 			{
 				return;
 			}
@@ -51,7 +51,14 @@ namespace Zscno.Trackora
 			}
 			else
 			{
-				await (MainFrame.Content as HomePage).Refresh();
+				if (MainFrame.Content is not HomePage page)
+				{
+					return;
+				}
+				else
+				{
+					await page.Refresh();
+				}
 			}
 
 			IntPtr hwnd = WindowNative.GetWindowHandle(window);
@@ -79,7 +86,7 @@ namespace Zscno.Trackora
 
 		private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
 		{
-			if ((args.SelectedItem as NavigationViewItem).Name == "Home")
+			if (((NavigationViewItem) args.SelectedItem).Name == "Home")
 			{
 				_ = MainFrame.Navigate(typeof(HomePage));
 				sender.Header = Loader.GetString("HomeHeader");
