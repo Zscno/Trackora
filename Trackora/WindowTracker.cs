@@ -188,11 +188,11 @@ internal class WindowTracker
 		_jsonOpitons.Indented = true;
 #endif
 
-		DateTimeOffset currentDate = new(DateTime.Now.Date);
-		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
+		DateTimeOffset realToday = new(DateTime.Now.Date);
+		if (!LocalSettings.TryGetValue("Today", out object? today) || (DateTimeOffset) today != realToday)
 		{
 			// 如果今天的记录不存在或不是今天，则重置记录。
-			LocalSettings["Today"] = currentDate;
+			LocalSettings["Today"] = realToday;
 			TotalUsedTime = TimeSpan.Zero;
 			EndUsingTime = TimeSpan.Zero;
 			HasTotalReminded = false;
