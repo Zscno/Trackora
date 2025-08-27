@@ -1,8 +1,12 @@
-# Trackora
+﻿# Trackora
 
 It helps you track your daily computer usage time and reminds you when necessary. Sometimes, there may be a discrepancy between the total usage time and the combined usage time of each application, which is normal.
 
 **If the application encounters an error and prompts you to check the logs, please submit an issue and upload the log file.**
+
+## ⚠️ Attention
+
+- Incompatible with ExplorerBlurMica, which may cause a crash. The reason is currently unknown.
 
 ## Skills
 
