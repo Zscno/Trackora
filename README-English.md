@@ -12,17 +12,21 @@ It helps you track your daily computer usage time and reminds you when necessary
 
 When you wish to disable time tracking, you can click on the taskbar or desktop. Simply avoid focusing on the window.
 
-## Installation
+## ⬇️Installation
 
-During the installation process, a Windows security warning may pop up. Simply click "Yes".
+> During the installation process, a Windows security warning may pop up. Simply click "Yes".
 
-1. Download the file named `Trackora-[version number]_[architecture].zip` from the latest version in the Releases section and extract it;
+1. Download the file named `Trackora-[version].zip` ( v1.0.0 is `Trackora-v1.0.0_x64.zip` ) from the latest version in the Releases section and extract it;
 
-1. Double-click to open the `Zscno.Trackora-[version number]_[architecture].cer` file and click "Install Certificate":
+1. Double-click to open the `Trackora-[version].cer` ( v1.0.0 is `Trackora-v1.0.0_x64.cer` ) file and click "Install Certificate":
+
 	1. Select "Local Computer" and click "Next",
+
 	1. Select "Place all certificates in the following store" and click "Browse",
+
 	1. Select "Trusted Root Certificate Authorities" and click "Next", and finally click "Finish";
-1. Double-click to open the `Trackora-[version number]_[architecture].msix` file and click "Install".
+
+1. Double-click to open the `Trackora-[version].msixbundle` ( v1.0.0 is `Trackora-v1.0.0_x64.msix` ) file and click "Install".
 
 ## Function
 
