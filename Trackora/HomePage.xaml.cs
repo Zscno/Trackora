@@ -15,29 +15,35 @@ namespace Zscno.Trackora
 	public sealed partial class HomePage : Page
 	{
 		private static TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
-		private static bool _isFirstLoad;
+		private static bool _firstLoad;
 
 		public HomePage()
 		{
 			InitializeComponent();
 		}
 
-		public async Task Refresh()
+		/// <summary>
+		/// 加载需要更新的控件。
+		/// </summary>
+		public async Task LoadControlsThatNeed()
 		{
 			LoadingRing.IsActive = true;
-
-			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
-			All.Content = Loader.GetString("All/Content");
+			// 如果结束使用时间未设置或已过，则不显示。
 			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
 				WindowTracker.EndUsingTime <= _timeNow ?
 				null : WindowTracker.EndUsingTime;
-			TimePickReminder.Text = EndUsing.SelectedTime != null &&
-				WindowTracker.EndUsingTime <= _timeNow ?
-				Loader.GetString("PastTime") : string.Empty;
+			TimePickReminder.Text = string.Empty;
+			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
+			if (!_firstLoad)
+			{
+				// 如果不是首次加载，则重置按钮内容。
+				All.Content = Loader.GetString("All/Content");
+			}
 
 			try
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
+				// 超过 6 项时显示按钮。
 				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
 					Visibility.Visible : Visibility.Collapsed;
 			}
@@ -48,13 +54,12 @@ namespace Zscno.Trackora
 				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
-
 			LoadingRing.IsActive = false;
 		}
 
 		private void Continuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_isFirstLoad)
+			if (!_firstLoad)
 			{
 				LocalSettings["ContinuousUsedRemindTime"] = e.NewTime;
 			}
@@ -76,44 +81,20 @@ namespace Zscno.Trackora
 
 		private async void Page_Loaded(object sender, RoutedEventArgs e)
 		{
-			LoadingRing.IsActive = true;
-			_isFirstLoad = true;
-
+			_firstLoad = true;
+			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
 			Total.Time = (TimeSpan) LocalSettings["TotalUsedRemindTime"];
 			Continuous.Time = (TimeSpan) LocalSettings["ContinuousUsedRemindTime"];
 			ResetContinuous.Time = (TimeSpan) LocalSettings["ContinuousUsedResetTime"];
-			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
-				WindowTracker.EndUsingTime <= _timeNow ?
-				null : WindowTracker.EndUsingTime;
-			TimePickReminder.Text = EndUsing.SelectedTime != null &&
-				WindowTracker.EndUsingTime <= _timeNow ?
-				Loader.GetString("PastTime") : string.Empty;
-			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
-			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
-
-			try
-			{
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
-					Visibility.Visible : Visibility.Collapsed;
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				All.Visibility = Visibility.Collapsed;
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
-			}
-
-			_isFirstLoad = false;
-			LoadingRing.IsActive = false;
+			await LoadControlsThatNeed();
+			_firstLoad = false;
 		}
 
 		private async void Refresh_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			await Refresh();
+			await LoadControlsThatNeed();
 			button.IsEnabled = true;
 		}
 
@@ -129,7 +110,7 @@ namespace Zscno.Trackora
 
 		private void ResetContinuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_isFirstLoad)
+			if (!_firstLoad)
 			{
 				LocalSettings["ContinuousUsedResetTime"] = e.NewTime;
 			}
@@ -137,7 +118,7 @@ namespace Zscno.Trackora
 
 		private void Total_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_isFirstLoad)
+			if (!_firstLoad)
 			{
 				LocalSettings["TotalUsedRemindTime"] = e.NewTime;
 				if (e.NewTime > e.OldTime)

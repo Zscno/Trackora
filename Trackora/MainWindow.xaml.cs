@@ -57,7 +57,7 @@ namespace Zscno.Trackora
 				}
 				else
 				{
-					await page.Refresh();
+					await page.LoadControlsThatNeed();
 				}
 			}
 
