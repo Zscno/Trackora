@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Core;
@@ -97,7 +98,7 @@ internal class WindowTracker
 	/// <summary>
 	/// Json 序列化时使用的配置。
 	/// </summary>
-	private static JsonSerializerOptions _jsonOpitons = new() { TypeInfoResolver = JsonSerializeMetadata.Default};
+	private static JsonWriterOptions _jsonOpitons = new();
 
 	/// <summary>
 	/// 当无法获取到进程图标时使用的默认图标。
@@ -184,7 +185,7 @@ internal class WindowTracker
 		_recordFilePath = Path.Join(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
 #if DEBUG
-		_jsonOpitons.WriteIndented = true;
+		_jsonOpitons.Indented = true;
 #endif
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
@@ -756,7 +757,8 @@ internal class WindowTracker
 		processesInfo.Add(info);
 		try
 		{
-			File.WriteAllText(InfoFilePath, JsonSerializer.Serialize(processesInfo, _jsonOpitons));
+			File.WriteAllText(InfoFilePath, 
+				SerializeJson(processesInfo, JsonSerializeMetadata.Default.ListProcessInfo));
 		}
 		catch (Exception ex)
 		{
@@ -767,6 +769,22 @@ internal class WindowTracker
 		}
 		_currentRecordProcessName = string.Empty;
 		WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
+	}
+
+	/// <summary>
+	/// 将提供的值转换为 Json <see langword="string"/> 。
+	/// </summary>
+	/// <typeparam name="T">要序列化的值的类型。</typeparam>
+	/// <param name="value">要转换的值。</param>
+	/// <param name="info">要转换的类型的元数据。</param>
+	/// <returns>值的 <see langword="string"/> 表示形式。</returns>
+	private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
+	{
+		using MemoryStream stream = new();
+		using Utf8JsonWriter writer = new(stream, _jsonOpitons);
+		JsonSerializer.Serialize(writer, value, info);
+		writer.Flush();
+		return Encoding.UTF8.GetString(stream.ToArray());
 	}
 
 	/// <summary>
