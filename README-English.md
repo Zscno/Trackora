@@ -8,11 +8,11 @@ It helps you track your daily computer usage time and reminds you when necessary
 
 - Incompatible with ExplorerBlurMica, which may cause a crash. The reason is currently unknown.
 
-## Skills
+## 💡 Skills
 
 When you wish to disable time tracking, you can click on the taskbar or desktop. Simply avoid focusing on the window.
 
-## ⬇️Installation
+## ⬇️ Installation
 
 > During the installation process, a Windows security warning may pop up. Simply click "Yes".
 
@@ -28,7 +28,7 @@ When you wish to disable time tracking, you can click on the taskbar or desktop.
 
 1. Double-click to open the `Trackora-[version].msixbundle` ( v1.0.0 is `Trackora-v1.0.0_x64.msix` ) file and click "Install".
 
-## Function
+## ✨ Function
 
 - Total usage duration reminder. When you use the computer for a specified duration (default is 2 hours) on the same day, you will be reminded. You can modify the time on the homepage, or change the alert sound on the settings page.
 
