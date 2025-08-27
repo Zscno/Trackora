@@ -40,7 +40,7 @@ namespace Zscno.Trackora
 			string basePath = ApplicationData.Current.LocalCacheFolder.Path;
 			try
 			{
-				SystemHelper.DeleteAllFiles(Path.Combine(basePath, "Logs"), Path.Combine(basePath, "Icons"));
+				SystemHelper.DeleteAllFiles(Path.Join(basePath, "Logs"), Path.Join(basePath, "Icons"));
 				File.WriteAllText(InfoFilePath, string.Empty);
 			}
 			catch (Exception ex)

@@ -47,7 +47,7 @@ namespace Zscno.Trackora
 			string path;
 			try
 			{
-				path = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Logs");
+				path = Path.Join(ApplicationData.Current.LocalCacheFolder.Path, "Logs");
 				if (!Directory.Exists(path))
 				{
 					_ = Directory.CreateDirectory(path);
@@ -58,7 +58,7 @@ namespace Zscno.Trackora
 				throw new("在准备日志文件目录时触发了异常。", ex);
 			}
 
-			LogFilePath = Path.Combine(path, $"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.log");
+			LogFilePath = Path.Join(path, $"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.log");
 		}
 
 		/// <summary>

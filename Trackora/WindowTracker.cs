@@ -176,7 +176,7 @@ internal class WindowTracker
 
 	public WindowTracker()
 	{
-		_recordFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
+		_recordFilePath = Path.Join(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
