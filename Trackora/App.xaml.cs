@@ -180,10 +180,6 @@ namespace Zscno.Trackora
 			{
 				LocalSettings["ContinuousUsedResetTime"] = TimeSpan.FromMinutes(10);
 			}
-			if (!LocalSettings.ContainsKey("HasTotalReminded"))
-			{
-				LocalSettings["HasTotalReminded"] = false;
-			}
 
 			// 设置主题。
 			try
