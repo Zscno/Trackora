@@ -97,7 +97,7 @@ internal class WindowTracker
 	/// <summary>
 	/// Json 序列化时使用的配置。
 	/// </summary>
-	private static JsonSerializerOptions? _jsonOpitons;
+	private static JsonSerializerOptions _jsonOpitons = new() { TypeInfoResolver = JsonSerializeMetadata.Default};
 
 	/// <summary>
 	/// 当无法获取到进程图标时使用的默认图标。
@@ -184,7 +184,7 @@ internal class WindowTracker
 		_recordFilePath = Path.Join(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
 #if DEBUG
-		_jsonOpitons = new() { WriteIndented = true };// 调试时使用缩进。
+		_jsonOpitons.WriteIndented = true;
 #endif
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
