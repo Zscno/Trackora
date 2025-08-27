@@ -12,6 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documents", "Documents", "{
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		LICENSE.txt = LICENSE.txt
+		LookBeforeWriting.txt = LookBeforeWriting.txt
 		README-English.md = README-English.md
 		README.md = README.md
 	EndProjectSection
