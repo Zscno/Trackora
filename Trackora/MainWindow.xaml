@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Window
+	x:Class="Zscno.Trackora.MainWindow"
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+	xmlns:tb="using:H.NotifyIcon"
+	mc:Ignorable="d">
+
+	<Window.SystemBackdrop>
+		<MicaBackdrop Kind="Base"/>
+	</Window.SystemBackdrop>
+
+	<Grid>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+		</Grid.RowDefinitions>
+
+		<tb:TaskbarIcon
+			x:Name="TbIcon"
+			x:Uid="TaskbarIcon"
+			ContextMenuMode="PopupMenu"
+			IconSource="/Icons/Trackora.ico"
+			LeftClickCommand="{x:Bind ShowWindowCommand}"
+			MenuActivation="RightClick">
+			<tb:TaskbarIcon.ContextFlyout>
+				<MenuFlyout AreOpenCloseAnimationsEnabled="True">
+					<MenuFlyoutItem x:Uid="ShowWindow" Command="{x:Bind ShowWindowCommand}"/>
+					<MenuFlyoutSeparator/>
+					<MenuFlyoutItem x:Uid="ExitApp" Command="{x:Bind ExitApplicationCommand}"/>
+				</MenuFlyout>
+			</tb:TaskbarIcon.ContextFlyout>
+		</tb:TaskbarIcon>
+
+		<RelativePanel x:Name="TitleBar" Grid.Row="0">
+			<Image
+				x:Name="AppIcon"
+				Width="24"
+				Height="24"
+				Margin="12"
+				Source="/Icons/TitleBar.png"/>
+			<TextBlock
+				x:Name="AppTitle"
+				Margin="0,15,0,0"
+				RelativePanel.RightOf="AppIcon"
+				Text="Trackora"/>
+		</RelativePanel>
+
+		<NavigationView
+			x:Name="MainView"
+			Grid.Row="1"
+			IsBackButtonVisible="Collapsed"
+			IsBackEnabled="False"
+			IsPaneOpen="True"
+			SelectionChanged="NavigationView_SelectionChanged">
+
+			<NavigationView.MenuItems>
+				<NavigationViewItem
+					x:Name="Home"
+					x:Uid="Home"
+					Icon="Home"/>
+			</NavigationView.MenuItems>
+			<Frame x:Name="MainFrame"/>
+		</NavigationView>
+	</Grid>
+</Window>
