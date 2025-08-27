@@ -95,6 +95,11 @@ internal class WindowTracker
 	public static bool HasTotalReminded { get; set; } = false;
 
 	/// <summary>
+	/// 当无法获取到进程图标时使用的默认图标。
+	/// </summary>
+	private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
+
+	/// <summary>
 	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
 	/// </summary>
 	private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
@@ -382,7 +387,7 @@ internal class WindowTracker
 		{
 			ProcessName = process.ProcessName,
 			DisplayName = string.IsNullOrWhiteSpace(title) ? process.ProcessName : title,
-			IconUri = "ms-appx:///Icons/Default.png",
+			IconUri = _defaultIconUri,
 		};
 	}
 
@@ -397,7 +402,7 @@ internal class WindowTracker
 		{
 			ProcessName = processName,
 			DisplayName = processName,
-			IconUri = "ms-appx:///Icons/Default.png",
+			IconUri = _defaultIconUri,
 		};
 	}
 
@@ -541,7 +546,6 @@ internal class WindowTracker
 			}
 
 			string iconUri;
-			string defaultIconUri = "ms-appx:///Icons/Default.png";
 			try
 			{
 				Icon preIcon = Icon.ExtractAssociatedIcon(path)!;
@@ -563,13 +567,13 @@ internal class WindowTracker
 				else
 				{
 					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到进程 {name} 的图标。");
-					iconUri = defaultIconUri;
+					iconUri = _defaultIconUri;
 				}
 			}
 			catch (Exception ex)
 			{
 				WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
-				iconUri = defaultIconUri;
+				iconUri = _defaultIconUri;
 			}
 
 			string? displayName = process.MainModule.FileVersionInfo.FileDescription;
