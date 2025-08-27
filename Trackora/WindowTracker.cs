@@ -95,6 +95,11 @@ internal class WindowTracker
 	public static bool HasTotalReminded { get; set; } = false;
 
 	/// <summary>
+	/// Json 序列化时使用的配置。
+	/// </summary>
+	private static JsonSerializerOptions? _jsonOpitons;
+
+	/// <summary>
 	/// 当无法获取到进程图标时使用的默认图标。
 	/// </summary>
 	private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
@@ -178,6 +183,9 @@ internal class WindowTracker
 	{
 		_recordFilePath = Path.Join(ApplicationData.Current.LocalCacheFolder.Path,
 			"Record.dat");
+#if DEBUG
+		_jsonOpitons = new() { WriteIndented = true };// 调试时使用缩进。
+#endif
 
 		DateTimeOffset currentDate = new(DateTime.Now.Date);
 		if (!LocalSettings.ContainsKey("Today") || (DateTimeOffset) LocalSettings["Today"] != currentDate)
@@ -748,8 +756,7 @@ internal class WindowTracker
 		processesInfo.Add(info);
 		try
 		{
-			File.WriteAllText(InfoFilePath, JsonSerializer.Serialize(processesInfo,
-				new JsonSerializerOptions { WriteIndented = true }));
+			File.WriteAllText(InfoFilePath, JsonSerializer.Serialize(processesInfo, _jsonOpitons));
 		}
 		catch (Exception ex)
 		{
