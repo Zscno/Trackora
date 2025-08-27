@@ -92,12 +92,7 @@ internal class WindowTracker
 	/// <summary>
 	/// 指示总使用时长提醒是否已经显示。
 	/// </summary>
-	public static bool HasTotalReminded
-	{
-		get => (bool) LocalSettings["HasTotalReminded"];
-
-		set => LocalSettings["HasTotalReminded"] = value;
-	}
+	public static bool HasTotalReminded { get; set; } = false;
 
 	/// <summary>
 	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
@@ -239,11 +234,8 @@ internal class WindowTracker
 					Loader.GetString("ECanNotGetRecord"), true);
 			}
 
-			if (HasTotalReminded)
-			{
-				// 如果已经达到了今日使用时长，则每次启动都提醒。
-				CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
-			}
+			// 如果已经达到了今日使用时长，则每次启动都提醒。
+			ShowTotalReminderIfNeed();
 		}
 
 		// 初始化并启动计时器。
@@ -260,6 +252,18 @@ internal class WindowTracker
 				Loader.GetString("ErrorOrWarningTitle"),
 				Loader.GetString("ECanNotInitTimer"), true);
 			Application.Current.Exit();
+		}
+	}
+
+	/// <summary>
+	/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
+	/// </summary>
+	private static void ShowTotalReminderIfNeed()
+	{
+		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
+		{
+			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
+			HasTotalReminded = true;
 		}
 	}
 
@@ -994,12 +998,7 @@ internal class WindowTracker
 		//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
 
 		// 检查是否需要显示提醒通知。
-		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"]
-			&& !HasTotalReminded)
-		{
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
-			HasTotalReminded = true;
-		}
+		ShowTotalReminderIfNeed();
 		if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"]
 			&& _continuousUsedTime != TimeSpan.Zero)
 		{
