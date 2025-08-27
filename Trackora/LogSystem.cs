@@ -107,7 +107,7 @@ namespace Zscno.Trackora
 					Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
 					$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash"), $"{ex}");
 				App.CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.", true);
+					"We can't launch the app. Contact the author for help please.");
 				Application.Current.Exit();
 			}
 		}

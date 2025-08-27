@@ -99,7 +99,7 @@ namespace Zscno.Trackora
 					Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 
 					$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash"), $"{ex}");
 				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.", true);
+					"We can't launch the app. Contact the author for help please.");
 				Current.Exit();
 			}
 
@@ -123,7 +123,7 @@ namespace Zscno.Trackora
 				WriteLog(LogLevel.Error, $"在初始化信息文件路径时触发异常，将在提醒用户退出：{ex}");
 				CanSend = ReminderHelper.SendReminder("提示用户无法加载进程信息",
 					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotInitInfoFilePath"), true);
+					Loader.GetString("ECanNotInitInfoFilePath"));
 				Current.Exit();
 			}
 
@@ -137,7 +137,7 @@ namespace Zscno.Trackora
 				WriteLog(LogLevel.Error, $"在初始化本地设置时触发异常，将使用内存临时存储：{ex}");
 				CanSend = ReminderHelper.SendReminder("提醒用户无法加载设置",
 					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotInitSettings"), true);
+					Loader.GetString("ECanNotInitSettings"));
 			}
 
 			// 本地设置的默认值。

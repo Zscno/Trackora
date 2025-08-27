@@ -206,7 +206,7 @@ internal class WindowTracker
 				WriteLog(LogLevel.Error, $"在重置/创建记录文件 [{_recordFilePath}] 时触发异常：{ex}");
 				CanSend = ReminderHelper.SendReminder("提示用户无法管理今天的记录",
 					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotSetRecord"), true);
+					Loader.GetString("ECanNotSetRecord"));
 			}
 		}
 		else
@@ -244,7 +244,7 @@ internal class WindowTracker
 				WriteLog(LogLevel.Error, $"在读取记录文件 [{_recordFilePath}] 时触发异常：{ex}");
 				CanSend = ReminderHelper.SendReminder("提示用户无法获取今天的记录",
 					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetRecord"), true);
+					Loader.GetString("ECanNotGetRecord"));
 			}
 
 			// 如果已经达到了今日使用时长，则每次启动都提醒。
@@ -263,7 +263,7 @@ internal class WindowTracker
 			WriteLog(LogLevel.Error, $"在初始化计时器时触发异常，将在提醒用户后退出：{ex}");
 			CanSend = ReminderHelper.SendReminder("提示用户无法初始化计时器",
 				Loader.GetString("ErrorOrWarningTitle"),
-				Loader.GetString("ECanNotInitTimer"), true);
+				Loader.GetString("ECanNotInitTimer"));
 			Application.Current.Exit();
 		}
 	}
@@ -461,7 +461,7 @@ internal class WindowTracker
 				WriteLog(LogLevel.Error, ex.ToString());
 				CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
 					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotRecordTime"), true);
+					Loader.GetString("ECanNotRecordTime"));
 			}
 			_lastProcess = null;
 		}
@@ -501,7 +501,7 @@ internal class WindowTracker
 		{
 			WriteLog(LogLevel.Error, $"在读取记录文件 [{InfoFilePath}] 时触发异常：{ex}");
 			CanSend = ReminderHelper.SendReminder("提示用户无法读取进程信息",
-				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"), true);
+				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"));
 			_currentRecordProcessName = string.Empty;
 			return;
 		}
@@ -762,7 +762,7 @@ internal class WindowTracker
 		{
 			WriteLog(LogLevel.Error, $"写入记录文件 [{InfoFilePath}] 时触发异常：{ex}");
 			CanSend = ReminderHelper.SendReminder("提示用户无法写入记录文件",
-				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"), true);
+				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"));
 			return;
 		}
 		_currentRecordProcessName = string.Empty;
@@ -1037,7 +1037,7 @@ internal class WindowTracker
 				WriteLog(LogLevel.Error, ex.ToString());
 				CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
 					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotRecordTime"), true);
+					Loader.GetString("ECanNotRecordTime"));
 			}
 		}
 

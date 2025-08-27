@@ -397,7 +397,7 @@ internal class ReminderHelper
 	/// <param name="content">通知内容。</param>
 	/// <param name="isExit">指示如果触发了异常，是否退出应用。</param>
 	/// <param name="audioUri">通知提示音（默认是 <see cref="CommonSounds"/> 中的 <c>Default</c> ）。</param>
-	public static bool SendReminder(string exMessage, string title, string content, bool isExit = false,
+	public static bool SendReminder(string exMessage, string title, string content, bool isExit = true,
 		string audioUri = "ms-winsoundevent:Notification.Default")
 	{
 		try
