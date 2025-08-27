@@ -225,7 +225,10 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				WriteLog(LogLevel.Error, $"在确认 Icons 文件夹存在时触发异常：{ex}");
+				WriteLog(LogLevel.Error, $"在准备 Icons 文件夹时触发异常：{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
+					"We can't launch the app. Contact the author for help please.");
+				Current.Exit();
 			}
 
 			_ = new WindowTracker();
