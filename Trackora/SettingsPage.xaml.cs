@@ -37,10 +37,10 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			string basePath = ApplicationData.Current.LocalCacheFolder.Path;
 			try
 			{
-				SystemHelper.DeleteAllFiles(Path.Join(basePath, "Logs"), Path.Join(basePath, "Icons"));
+				SystemHelper.DeleteAllFiles(
+					Path.Join(LocalCachePath, "Logs"), Path.Join(LocalCachePath, "Icons"));
 				File.WriteAllText(InfoFilePath, string.Empty);
 			}
 			catch (Exception ex)
@@ -53,7 +53,7 @@ namespace Zscno.Trackora
 			try
 			{
 				CacheSize.Text = Loader.GetString("CacheFolderSize") +
-					SystemHelper.GetFolderSize(ApplicationData.Current.LocalCacheFolder.Path);
+					SystemHelper.GetFolderSize(LocalCachePath);
 			}
 			catch (Exception ex)
 			{
@@ -134,7 +134,7 @@ namespace Zscno.Trackora
 			try
 			{
 				CacheSize.Text = Loader.GetString("CacheFolderSize") +
-					SystemHelper.GetFolderSize(ApplicationData.Current.LocalCacheFolder.Path);
+					SystemHelper.GetFolderSize(LocalCachePath);
 			}
 			catch (Exception ex)
 			{

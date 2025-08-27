@@ -47,7 +47,7 @@ namespace Zscno.Trackora
 			string path;
 			try
 			{
-				path = Path.Join(ApplicationData.Current.LocalCacheFolder.Path, "Logs");
+				path = Path.Join(App.LocalCachePath, "Logs");
 				if (!Directory.Exists(path))
 				{
 					_ = Directory.CreateDirectory(path);

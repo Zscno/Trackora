@@ -40,6 +40,11 @@ namespace Zscno.Trackora
 		public static MainWindow? AppMainWindow { get; private set; }
 
 		/// <summary>
+		/// 本地缓存文件夹路径。
+		/// </summary>
+		public static string LocalCachePath { get; private set; } = string.Empty;
+
+		/// <summary>
 		/// 指示是否能发出各种通知和提醒。
 		/// </summary>
 		public static bool CanSend { get; set; } = true;
@@ -90,14 +95,15 @@ namespace Zscno.Trackora
 
 			try
 			{
+				LocalCachePath = ApplicationData.Current.LocalCacheFolder.Path;
 				InitLogFile();
 			}
 			catch (Exception ex)
 			{
-				// 如果日志文件初始化失败，就把异常信息写到文档目录下的崩溃日志里，尝试发送通知提醒用户并退出。
-				File.WriteAllText(
-					Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), 
-					$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash"), $"{ex}");
+				// 如果无法获取本地缓存文件夹路径或日志文件初始化失败，
+				// 就把异常信息写到崩溃日志里，尝试发送通知提醒用户并退出。
+				File.WriteAllText($"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash",
+					$"无法获取本地缓存文件夹路径或日志文件初始化失败：{ex}");
 				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
 					"We can't launch the app. Contact the author for help please.");
 				Current.Exit();
@@ -116,7 +122,7 @@ namespace Zscno.Trackora
 			// 初始化信息文件路径。
 			try
 			{
-				InfoFilePath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Info.json");
+				InfoFilePath = Path.Combine(LocalCachePath, "Info.json");
 			}
 			catch (Exception ex)
 			{
@@ -212,10 +218,9 @@ namespace Zscno.Trackora
 		{
 			try
 			{
-				string path = ApplicationData.Current.LocalCacheFolder.Path;
-				if (!Directory.Exists(Path.Combine(path, "Icons")))
+				if (!Directory.Exists(Path.Combine(LocalCachePath, "Icons")))
 				{
-					_ = Directory.CreateDirectory(Path.Combine(path, "Icons"));
+					_ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
 				}
 			}
 			catch (Exception ex)

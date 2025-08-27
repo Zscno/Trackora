@@ -182,7 +182,7 @@ internal class WindowTracker
 
 	public WindowTracker()
 	{
-		_recordFilePath = Path.Join(ApplicationData.Current.LocalCacheFolder.Path,
+		_recordFilePath = Path.Join(LocalCachePath,
 			"Record.dat");
 #if DEBUG
 		_jsonOpitons.Indented = true;
@@ -564,7 +564,7 @@ internal class WindowTracker
 				if (icon != null)
 				{
 					// 加载图标并将图标保存到缓存文件夹中。
-					string iconPath = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
+					string iconPath = Path.Combine(LocalCachePath,
 						"Icons", $"{name}.png");
 					using FileStream iconStream = new(iconPath, FileMode.Create,
 						FileAccess.ReadWrite, FileShare.None);
@@ -722,13 +722,13 @@ internal class WindowTracker
 
 					// 保存图标。
 					StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
-						Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Icons"));
+						Path.Combine(LocalCachePath, "Icons"));
 					StorageFile iconFile = await iconfolder.CreateFileAsync(
 						$"{name}.png", CreationCollisionOption.ReplaceExisting);
 					_ = await RandomAccessStream.CopyAndCloseAsync(
 						croppedStream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
 
-					iconUri = new Uri(Path.Combine(ApplicationData.Current.LocalCacheFolder.Path,
+					iconUri = new Uri(Path.Combine(LocalCachePath,
 						"Icons", $"{name}.png")).ToString();
 				}
 				catch (Exception ex)
