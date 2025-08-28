@@ -107,51 +107,6 @@ internal static class SystemHelper
 	public static extern bool BringWindowToTop(IntPtr hWnd);
 
 	/// <summary>
-	/// 删除指定文件夹中的所有文件。
-	/// </summary>
-	/// <param name="foldersPath">指定文件夹的路径。</param>
-	public static void DeleteAllFiles(params string[] foldersPath)
-	{
-		foreach (string folderPath in foldersPath)
-		{
-			DirectoryInfo info;
-			try
-			{
-				info = new(folderPath);
-			}
-			catch (Exception ex)
-			{
-				//LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{folderPath}] 信息时触发异常：{ex}");
-				throw new Exception($"在获取文件夹 [{folderPath}] 信息时触发了异常。", ex);
-			}
-
-			foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
-			{
-				try
-				{
-					if (file.FullName != LogSystem.LogFilePath)
-					{
-						file.Delete();
-					}
-				}
-				catch (Exception ex)
-				{
-					try
-					{
-						string filePath = file.FullName;
-						LogSystem.WriteLog(LogLevel.Error, $"在删除文件夹中的文件 [{filePath}] 时触发异常：{ex}");
-					}
-					catch (Exception)
-					{
-						// 如果无法获取文件路径就使用文件夹路径。
-						LogSystem.WriteLog(LogLevel.Error, $"在删除文件夹 [{folderPath}] 中的文件时触发异常：{ex}");
-					}
-				}
-			}
-		}
-	}
-
-	/// <summary>
 	/// 检索其类名称和窗口名称与指定字符串匹配的窗口的句柄。
 	/// </summary>
 	/// <param name="hWndParent">要搜索其子窗口的父窗口的句柄。</param>
@@ -171,57 +126,6 @@ internal static class SystemHelper
 	/// <returns>如果函数成功，则返回值是复制到缓冲区的字符数，不包括终止 <see langword="null"/> 字符。如果函数失败，则返回值为零。</returns>
 	[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
 	public static extern int GetClassName(IntPtr hWnd, StringBuilder lpClassName, int nMaxCount);
-
-	/// <summary>
-	/// 获取指定文件夹大小的格式化字符串。
-	/// </summary>
-	/// <param name="path">指定文件夹的路径。</param>
-	/// <returns>格式化字符串。</returns>
-	public static string GetFolderSize(string path)
-	{
-		double size = 0;
-		DirectoryInfo info;
-		try
-		{
-			info = new(path);
-		}
-		catch (Exception ex)
-		{
-			//LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{path}] 信息时触发异常：{ex}");
-			throw new Exception($"在获取文件夹 [{path}] 信息时触发了异常。", ex);
-		}
-
-		foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
-		{
-			try
-			{
-				size += file.Length;
-			}
-			catch (Exception ex)
-			{
-				try
-				{
-					string filePath = file.FullName;
-					LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹中的文件 [{filePath}] 大小时触发异常：{ex}");
-				}
-				catch (Exception)
-				{
-					// 如果无法获取文件路径就使用文件夹路径。
-					LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{path}] 中的文件大小时触发异常：{ex}");
-				}
-			}
-		}
-
-		string[] sizes = { "B", "KB", "MB", "GB" };
-		int count = 0;
-		while (size >= 1024 && count < sizes.Length - 1)
-		{
-			count++;
-			size /= 1024;
-		}
-
-		return $"{size:F2} {sizes[count]}";
-	}
 
 	/// <summary>
 	/// 检索前台窗口的句柄，(用户当前正在使用) 窗口。
@@ -257,17 +161,6 @@ internal static class SystemHelper
 	{
 		IntPtr hwnd = WindowNative.GetWindowHandle(window);
 		_ = ShowWindow(hwnd, SW_HIDE);
-	}
-
-	/// <summary>
-	/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
-	/// </summary>
-	/// <param name="value">要操作的 <see langword="double"/> 值。</param>
-	/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
-	public static uint Round(double value)
-	{
-		uint intValue = (uint) value;
-		return (value - intValue) < 0.5 ? intValue : intValue - 1;
 	}
 
 	/// <summary>

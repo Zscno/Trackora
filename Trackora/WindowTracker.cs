@@ -701,8 +701,8 @@ internal class WindowTracker
 					if (cropWidth < 32 && cropHeight < 32)
 					{
 						cropWidth = cropHeight = 32;
-						minX = SystemHelper.Round((width - cropWidth) / 2);
-						minY = SystemHelper.Round((width - cropHeight) / 2);
+						minX = Round((width - cropWidth) / 2);
+						minY = Round((width - cropHeight) / 2);
 					}
 					minX = minX < 0 ? 0 : minX;
 					minY = minY < 0 ? 0 : minY;
@@ -769,6 +769,17 @@ internal class WindowTracker
 		}
 		_currentRecordProcessName = string.Empty;
 		WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
+	}
+
+	/// <summary>
+	/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
+	/// </summary>
+	/// <param name="value">要操作的 <see langword="double"/> 值。</param>
+	/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
+	private static uint Round(double value)
+	{
+		uint intValue = (uint) value;
+		return (value - intValue) < 0.5 ? intValue : intValue - 1;
 	}
 
 	/// <summary>
