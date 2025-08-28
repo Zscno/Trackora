@@ -51,8 +51,8 @@ namespace Zscno.Trackora
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
 				All.Visibility = Visibility.Collapsed;
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
+				await ReminderHelper.ShowDialog(Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetInfo"), "无法加载应用列表");
 			}
 			LoadingRing.IsActive = false;
 		}
@@ -71,8 +71,8 @@ namespace Zscno.Trackora
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
+				await ReminderHelper.ShowDialog(Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetInfo"), "无法加载应用列表");
 			}
 			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
 

@@ -140,8 +140,8 @@ namespace Zscno.Trackora
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotDeleteFiles"));
+				await ReminderHelper.ShowDialog(Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotDeleteFiles"), "无法完全清理缓存");
 			}
 
 			try
@@ -152,8 +152,8 @@ namespace Zscno.Trackora
 			{
 				CacheSize.Text = string.Empty;
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetSize"));
+				await ReminderHelper.ShowDialog(Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetSize"), "无法获取缓存文件夹大小");
 			}
 			button.IsEnabled = true;
 		}
@@ -273,8 +273,8 @@ namespace Zscno.Trackora
 			{
 				CacheSize.Text = string.Empty;
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetSize"));
+				await ReminderHelper.ShowDialog(Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetSize"), "无法获取缓存文件夹大小");
 			}
 		}
 

@@ -1,5 +1,4 @@
-﻿using Microsoft.UI.Xaml;
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -53,11 +52,10 @@ namespace Zscno.Trackora
 		/// <param name="level">日志的等级。</param>
 		/// <param name="message">日志的内容。</param>
 		/// <param name="useDialog">指示是否使用对话框。</param>
-		/// <param name="root">对话框使用的 <see cref="XamlRoot"/> 。</param>
 		/// <param name="contentResName">对话框内容的资源名称。</param>
 		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
 		public static async Task<bool> CallNormal(Action action, LogLevel level, string message,
-			bool useDialog = false, XamlRoot? root = null, string contentResName = "")
+			bool useDialog = false, string exMessage = "", string contentResName = "")
 		{
 			try
 			{
@@ -67,11 +65,12 @@ namespace Zscno.Trackora
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(level, $"{message}：{ex}");
-				if (useDialog && root is not null && contentResName is not "")
+				if (useDialog && exMessage is not "" && contentResName is not "")
 				{
-					await ReminderHelper.ShowDialog(root,
+					await ReminderHelper.ShowDialog(
 						App.Loader.GetString("ErrorOrWarningTitle"),
-						App.Loader.GetString(contentResName));
+						App.Loader.GetString(contentResName),
+						exMessage);
 				}
 				return false;
 			}
