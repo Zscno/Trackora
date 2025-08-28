@@ -2,6 +2,7 @@
 using Microsoft.Windows.AppLifecycle;
 using System;
 using System.Collections.Generic;
+using System.Drawing.Printing;
 using System.IO;
 using Windows.ApplicationModel.Resources;
 using Windows.Foundation.Collections;
@@ -145,7 +146,52 @@ namespace Zscno.Trackora
 					Loader.GetString("ECanNotInitSettings"));
 			}
 
-			// 本地设置的默认值。
+			InitLocalSettingsIfNeed();
+
+			try
+			{
+				SetTheme((string) LocalSettings["Theme"]);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(LogLevel.Error, $"在设置应用主题时触发异常：{ex}");
+			}
+		}
+
+		/// <summary>
+		/// Invoked when the application is launched.
+		/// </summary>
+		/// <param name="args">Details about the launch request and process.</param>
+		protected override void OnLaunched(LaunchActivatedEventArgs args)
+		{
+			try
+			{
+				if (!Directory.Exists(Path.Combine(LocalCachePath, "Icons")))
+				{
+					_ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
+				}
+			}
+			catch (Exception ex)
+			{
+				WriteLog(LogLevel.Error, $"在准备 Icons 文件夹时触发异常：{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
+					"We can't launch the app. Contact the author for help please.");
+				Current.Exit();
+			}
+
+			_ = new WindowTracker();
+
+			AppMainWindow = new MainWindow();
+			AppMainWindow.Activate();
+
+			SystemHelper.HideWindow(AppMainWindow);
+		}
+
+		/// <summary>
+		/// 在需要时初始化本地设置的默认值。
+		/// </summary>
+		private static void InitLocalSettingsIfNeed()
+		{
 			if (!LocalSettings.ContainsKey("TotalUsedRemindTime"))
 			{
 				LocalSettings["TotalUsedRemindTime"] = TimeSpan.FromHours(2);
@@ -185,57 +231,27 @@ namespace Zscno.Trackora
 			{
 				LocalSettings["ContinuousUsedResetTime"] = TimeSpan.FromMinutes(10);
 			}
-
-			// 设置主题。
-			try
-			{
-				switch ((string) LocalSettings["Theme"])
-				{
-					case "LightTheme":
-						Current.RequestedTheme = ApplicationTheme.Light;
-						break;
-
-					case "DarkTheme":
-						Current.RequestedTheme = ApplicationTheme.Dark;
-						break;
-
-					default:
-						break;
-				}
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在设置应用主题时触发异常：{ex}");
-			}
 		}
 
 		/// <summary>
-		/// Invoked when the application is launched.
+		/// 设置应用主题。
 		/// </summary>
-		/// <param name="args">Details about the launch request and process.</param>
-		protected override void OnLaunched(LaunchActivatedEventArgs args)
+		/// <param name="themeName">指定的主题名称。</param>
+		private static void SetTheme(string themeName)
 		{
-			try
+			switch (themeName)
 			{
-				if (!Directory.Exists(Path.Combine(LocalCachePath, "Icons")))
-				{
-					_ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
-				}
+				case "LightTheme":
+					Current.RequestedTheme = ApplicationTheme.Light;
+					break;
+
+				case "DarkTheme":
+					Current.RequestedTheme = ApplicationTheme.Dark;
+					break;
+
+				default:
+					break;
 			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在准备 Icons 文件夹时触发异常：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.");
-				Current.Exit();
-			}
-
-			_ = new WindowTracker();
-
-			AppMainWindow = new MainWindow();
-			AppMainWindow.Activate();
-
-			SystemHelper.HideWindow(AppMainWindow);
 		}
 
 		/// <summary>
