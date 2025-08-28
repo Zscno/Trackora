@@ -40,11 +40,6 @@ namespace Zscno.Trackora
 		public static MainWindow? AppMainWindow { get; private set; }
 
 		/// <summary>
-		/// 本地缓存文件夹路径。
-		/// </summary>
-		public static string LocalCachePath { get; private set; } = string.Empty;
-
-		/// <summary>
 		/// 指示是否能发出各种通知和提醒。
 		/// </summary>
 		public static bool CanSend { get; set; } = true;
@@ -70,6 +65,11 @@ namespace Zscno.Trackora
 		/// 用于加载语言资源。
 		/// </summary>
 		public static ResourceLoader Loader { get; } = new();
+
+		/// <summary>
+		/// 本地缓存文件夹路径。
+		/// </summary>
+		public static string LocalCachePath { get; private set; } = string.Empty;
 
 		/// <summary>
 		/// 应用本地设置。
@@ -100,8 +100,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				// 如果无法获取本地缓存文件夹路径或日志文件初始化失败，
-				// 就把异常信息写到崩溃日志里，尝试发送通知提醒用户并退出。
+				// 如果无法获取本地缓存文件夹路径或日志文件初始化失败， 就把异常信息写到崩溃日志里，尝试发送通知提醒用户并退出。
 				File.WriteAllText($"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash",
 					$"无法获取本地缓存文件夹路径或日志文件初始化失败：{ex}");
 				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",

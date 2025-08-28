@@ -3,7 +3,6 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -12,6 +11,42 @@ using WinRT.Interop;
 using static Zscno.Trackora.App;
 
 namespace Zscno.Trackora;
+
+/// <summary>
+/// 提醒通知类型。
+/// </summary>
+internal enum ReminderKinds
+{
+	/// <summary>
+	/// 总使用时长提醒。
+	/// </summary>
+	TotalUsedTimeReminders,
+
+	/// <summary>
+	/// 总使用时长提醒提示音的测试通知。
+	/// </summary>
+	TotalUsedTimeSoundTest,
+
+	/// <summary>
+	/// 连续使用时长提醒。
+	/// </summary>
+	ContinuousUsedTimeReminders,
+
+	/// <summary>
+	/// 连续使用时长提醒提示音的测试通知。
+	/// </summary>
+	ContinuousUsedTimeSoundTest,
+
+	/// <summary>
+	/// 结束使用时间提醒。
+	/// </summary>
+	EndUsingTimeReminders,
+
+	/// <summary>
+	/// 结束使用时间提醒提示音的测试通知。
+	/// </summary>
+	EndUsingTimeSoundTest,
+}
 
 /// <summary>
 /// Win32 API + 文件系统的封装。
@@ -336,46 +371,8 @@ internal class ReminderHelper
 }
 
 /// <summary>
-/// 提醒通知类型。
-/// </summary>
-internal enum ReminderKinds
-{
-	/// <summary>
-	/// 总使用时长提醒。
-	/// </summary>
-	TotalUsedTimeReminders,
-
-	/// <summary>
-	/// 总使用时长提醒提示音的测试通知。
-	/// </summary>
-	TotalUsedTimeSoundTest,
-
-	/// <summary>
-	/// 连续使用时长提醒。
-	/// </summary>
-	ContinuousUsedTimeReminders,
-
-	/// <summary>
-	/// 连续使用时长提醒提示音的测试通知。
-	/// </summary>
-	ContinuousUsedTimeSoundTest,
-
-	/// <summary>
-	/// 结束使用时间提醒。
-	/// </summary>
-	EndUsingTimeReminders,
-
-	/// <summary>
-	/// 结束使用时间提醒提示音的测试通知。
-	/// </summary>
-	EndUsingTimeSoundTest,
-}
-
-/// <summary>
 /// 提供有关与 JSON 序列化相关的一组类型的元数据。
 /// </summary>
 [JsonSerializable(typeof(List<ProcessInfo>))]
 internal partial class JsonSerializeMetadata : JsonSerializerContext
-{
-	
-}
+{ }

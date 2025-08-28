@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Zscno.Trackora.App;
 
@@ -14,8 +13,9 @@ namespace Zscno.Trackora
 	/// </summary>
 	public sealed partial class HomePage : Page
 	{
-		private static TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 		private static bool _firstLoad;
+
+		private static TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 
 		public HomePage()
 		{
@@ -54,6 +54,29 @@ namespace Zscno.Trackora
 				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
+			LoadingRing.IsActive = false;
+		}
+
+		private async void All_Click(object sender, RoutedEventArgs e)
+		{
+			LoadingRing.IsActive = true;
+			All.IsEnabled = false;
+			bool isRetract = (string) All.Content == Loader.GetString("Retract");
+
+			try
+			{
+				int count = isRetract ? 6 : WindowTracker.WindowsUsedTime.Count;
+				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
+			}
+			catch (Exception ex)
+			{
+				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
+				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotGetInfo"));
+			}
+			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
+
+			All.IsEnabled = true;
 			LoadingRing.IsActive = false;
 		}
 
@@ -126,29 +149,6 @@ namespace Zscno.Trackora
 					WindowTracker.HasTotalReminded = false;
 				}
 			}
-		}
-
-		private async void All_Click(object sender, RoutedEventArgs e)
-		{
-			LoadingRing.IsActive = true;
-			All.IsEnabled = false;
-			bool isRetract = (string) All.Content == Loader.GetString("Retract");
-
-			try
-			{
-				int count =  isRetract? 6 : WindowTracker.WindowsUsedTime.Count;
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
-			}
-			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
-
-			All.IsEnabled = true;
-			LoadingRing.IsActive = false;
 		}
 	}
 }

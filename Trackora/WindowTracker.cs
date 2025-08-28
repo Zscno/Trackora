@@ -14,7 +14,6 @@ using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
-using Windows.ApplicationModel.Core;
 using Windows.Graphics.Imaging;
 using Windows.Management.Deployment;
 using Windows.Storage;
@@ -64,6 +63,11 @@ internal class WindowTracker
 	}
 
 	/// <summary>
+	/// 指示总使用时长提醒是否已经显示。
+	/// </summary>
+	public static bool HasTotalReminded { get; set; } = false;
+
+	/// <summary>
 	/// 用于显示的总使用时长。
 	/// </summary>
 	public static TimeSpan TotalUsedTime
@@ -91,9 +95,9 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 指示总使用时长提醒是否已经显示。
+	/// 当无法获取到进程图标时使用的默认图标。
 	/// </summary>
-	public static bool HasTotalReminded { get; set; } = false;
+	private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
 
 	/// <summary>
 	/// Json 序列化时使用的配置。
@@ -101,19 +105,24 @@ internal class WindowTracker
 	private static JsonWriterOptions _jsonOpitons = new();
 
 	/// <summary>
-	/// 当无法获取到进程图标时使用的默认图标。
+	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
 	/// </summary>
-	private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
+	private static string _lastNoInfoNamesStr = string.Empty;
 
 	/// <summary>
-	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
+	/// 用于过滤只记录时间的进程名称的字符串数组
 	/// </summary>
-	private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
+	private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
 
 	/// <summary>
 	/// 用于触发提醒的总使用时长。
 	/// </summary>
 	private static TimeSpan _totalUsedTime;
+
+	/// <summary>
+	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
+	/// </summary>
+	private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
 
 	/// <summary>
 	/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -141,11 +150,6 @@ internal class WindowTracker
 	private DateTime _lastActivationTime;
 
 	/// <summary>
-	/// 记录同一进程的连续使用时长以保证使用时长不超过 5 秒的进程不被记录。
-	/// </summary>
-	private TimeSpan _singleContinuousUsedTime;
-
-	/// <summary>
 	/// 用于过滤进程名称的字符串数组。
 	/// </summary>
 	private string[] _lastNoTimeNamesArr = Array.Empty<string>();
@@ -156,16 +160,6 @@ internal class WindowTracker
 	private string _lastNoTimeNamesStr = string.Empty;
 
 	/// <summary>
-	/// 用于过滤只记录时间的进程名称的字符串数组
-	/// </summary>
-	private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
-
-	/// <summary>
-	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
-	/// </summary>
-	private static string _lastNoInfoNamesStr = string.Empty;
-
-	/// <summary>
 	/// 上一个检测到的被激活的进程。
 	/// </summary>
 	private Process? _lastProcess;
@@ -174,6 +168,11 @@ internal class WindowTracker
 	/// 上次记录连续使用时长的时间。
 	/// </summary>
 	private DateTime _lastRecordTime;
+
+	/// <summary>
+	/// 记录同一进程的连续使用时长以保证使用时长不超过 5 秒的进程不被记录。
+	/// </summary>
+	private TimeSpan _singleContinuousUsedTime;
 
 	/// <summary>
 	/// 计时器。
@@ -270,18 +269,6 @@ internal class WindowTracker
 	}
 
 	/// <summary>
-	/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
-	/// </summary>
-	private static void ShowTotalReminderIfNeed()
-	{
-		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
-		{
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
-			HasTotalReminded = true;
-		}
-	}
-
-	/// <summary>
 	/// 获取本地化时间 / 时长。
 	/// </summary>
 	/// <param name="time">一个时间 / 时长。</param>
@@ -352,7 +339,7 @@ internal class WindowTracker
 		{
 			try
 			{
-				List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText, 
+				List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText,
 					JsonSerializeMetadata.Default.ListProcessInfo);
 				Dictionary<string, ProcessInfo> dict = list?.ToDictionary(value => value.ProcessName)
 					?? new();
@@ -413,6 +400,62 @@ internal class WindowTracker
 			DisplayName = processName,
 			IconUri = _defaultIconUri,
 		};
+	}
+
+	/// <summary>
+	/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
+	/// </summary>
+	/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
+	private static HashSet<string> GetNoInfoArr()
+	{
+		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
+		if (_lastNoInfoNamesStr != noInfoNamesStr)
+		{
+			// 如果过滤字符串有更新，则更新缓存。
+			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
+			_lastNoInfoNamesStr = noInfoNamesStr;
+		}
+
+		return new(_lastNotInfoNamesArr);
+	}
+
+	/// <summary>
+	/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
+	/// </summary>
+	/// <param name="value">要操作的 <see langword="double"/> 值。</param>
+	/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
+	private static uint Round(double value)
+	{
+		uint intValue = (uint) value;
+		return (value - intValue) < 0.5 ? intValue : intValue - 1;
+	}
+
+	/// <summary>
+	/// 将提供的值转换为 Json <see langword="string"/> 。
+	/// </summary>
+	/// <typeparam name="T">要序列化的值的类型。</typeparam>
+	/// <param name="value">要转换的值。</param>
+	/// <param name="info">要转换的类型的元数据。</param>
+	/// <returns>值的 <see langword="string"/> 表示形式。</returns>
+	private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
+	{
+		using MemoryStream stream = new();
+		using Utf8JsonWriter writer = new(stream, _jsonOpitons);
+		JsonSerializer.Serialize(writer, value, info);
+		writer.Flush();
+		return Encoding.UTF8.GetString(stream.ToArray());
+	}
+
+	/// <summary>
+	/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
+	/// </summary>
+	private static void ShowTotalReminderIfNeed()
+	{
+		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
+		{
+			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
+			HasTotalReminded = true;
+		}
 	}
 
 	/// <summary>
@@ -491,7 +534,7 @@ internal class WindowTracker
 		List<ProcessInfo> processesInfo;
 		try
 		{
-			using FileStream textStream = 
+			using FileStream textStream =
 				new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
 			// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
 			processesInfo = textStream.Length > 0 ?
@@ -757,7 +800,7 @@ internal class WindowTracker
 		processesInfo.Add(info);
 		try
 		{
-			File.WriteAllText(InfoFilePath, 
+			File.WriteAllText(InfoFilePath,
 				SerializeJson(processesInfo, JsonSerializeMetadata.Default.ListProcessInfo));
 		}
 		catch (Exception ex)
@@ -769,50 +812,6 @@ internal class WindowTracker
 		}
 		_currentRecordProcessName = string.Empty;
 		WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
-	}
-
-	/// <summary>
-	/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
-	/// </summary>
-	/// <param name="value">要操作的 <see langword="double"/> 值。</param>
-	/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
-	private static uint Round(double value)
-	{
-		uint intValue = (uint) value;
-		return (value - intValue) < 0.5 ? intValue : intValue - 1;
-	}
-
-	/// <summary>
-	/// 将提供的值转换为 Json <see langword="string"/> 。
-	/// </summary>
-	/// <typeparam name="T">要序列化的值的类型。</typeparam>
-	/// <param name="value">要转换的值。</param>
-	/// <param name="info">要转换的类型的元数据。</param>
-	/// <returns>值的 <see langword="string"/> 表示形式。</returns>
-	private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
-	{
-		using MemoryStream stream = new();
-		using Utf8JsonWriter writer = new(stream, _jsonOpitons);
-		JsonSerializer.Serialize(writer, value, info);
-		writer.Flush();
-		return Encoding.UTF8.GetString(stream.ToArray());
-	}
-
-	/// <summary>
-	/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
-	/// </summary>
-	/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
-	private static HashSet<string> GetNoInfoArr()
-	{
-		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
-		if (_lastNoInfoNamesStr != noInfoNamesStr)
-		{
-			// 如果过滤字符串有更新，则更新缓存。
-			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
-			_lastNoInfoNamesStr = noInfoNamesStr;
-		}
-
-		return new(_lastNotInfoNamesArr);
 	}
 
 	/// <summary>
