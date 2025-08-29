@@ -179,18 +179,53 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
-		/// 调用 <paramref name="func"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
 		/// </summary>
 		/// <typeparam name="TResult">返回值类型。</typeparam>
-		/// <param name="func">要调用的方法。</param>
+		/// <param name="action">要调用的方法。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
 		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
-			<T, TResult>(Func<T, TResult> func, T param)
+			<T, TResult>(Func<T, TResult> action, T param)
 		{
 			try
 			{
-				TResult result = func(param);
+				TResult result = action(param);
 				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。同时捕获 <typeparamref name="TEx"/> 类型的异常。
+		/// </summary>
+		/// <typeparam name="TEx">要捕获的特定异常。</typeparam>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="level">特定的日志等级。</param>
+		/// <param name="message">特定的日志标识。</param>
+		/// <param name="func">（可选）特定异常附加的判断条件。</param>
+		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
+		public async Task<(bool Success, TResult? Result)> CallActionWithReturn<TEx, TResult>(
+			Func<TResult> action, LogLevel level, string message,
+			Func<TEx, bool>? func = null) where TEx : Exception
+		{
+			try
+			{
+				TResult result = action();
+				return (true, result);
+			}
+			catch (TEx ex) when (func is null || func(ex))
+			{
+				WriteLog(ex, level, message);
+				await RemindUser();
+				ExitIfNeed();
+				return (false, default(TResult));
 			}
 			catch (Exception ex)
 			{
