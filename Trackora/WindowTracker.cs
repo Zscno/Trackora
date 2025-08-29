@@ -21,568 +21,547 @@ using Windows.Storage.Streams;
 using static Zscno.Trackora.App;
 using static Zscno.Trackora.LogSystem;
 
-namespace Zscno.Trackora;
-
-/// <summary>
-/// 进程信息。
-/// </summary>
-internal class ProcessInfo
+namespace Zscno.Trackora
 {
 	/// <summary>
-	/// 显示给用户的名称。
+	/// 进程信息。
 	/// </summary>
-	public string DisplayName { get; set; } = string.Empty;
-
-	/// <summary>
-	/// 图标的Uri。
-	/// </summary>
-	public string IconUri { get; set; } = string.Empty;
-
-	/// <summary>
-	/// 进程名称。
-	/// </summary>
-	public string ProcessName { get; set; } = string.Empty;
-
-	/// <summary>
-	/// 使用时长。
-	/// </summary>
-	[JsonIgnore]
-	public string UsedTime { get; set; } = string.Empty;
-}
-
-internal class WindowTracker
-{
-	/// <summary>
-	/// 结束使用的时间。
-	/// </summary>
-	public static TimeSpan EndUsingTime
+	internal class ProcessInfo
 	{
-		get => (TimeSpan) LocalSettings["EndUsingTime"];
+		/// <summary>
+		/// 显示给用户的名称。
+		/// </summary>
+		public string DisplayName { get; set; } = string.Empty;
 
-		set => LocalSettings["EndUsingTime"] = value;
+		/// <summary>
+		/// 图标的Uri。
+		/// </summary>
+		public string IconUri { get; set; } = string.Empty;
+
+		/// <summary>
+		/// 进程名称。
+		/// </summary>
+		public string ProcessName { get; set; } = string.Empty;
+
+		/// <summary>
+		/// 使用时长。
+		/// </summary>
+		[JsonIgnore]
+		public string UsedTime { get; set; } = string.Empty;
 	}
 
-	/// <summary>
-	/// 指示总使用时长提醒是否已经显示。
-	/// </summary>
-	public static bool HasTotalReminded { get; set; } = false;
-
-	/// <summary>
-	/// 用于显示的总使用时长。
-	/// </summary>
-	public static TimeSpan TotalUsedTime
+	internal class WindowTracker
 	{
-		get => (TimeSpan) LocalSettings["TotalUsedTime"];
-
-		private set
+		/// <summary>
+		/// 结束使用的时间。
+		/// </summary>
+		public static TimeSpan EndUsingTime
 		{
-			LocalSettings["TotalUsedTime"] = value;
-			_totalUsedTime = value;
-		}
-	}
+			get => (TimeSpan) LocalSettings["EndUsingTime"];
 
-	/// <summary>
-	/// 用于显示的所有检测到进程的名称及其使用时长（不包含只记录时间的进程）。
-	/// </summary>
-	public static Dictionary<string, TimeSpan> WindowsUsedTime
-	{
-		get
+			set => LocalSettings["EndUsingTime"] = value;
+		}
+
+		/// <summary>
+		/// 指示总使用时长提醒是否已经显示。
+		/// </summary>
+		public static bool HasTotalReminded { get; set; } = false;
+
+		/// <summary>
+		/// 用于显示的总使用时长。
+		/// </summary>
+		public static TimeSpan TotalUsedTime
 		{
-			return _windowsUsedTime
-				.Where(pair => !GetNoInfoArr().Contains(pair.Key))
-				.ToDictionary(pair => pair.Key, pair => pair.Value);
+			get => (TimeSpan) LocalSettings["TotalUsedTime"];
+
+			private set
+			{
+				LocalSettings["TotalUsedTime"] = value;
+				_totalUsedTime = value;
+			}
 		}
-	}
 
-	/// <summary>
-	/// 当无法获取到进程图标时使用的默认图标。
-	/// </summary>
-	private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
+		/// <summary>
+		/// 用于显示的所有检测到进程的名称及其使用时长（不包含只记录时间的进程）。
+		/// </summary>
+		public static Dictionary<string, TimeSpan> WindowsUsedTime
+		{
+			get
+			{
+				return _windowsUsedTime
+					.Where(pair => !GetNoInfoArr().Contains(pair.Key))
+					.ToDictionary(pair => pair.Key, pair => pair.Value);
+			}
+		}
 
-	/// <summary>
-	/// Json 序列化时使用的配置。
-	/// </summary>
-	private static JsonWriterOptions _jsonOpitons = new();
+		/// <summary>
+		/// 当无法获取到进程图标时使用的默认图标。
+		/// </summary>
+		private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
 
-	/// <summary>
-	/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
-	/// </summary>
-	private static string _lastNoInfoNamesStr = string.Empty;
+		/// <summary>
+		/// Json 序列化时使用的配置。
+		/// </summary>
+		private static JsonWriterOptions _jsonOpitons = new();
 
-	/// <summary>
-	/// 用于过滤只记录时间的进程名称的字符串数组
-	/// </summary>
-	private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
+		/// <summary>
+		/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
+		/// </summary>
+		private static string _lastNoInfoNamesStr = string.Empty;
 
-	/// <summary>
-	/// 用于触发提醒的总使用时长。
-	/// </summary>
-	private static TimeSpan _totalUsedTime;
+		/// <summary>
+		/// 用于过滤只记录时间的进程名称的字符串数组
+		/// </summary>
+		private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
 
-	/// <summary>
-	/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
-	/// </summary>
-	private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
+		/// <summary>
+		/// 用于触发提醒的总使用时长。
+		/// </summary>
+		private static TimeSpan _totalUsedTime;
 
-	/// <summary>
-	/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
-	/// </summary>
-	private readonly TimeSpan _oneSecond = TimeSpan.FromSeconds(1);
+		/// <summary>
+		/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
+		/// </summary>
+		private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
 
-	/// <summary>
-	/// 记录当天进程名称和使用时长的文本文件路径。
-	/// </summary>
-	private readonly string _recordFilePath = string.Empty;
+		/// <summary>
+		/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
+		/// </summary>
+		private readonly TimeSpan _oneSecond = TimeSpan.FromSeconds(1);
 
-	/// <summary>
-	/// 连续使用时长。
-	/// </summary>
-	private TimeSpan _continuousUsedTime;
+		/// <summary>
+		/// 记录当天进程名称和使用时长的文本文件路径。
+		/// </summary>
+		private readonly string _recordFilePath = string.Empty;
 
-	/// <summary>
-	/// 当前正在记录信息的进程的名称。
-	/// </summary>
-	private string _currentRecordProcessName = string.Empty;
+		/// <summary>
+		/// 连续使用时长。
+		/// </summary>
+		private TimeSpan _continuousUsedTime;
 
-	/// <summary>
-	/// 上一个窗口被激活的时间。
-	/// </summary>
-	private DateTime _lastActivationTime;
+		/// <summary>
+		/// 当前正在记录信息的进程的名称。
+		/// </summary>
+		private string _currentRecordProcessName = string.Empty;
 
-	/// <summary>
-	/// 用于过滤进程名称的字符串数组。
-	/// </summary>
-	private string[] _lastNoTimeNamesArr = Array.Empty<string>();
+		/// <summary>
+		/// 上一个窗口被激活的时间。
+		/// </summary>
+		private DateTime _lastActivationTime;
 
-	/// <summary>
-	/// 用于过滤进程名称的字符串（以英文逗号分隔）。
-	/// </summary>
-	private string _lastNoTimeNamesStr = string.Empty;
+		/// <summary>
+		/// 用于过滤进程名称的字符串数组。
+		/// </summary>
+		private string[] _lastNoTimeNamesArr = Array.Empty<string>();
 
-	/// <summary>
-	/// 上一个检测到的被激活的进程。
-	/// </summary>
-	private Process? _lastProcess;
+		/// <summary>
+		/// 用于过滤进程名称的字符串（以英文逗号分隔）。
+		/// </summary>
+		private string _lastNoTimeNamesStr = string.Empty;
 
-	/// <summary>
-	/// 上次记录连续使用时长的时间。
-	/// </summary>
-	private DateTime _lastRecordTime;
+		/// <summary>
+		/// 上一个检测到的被激活的进程。
+		/// </summary>
+		private Process? _lastProcess;
 
-	/// <summary>
-	/// 记录同一进程的连续使用时长以保证使用时长不超过 5 秒的进程不被记录。
-	/// </summary>
-	private TimeSpan _singleContinuousUsedTime;
+		/// <summary>
+		/// 上次记录连续使用时长的时间。
+		/// </summary>
+		private DateTime _lastRecordTime;
 
-	/// <summary>
-	/// 计时器。
-	/// </summary>
-	private DispatcherTimer _timer = new();
+		/// <summary>
+		/// 记录同一进程的连续使用时长以保证使用时长不超过 5 秒的进程不被记录。
+		/// </summary>
+		private TimeSpan _singleContinuousUsedTime;
 
-	public WindowTracker()
-	{
-		_recordFilePath = Path.Join(LocalCachePath,
-			"Record.dat");
+		/// <summary>
+		/// 计时器。
+		/// </summary>
+		private DispatcherTimer _timer = new();
+
+		public WindowTracker()
+		{
+			_recordFilePath = Path.Join(LocalCachePath,
+				"Record.dat");
 #if DEBUG
-		_jsonOpitons.Indented = true;
+			_jsonOpitons.Indented = true;
 #endif
 
-		DateTimeOffset realToday = new(DateTime.Now.Date);
-		if (!LocalSettings.TryGetValue("Today", out object? today) || (DateTimeOffset) today != realToday)
-		{
-			// 如果今天的记录不存在或不是今天，则重置记录。
-			LocalSettings["Today"] = realToday;
-			TotalUsedTime = TimeSpan.Zero;
-			EndUsingTime = TimeSpan.Zero;
-			HasTotalReminded = false;
+			DateTimeOffset realToday = new(DateTime.Now.Date);
+			if (!LocalSettings.TryGetValue("Today", out object? today) || (DateTimeOffset) today != realToday)
+			{
+				// 如果今天的记录不存在或不是今天，则重置记录。
+				LocalSettings["Today"] = realToday;
+				TotalUsedTime = TimeSpan.Zero;
+				EndUsingTime = TimeSpan.Zero;
+				HasTotalReminded = false;
 
-			// 重置记录文件。
-			try
-			{
-				File.WriteAllText(_recordFilePath, string.Empty);
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在重置/创建记录文件 [{_recordFilePath}] 时触发异常：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法管理今天的记录",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotSetRecord"));
-			}
-		}
-		else
-		{
-			// 获取记录的使用时长。
-			_totalUsedTime = TotalUsedTime;
-			try
-			{
-				string[] lines = GetUsedTime();
-				foreach (string line in lines)
+				// 重置记录文件。
+				try
 				{
-					if (string.IsNullOrWhiteSpace(line))
-					{
-						// 如果有空行则跳过。
-						if (line != lines[^1])
-						{
-							WriteLog(LogLevel.Warning, "记录文件中有空行。");
-						}
-						// 如果是最后一行不算。
-						continue;
-					}
-					string[] keyValuePair = line.Split('|');
-					if (keyValuePair.Length != 2 ||
-						!double.TryParse(keyValuePair[1], out double result))
-					{
-						// 如果文本结构不正确则跳过。
-						WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
-						continue;
-					}
-					_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
+					File.WriteAllText(_recordFilePath, string.Empty);
+				}
+				catch (Exception ex)
+				{
+					WriteLog(LogLevel.Error, $"在重置/创建记录文件 [{_recordFilePath}] 时触发异常：{ex}");
+					CanSend = ReminderHelper.SendReminder("提示用户无法管理今天的记录",
+						Loader.GetString("ErrorOrWarningTitle"),
+						Loader.GetString("ECanNotSetRecord"));
 				}
 			}
-			catch (Exception ex)
+			else
 			{
-				WriteLog(LogLevel.Error, $"在读取记录文件 [{_recordFilePath}] 时触发异常：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法获取今天的记录",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetRecord"));
+				// 获取记录的使用时长。
+				_totalUsedTime = TotalUsedTime;
+				try
+				{
+					string[] lines = GetUsedTime();
+					foreach (string line in lines)
+					{
+						if (string.IsNullOrWhiteSpace(line))
+						{
+							// 如果有空行则跳过。
+							if (line != lines[^1])
+							{
+								WriteLog(LogLevel.Warning, "记录文件中有空行。");
+							}
+							// 如果是最后一行不算。
+							continue;
+						}
+						string[] keyValuePair = line.Split('|');
+						if (keyValuePair.Length != 2 ||
+							!double.TryParse(keyValuePair[1], out double result))
+						{
+							// 如果文本结构不正确则跳过。
+							WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
+							continue;
+						}
+						_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
+					}
+				}
+				catch (Exception ex)
+				{
+					WriteLog(LogLevel.Error, $"在读取记录文件 [{_recordFilePath}] 时触发异常：{ex}");
+					CanSend = ReminderHelper.SendReminder("提示用户无法获取今天的记录",
+						Loader.GetString("ErrorOrWarningTitle"),
+						Loader.GetString("ECanNotGetRecord"));
+				}
+
+				// 如果已经达到了今日使用时长，则每次启动都提醒。
+				ShowTotalReminderIfNeed();
 			}
 
-			// 如果已经达到了今日使用时长，则每次启动都提醒。
-			ShowTotalReminderIfNeed();
-		}
-
-		// 初始化并启动计时器。
-		try
-		{
-			_timer.Tick += Timer_Tick;
-			_timer.Interval = _oneSecond;
-			_timer.Start();
-		}
-		catch (Exception ex)
-		{
-			WriteLog(LogLevel.Error, $"在初始化计时器时触发异常，将在提醒用户后退出：{ex}");
-			CanSend = ReminderHelper.SendReminder("提示用户无法初始化计时器",
-				Loader.GetString("ErrorOrWarningTitle"),
-				Loader.GetString("ECanNotInitTimer"));
-			Application.Current.Exit();
-		}
-	}
-
-	/// <summary>
-	/// 获取本地化时间 / 时长。
-	/// </summary>
-	/// <param name="time">一个时间 / 时长。</param>
-	/// <param name="useRemindTotal">指示是否使用用于触发提醒的总时长。</param>
-	/// <returns>本地化时间 / 时长字符串。</returns>
-	public static string GetLocalTime(TimeSpan time, bool useRemindTotal = false)
-	{
-		// 如果使用用于触发提醒的总时长则忽略传入的 time 参数。
-		TimeSpan realTime = useRemindTotal ? _totalUsedTime : time;
-
-		// 根据本地化设置返回时间字符串。
-		string result;
-		if (realTime.Days == 0 && realTime.Hours == 0 && realTime.Minutes == 0)
-		{
-			result = "< 1" + Loader.GetString("Minute");
-		}
-		else if (realTime.Days == 0 && realTime.Hours == 0)
-		{
-			result = realTime.Minutes + Loader.GetString("Minute");
-		}
-		else if (realTime.Days == 0)
-		{
-			result = realTime.Hours + Loader.GetString("Hour")
-				+ realTime.Minutes + Loader.GetString("Minute");
-		}
-		else
-		{
-			result = realTime.Days + Loader.GetString("Day")
-				+ realTime.Hours + Loader.GetString("Hour")
-				+ realTime.Minutes + Loader.GetString("Minute");
-		}
-		return result;
-	}
-
-	/// <summary>
-	/// 获取进程名称、图标及使用的时长。
-	/// </summary>
-	/// <param name="count">需要获取的数量（以使用时长正序排列）。</param>
-	/// <returns>使用时长最长的 <paramref name="count"/> 个进程名称、图标和时长。</returns>
-	public static List<ProcessInfo> GetProcessesInfo(int count)
-	{
-		// 获取使用时长最长的六个进程的名称（排除无需记录信息的进程）。
-		List<string> processNames = WindowsUsedTime
-			.OrderByDescending(x => x.Value)
-			.Take(count)
-			.Select(x => x.Key)
-			.ToList();
-
-		string processesListText;
-		try
-		{
-			processesListText = File.Exists(InfoFilePath) ?
-				File.ReadAllText(InfoFilePath) : string.Empty;
-		}
-		catch (Exception ex)
-		{
-			throw new Exception($"在获取记录文件 [Path={InfoFilePath}] 的文本时触发了异常。", ex);
-		}
-
-		List<ProcessInfo> processesInfo = new();
-		bool isEmpty = string.IsNullOrWhiteSpace(processesListText);
-		if (isEmpty)
-		{
-			WriteLog(LogLevel.Warning, $"程序尚未开始监测和记录（json 文件中无内容） [Path={InfoFilePath}] 。");
-		}
-
-		Lazy<Dictionary<string, ProcessInfo>> processesDict = new(() =>
-		{
+			// 初始化并启动计时器。
 			try
 			{
-				List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText,
-					JsonSerializeMetadata.Default.ListProcessInfo);
-				Dictionary<string, ProcessInfo> dict = list?.ToDictionary(value => value.ProcessName)
-					?? new();
-				return dict;
+				_timer.Tick += Timer_Tick;
+				_timer.Interval = _oneSecond;
+				_timer.Start();
 			}
 			catch (Exception ex)
 			{
-				throw new Exception($"在反序列化记录文件 [Path={InfoFilePath}] 时触发了异常。", ex);
+				WriteLog(LogLevel.Error, $"在初始化计时器时触发异常，将在提醒用户后退出：{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法初始化计时器",
+					Loader.GetString("ErrorOrWarningTitle"),
+					Loader.GetString("ECanNotInitTimer"));
+				Application.Current.Exit();
 			}
-		});
+		}
 
-		foreach (string name in processNames)
+		/// <summary>
+		/// 获取本地化时间 / 时长。
+		/// </summary>
+		/// <param name="time">一个时间 / 时长。</param>
+		/// <param name="useRemindTotal">指示是否使用用于触发提醒的总时长。</param>
+		/// <returns>本地化时间 / 时长字符串。</returns>
+		public static string GetLocalTime(TimeSpan time, bool useRemindTotal = false)
 		{
-			ProcessInfo? info;
+			// 如果使用用于触发提醒的总时长则忽略传入的 time 参数。
+			TimeSpan realTime = useRemindTotal ? _totalUsedTime : time;
 
+			// 根据本地化设置返回时间字符串。
+			string result;
+			if (realTime.Days == 0 && realTime.Hours == 0 && realTime.Minutes == 0)
+			{
+				result = "< 1" + Loader.GetString("Minute");
+			}
+			else if (realTime.Days == 0 && realTime.Hours == 0)
+			{
+				result = realTime.Minutes + Loader.GetString("Minute");
+			}
+			else if (realTime.Days == 0)
+			{
+				result = realTime.Hours + Loader.GetString("Hour")
+					+ realTime.Minutes + Loader.GetString("Minute");
+			}
+			else
+			{
+				result = realTime.Days + Loader.GetString("Day")
+					+ realTime.Hours + Loader.GetString("Hour")
+					+ realTime.Minutes + Loader.GetString("Minute");
+			}
+			return result;
+		}
+
+		/// <summary>
+		/// 获取进程名称、图标及使用的时长。
+		/// </summary>
+		/// <param name="count">需要获取的数量（以使用时长正序排列）。</param>
+		/// <returns>使用时长最长的 <paramref name="count"/> 个进程名称、图标和时长。</returns>
+		public static List<ProcessInfo> GetProcessesInfo(int count)
+		{
+			// 获取使用时长最长的六个进程的名称（排除无需记录信息的进程）。
+			List<string> processNames = WindowsUsedTime
+				.OrderByDescending(x => x.Value)
+				.Take(count)
+				.Select(x => x.Key)
+				.ToList();
+
+			string processesListText;
+			try
+			{
+				processesListText = File.Exists(InfoFilePath) ?
+					File.ReadAllText(InfoFilePath) : string.Empty;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"在获取记录文件 [Path={InfoFilePath}] 的文本时触发了异常。", ex);
+			}
+
+			List<ProcessInfo> processesInfo = new();
+			bool isEmpty = string.IsNullOrWhiteSpace(processesListText);
 			if (isEmpty)
 			{
-				info = GetDefaultInfo(name);
+				WriteLog(LogLevel.Warning, $"程序尚未开始监测和记录（json 文件中无内容） [Path={InfoFilePath}] 。");
 			}
-			else if (!processesDict.Value.TryGetValue(name, out info) || info is null)
+
+			Lazy<Dictionary<string, ProcessInfo>> processesDict = new(() =>
 			{
-				// 如果 json 文件中已有记录，则反序列化并查找当前进程。
-				WriteLog(LogLevel.Warning, $"在记录文件 [Path={InfoFilePath}] 中未找到进程 {name} 的信息。");
-				info = GetDefaultInfo(name);
-			}
-			info.UsedTime = GetLocalTime(WindowsUsedTime[name]);
-			processesInfo.Add(info);
-		}
-		return processesInfo;
-	}
+				try
+				{
+					List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText,
+						JsonSerializeMetadata.Default.ListProcessInfo);
+					Dictionary<string, ProcessInfo> dict = list?.ToDictionary(value => value.ProcessName)
+						?? new();
+					return dict;
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"在反序列化记录文件 [Path={InfoFilePath}] 时触发了异常。", ex);
+				}
+			});
 
-	/// <summary>
-	/// 获取默认的进程信息（当无法获取到进程信息时使用）。
-	/// </summary>
-	/// <param name="process">要获取的进程。</param>
-	/// <returns>默认的进程信息。</returns>
-	private static ProcessInfo GetDefaultInfo(Process process)
-	{
-		string title = process.MainWindowTitle;
-		return new()
-		{
-			ProcessName = process.ProcessName,
-			DisplayName = string.IsNullOrWhiteSpace(title) ? process.ProcessName : title,
-			IconUri = _defaultIconUri,
-		};
-	}
-
-	/// <summary>
-	/// 获取默认的进程信息（当 json 文件中没有进程信息时使用）。
-	/// </summary>
-	/// <param name="processName">要获取的进程的名称。</param>
-	/// <returns>默认的进程信息。</returns>
-	private static ProcessInfo GetDefaultInfo(string processName)
-	{
-		return new()
-		{
-			ProcessName = processName,
-			DisplayName = processName,
-			IconUri = _defaultIconUri,
-		};
-	}
-
-	/// <summary>
-	/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
-	/// </summary>
-	/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
-	private static HashSet<string> GetNoInfoArr()
-	{
-		string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
-		if (_lastNoInfoNamesStr != noInfoNamesStr)
-		{
-			// 如果过滤字符串有更新，则更新缓存。
-			_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
-			_lastNoInfoNamesStr = noInfoNamesStr;
-		}
-
-		return new(_lastNotInfoNamesArr);
-	}
-
-	/// <summary>
-	/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
-	/// </summary>
-	/// <param name="value">要操作的 <see langword="double"/> 值。</param>
-	/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
-	private static uint Round(double value)
-	{
-		uint intValue = (uint) value;
-		return (value - intValue) < 0.5 ? intValue : intValue - 1;
-	}
-
-	/// <summary>
-	/// 将提供的值转换为 Json <see langword="string"/> 。
-	/// </summary>
-	/// <typeparam name="T">要序列化的值的类型。</typeparam>
-	/// <param name="value">要转换的值。</param>
-	/// <param name="info">要转换的类型的元数据。</param>
-	/// <returns>值的 <see langword="string"/> 表示形式。</returns>
-	private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
-	{
-		using MemoryStream stream = new();
-		using Utf8JsonWriter writer = new(stream, _jsonOpitons);
-		JsonSerializer.Serialize(writer, value, info);
-		writer.Flush();
-		return Encoding.UTF8.GetString(stream.ToArray());
-	}
-
-	/// <summary>
-	/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
-	/// </summary>
-	private static void ShowTotalReminderIfNeed()
-	{
-		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
-		{
-			CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
-			HasTotalReminded = true;
-		}
-	}
-
-	/// <summary>
-	/// 获取记录文件中的记录。如果文件中没有内容就返回空数组。
-	/// </summary>
-	/// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
-	private string[] GetUsedTime()
-	{
-		using FileStream fstream = new(_recordFilePath, FileMode.OpenOrCreate,
-			FileAccess.Read, FileShare.ReadWrite);
-		if (fstream.Length > 0)
-		{
-			using BinaryReader breader = new(fstream, Encoding.UTF8);
-			string text = breader.ReadString();
-			return text.Split("\r\n");
-		}
-		else
-		{
-			return Array.Empty<string>();
-		}
-	}
-
-	/// <summary>
-	/// 当没有获取到符合条件的进程时调用。
-	/// </summary>
-	private void NoProcessNow()
-	{
-		if (_lastProcess == null)
-		{
-			// 如果上次没有记录:
-			if (DateTime.Now - _lastRecordTime >= (TimeSpan) LocalSettings["ContinuousUsedResetTime"]
-				&& _continuousUsedTime != TimeSpan.Zero)
+			foreach (string name in processNames)
 			{
-				// 如果上次记录的时间超过指定时间，则刷新连续使用时长。
-				_continuousUsedTime = TimeSpan.Zero;
+				ProcessInfo? info;
+
+				if (isEmpty)
+				{
+					info = GetDefaultInfo(name);
+				}
+				else if (!processesDict.Value.TryGetValue(name, out info) || info is null)
+				{
+					// 如果 json 文件中已有记录，则反序列化并查找当前进程。
+					WriteLog(LogLevel.Warning, $"在记录文件 [Path={InfoFilePath}] 中未找到进程 {name} 的信息。");
+					info = GetDefaultInfo(name);
+				}
+				info.UsedTime = GetLocalTime(WindowsUsedTime[name]);
+				processesInfo.Add(info);
+			}
+			return processesInfo;
+		}
+
+		/// <summary>
+		/// 获取默认的进程信息（当无法获取到进程信息时使用）。
+		/// </summary>
+		/// <param name="process">要获取的进程。</param>
+		/// <returns>默认的进程信息。</returns>
+		private static ProcessInfo GetDefaultInfo(Process process)
+		{
+			string title = process.MainWindowTitle;
+			return new()
+			{
+				ProcessName = process.ProcessName,
+				DisplayName = string.IsNullOrWhiteSpace(title) ? process.ProcessName : title,
+				IconUri = _defaultIconUri,
+			};
+		}
+
+		/// <summary>
+		/// 获取默认的进程信息（当 json 文件中没有进程信息时使用）。
+		/// </summary>
+		/// <param name="processName">要获取的进程的名称。</param>
+		/// <returns>默认的进程信息。</returns>
+		private static ProcessInfo GetDefaultInfo(string processName)
+		{
+			return new()
+			{
+				ProcessName = processName,
+				DisplayName = processName,
+				IconUri = _defaultIconUri,
+			};
+		}
+
+		/// <summary>
+		/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
+		/// </summary>
+		/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
+		private static HashSet<string> GetNoInfoArr()
+		{
+			string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
+			if (_lastNoInfoNamesStr != noInfoNamesStr)
+			{
+				// 如果过滤字符串有更新，则更新缓存。
+				_lastNotInfoNamesArr = noInfoNamesStr.Split(',');
+				_lastNoInfoNamesStr = noInfoNamesStr;
+			}
+
+			return new(_lastNotInfoNamesArr);
+		}
+
+		/// <summary>
+		/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
+		/// </summary>
+		/// <param name="value">要操作的 <see langword="double"/> 值。</param>
+		/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
+		private static uint Round(double value)
+		{
+			uint intValue = (uint) value;
+			return (value - intValue) < 0.5 ? intValue : intValue - 1;
+		}
+
+		/// <summary>
+		/// 将提供的值转换为 Json <see langword="string"/> 。
+		/// </summary>
+		/// <typeparam name="T">要序列化的值的类型。</typeparam>
+		/// <param name="value">要转换的值。</param>
+		/// <param name="info">要转换的类型的元数据。</param>
+		/// <returns>值的 <see langword="string"/> 表示形式。</returns>
+		private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
+		{
+			using MemoryStream stream = new();
+			using Utf8JsonWriter writer = new(stream, _jsonOpitons);
+			JsonSerializer.Serialize(writer, value, info);
+			writer.Flush();
+			return Encoding.UTF8.GetString(stream.ToArray());
+		}
+
+		/// <summary>
+		/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
+		/// </summary>
+		private static void ShowTotalReminderIfNeed()
+		{
+			if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
+			{
+				CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
+				HasTotalReminded = true;
 			}
 		}
-		else
+
+		/// <summary>
+		/// 获取记录文件中的记录。如果文件中没有内容就返回空数组。
+		/// </summary>
+		/// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
+		private string[] GetUsedTime()
 		{
-			// 如果上次有记录，则记录使用时长。
+			using FileStream fstream = new(_recordFilePath, FileMode.OpenOrCreate,
+				FileAccess.Read, FileShare.ReadWrite);
+			if (fstream.Length > 0)
+			{
+				using BinaryReader breader = new(fstream, Encoding.UTF8);
+				string text = breader.ReadString();
+				return text.Split("\r\n");
+			}
+			else
+			{
+				return Array.Empty<string>();
+			}
+		}
+
+		/// <summary>
+		/// 当没有获取到符合条件的进程时调用。
+		/// </summary>
+		private void NoProcessNow()
+		{
+			if (_lastProcess == null)
+			{
+				// 如果上次没有记录:
+				if (DateTime.Now - _lastRecordTime >= (TimeSpan) LocalSettings["ContinuousUsedResetTime"]
+					&& _continuousUsedTime != TimeSpan.Zero)
+				{
+					// 如果上次记录的时间超过指定时间，则刷新连续使用时长。
+					_continuousUsedTime = TimeSpan.Zero;
+				}
+			}
+			else
+			{
+				// 如果上次有记录，则记录使用时长。
+				try
+				{
+					RecordUsedTime();
+				}
+				catch (Exception ex)
+				{
+					WriteLog(LogLevel.Error, ex.ToString());
+					CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
+						Loader.GetString("ErrorOrWarningTitle"),
+						Loader.GetString("ECanNotRecordTime"));
+				}
+				_lastProcess = null;
+			}
+		}
+
+		/// <summary>
+		/// 记录进程信息到 JSON 文件中。
+		/// </summary>
+		private async Task RecordProcessInfo()
+		{
+			if (_lastProcess is null)
+			{
+				WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
+				return;
+			}
+
+			Process process = _lastProcess;
+			string name = process.ProcessName;
+			// 如果已经在记录进程则退出，防止重复记录。
+			if (name == _currentRecordProcessName)
+			{
+				return;
+			}
+			_currentRecordProcessName = name;
+
+			List<ProcessInfo> processesInfo;
 			try
 			{
-				RecordUsedTime();
+				using FileStream textStream =
+					new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
+				processesInfo = textStream.Length > 0 ?
+					JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo) ??
+					new() : new();
 			}
 			catch (Exception ex)
 			{
-				WriteLog(LogLevel.Error, ex.ToString());
-				CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotRecordTime"));
+				WriteLog(LogLevel.Error, $"在读取记录文件 [{InfoFilePath}] 时触发异常：{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法读取进程信息",
+					Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"));
+				_currentRecordProcessName = string.Empty;
+				return;
 			}
-			_lastProcess = null;
-		}
-	}
 
-	/// <summary>
-	/// 记录进程信息到 JSON 文件中。
-	/// </summary>
-	private async Task RecordProcessInfo()
-	{
-		if (_lastProcess is null)
-		{
-			WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
-			return;
-		}
+			if (processesInfo.Any(info => info.ProcessName == process.ProcessName))
+			{
+				_currentRecordProcessName = string.Empty;
+				return;
+			}
 
-		Process process = _lastProcess;
-		string name = process.ProcessName;
-		// 如果已经在记录进程则退出，防止重复记录。
-		if (name == _currentRecordProcessName)
-		{
-			return;
-		}
-		_currentRecordProcessName = name;
-
-		List<ProcessInfo> processesInfo;
-		try
-		{
-			using FileStream textStream =
-				new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-			// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
-			processesInfo = textStream.Length > 0 ?
-				JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo) ??
-				new() : new();
-		}
-		catch (Exception ex)
-		{
-			WriteLog(LogLevel.Error, $"在读取记录文件 [{InfoFilePath}] 时触发异常：{ex}");
-			CanSend = ReminderHelper.SendReminder("提示用户无法读取进程信息",
-				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"));
-			_currentRecordProcessName = string.Empty;
-			return;
-		}
-
-		if (processesInfo.Any(info => info.ProcessName == process.ProcessName))
-		{
-			_currentRecordProcessName = string.Empty;
-			return;
-		}
-
-		ProcessInfo info;
-		uint packageFullNameLength = 0;
-		long result;
-		try
-		{
-			result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, null!);
-		}
-		catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
-		{
-			WriteLog(LogLevel.Warning, $"获取进程 {name} 的包全名时触发异常：{we}");
-			info = GetDefaultInfo(process);
-			goto Finish;
-		}
-		catch (Exception ex)
-		{
-			WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常：{ex}");
-			info = GetDefaultInfo(process);
-			goto Finish;
-		}
-
-		if (result == SystemHelper.APPMODEL_ERROR_NO_PACKAGE)
-		{
-			// 如果是 Win32 应用：
-			string path;
+			ProcessInfo info;
+			uint packageFullNameLength = 0;
+			long result;
 			try
 			{
-				path = process.MainModule!.FileName;
+				result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, null!);
 			}
 			catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
 			{
@@ -592,491 +571,513 @@ internal class WindowTracker
 			}
 			catch (Exception ex)
 			{
-				WriteLog(LogLevel.Error, $"获取进程 {name} 的路径时触发异常：{ex}");
+				WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常：{ex}");
 				info = GetDefaultInfo(process);
 				goto Finish;
 			}
 
-			string iconUri;
-			try
+			if (result == SystemHelper.APPMODEL_ERROR_NO_PACKAGE)
 			{
-				Icon preIcon = Icon.ExtractAssociatedIcon(path)!;
-				Icon icon = new(preIcon, 32, 32);
-				preIcon.Dispose();
-
-				if (icon != null)
+				// 如果是 Win32 应用：
+				string path;
+				try
 				{
-					// 加载图标并将图标保存到缓存文件夹中。
-					string iconPath = Path.Combine(LocalCachePath,
-						"Icons", $"{name}.png");
-					using FileStream iconStream = new(iconPath, FileMode.Create,
-						FileAccess.ReadWrite, FileShare.None);
-					icon.ToBitmap().Save(iconStream, ImageFormat.Png);
-					icon.Dispose();
-
-					iconUri = new Uri(iconPath).ToString();
+					path = process.MainModule!.FileName;
 				}
-				else
+				catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
 				{
-					WriteLog(LogLevel.Warning, $"出于未知原因，未获取到进程 {name} 的图标。");
-					iconUri = _defaultIconUri;
+					WriteLog(LogLevel.Warning, $"获取进程 {name} 的包全名时触发异常：{we}");
+					info = GetDefaultInfo(process);
+					goto Finish;
 				}
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
-				iconUri = _defaultIconUri;
-			}
-
-			string? displayName = process.MainModule.FileVersionInfo.FileDescription;
-			info = new()
-			{
-				ProcessName = name,
-				DisplayName = string.IsNullOrWhiteSpace(displayName) ?
-				(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name : process.MainWindowTitle)
-				: displayName,
-				IconUri = iconUri
-			};
-		}
-		else if (result == SystemHelper.ERROR_INSUFFICIENT_BUFFER)
-		{
-			// 如果是有应用包的应用：
-			StringBuilder packageFullName = new((int) packageFullNameLength);
-			result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, packageFullName);
-			if (result != SystemHelper.ERROR_SUCCESS)
-			{
-				WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				info = GetDefaultInfo(process);
-				goto Finish;
-			}
-			else
-			{
-				// 如果获取包全名成功：
-				PackageManager packageManager = new();
-				Package[] packages = packageManager.FindPackagesForUser(string.Empty)
-					.OrderByDescending(pkg => pkg.Id.FullName.Length)
-					.ToArray();
-				Package? package = packages.FirstOrDefault(pkg => pkg.Id.FullName
-				== packageFullName.ToString());
-
-				if (package == null)
+				catch (Exception ex)
 				{
-					WriteLog(LogLevel.Warning, $"出于未知原因，未找到进程 {name} 的包信息。");
+					WriteLog(LogLevel.Error, $"获取进程 {name} 的路径时触发异常：{ex}");
 					info = GetDefaultInfo(process);
 					goto Finish;
 				}
 
-				// 加载图标并将图标保存到缓存文件夹中。
 				string iconUri;
 				try
 				{
-					string iconPath = package.Logo.LocalPath;
-					StorageFile iconFile1 = await StorageFile.GetFileFromPathAsync(iconPath);
-					IRandomAccessStreamWithContentType iconStream = await iconFile1.OpenReadAsync();
+					Icon preIcon = Icon.ExtractAssociatedIcon(path)!;
+					Icon icon = new(preIcon, 32, 32);
+					preIcon.Dispose();
 
-					// 获取图标的实际内容范围。
-					BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
-					PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
-					byte[] pixels = pixelData.DetachPixelData();
-					uint width = decoder.PixelWidth, height = decoder.PixelHeight;
-					uint minX = 0, minY = 0, maxX = 0, maxY = 0;
-					bool exit;
-
-					// 从左向右遍历每一列，找到最左边有内容的像素列。
-					exit = false;
-					for (uint column = 0; column < width && !exit; column++)
+					if (icon != null)
 					{
-						for (uint pixel = 0; pixel < height && !exit; pixel++)
-						{
-							if (pixels[(pixel * width + column) * 4 + 3] > 0)
-							{
-								minX = column;
-								exit = true;
-							}
-						}
+						// 加载图标并将图标保存到缓存文件夹中。
+						string iconPath = Path.Combine(LocalCachePath,
+							"Icons", $"{name}.png");
+						using FileStream iconStream = new(iconPath, FileMode.Create,
+							FileAccess.ReadWrite, FileShare.None);
+						icon.ToBitmap().Save(iconStream, ImageFormat.Png);
+						icon.Dispose();
+
+						iconUri = new Uri(iconPath).ToString();
 					}
-
-					// 从右向左遍历每一列，找到最右边有内容的像素列。
-					exit = false;
-					for (uint column = width - 1; column >= 0 && !exit; column--)
+					else
 					{
-						for (uint pixel = 0; pixel < height && !exit; pixel++)
-						{
-							if (pixels[(pixel * width + column) * 4 + 3] > 0)
-							{
-								maxX = column;
-								exit = true;
-							}
-						}
+						WriteLog(LogLevel.Warning, $"出于未知原因，未获取到进程 {name} 的图标。");
+						iconUri = _defaultIconUri;
 					}
-
-					// 从上向下遍历每一行，找到最上边有内容的像素行。
-					exit = false;
-					for (uint row = 0; row < height && !exit; row++)
-					{
-						for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
-						{
-							if (pixels[(row * width + pixel) * 4 + 3] > 0)
-							{
-								minY = row;
-								exit = true;
-							}
-						}
-					}
-
-					// 从下向上遍历每一行，找到最下边有内容的像素行。
-					exit = false;
-					for (uint row = height - 1; row >= 0 && !exit; row--)
-					{
-						for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
-						{
-							if (pixels[(row * width + pixel) * 4 + 3] > 0)
-							{
-								maxY = row;
-								exit = true;
-							}
-						}
-					}
-
-					uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
-
-					// 图标裁剪区域至少为 32 * 32 像素，且裁剪区域坐标不能为负。
-					if (cropWidth < 32 && cropHeight < 32)
-					{
-						cropWidth = cropHeight = 32;
-						minX = Round((width - cropWidth) / 2);
-						minY = Round((width - cropHeight) / 2);
-					}
-					minX = minX < 0 ? 0 : minX;
-					minY = minY < 0 ? 0 : minY;
-
-					//裁剪图标。
-					InMemoryRandomAccessStream croppedStream = new();
-					BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
-					encoder.BitmapTransform.Bounds = new()
-					{
-						X = minX,
-						Y = minY,
-						Width = cropWidth,
-						Height = cropHeight,
-					};
-					await encoder.FlushAsync();
-					croppedStream.Seek(0);
-
-					// 保存图标。
-					StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
-						Path.Combine(LocalCachePath, "Icons"));
-					StorageFile iconFile = await iconfolder.CreateFileAsync(
-						$"{name}.png", CreationCollisionOption.ReplaceExisting);
-					_ = await RandomAccessStream.CopyAndCloseAsync(
-						croppedStream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
-
-					iconUri = new Uri(Path.Combine(LocalCachePath,
-						"Icons", $"{name}.png")).ToString();
 				}
 				catch (Exception ex)
 				{
 					WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
-					iconUri = "ms-appx:///Icons/Default.png";
+					iconUri = _defaultIconUri;
 				}
 
+				string? displayName = process.MainModule.FileVersionInfo.FileDescription;
 				info = new()
 				{
 					ProcessName = name,
-					DisplayName = string.IsNullOrWhiteSpace(package.DisplayName) ?
-					(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name :
-					process.MainWindowTitle) : package.DisplayName,
+					DisplayName = string.IsNullOrWhiteSpace(displayName) ?
+					(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name : process.MainWindowTitle)
+					: displayName,
 					IconUri = iconUri
 				};
 			}
-		}
-		else
-		{
-			WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-			info = GetDefaultInfo(process);
-		}
-
-		Finish:
-		processesInfo.Add(info);
-		try
-		{
-			File.WriteAllText(InfoFilePath,
-				SerializeJson(processesInfo, JsonSerializeMetadata.Default.ListProcessInfo));
-		}
-		catch (Exception ex)
-		{
-			WriteLog(LogLevel.Error, $"写入记录文件 [{InfoFilePath}] 时触发异常：{ex}");
-			CanSend = ReminderHelper.SendReminder("提示用户无法写入记录文件",
-				Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"));
-			return;
-		}
-		_currentRecordProcessName = string.Empty;
-		WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
-	}
-
-	/// <summary>
-	/// 记录上次被激活窗口的使用时长。
-	/// </summary>
-	private void RecordUsedTime()
-	{
-		if (_lastProcess is null)
-		{
-			WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
-			return;
-		}
-
-		string name = _lastProcess.ProcessName;
-		TimeSpan usedTime;
-		TimeSpan totalUsedTime;
-
-		// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。在 TotalUsedTime 中记录总使用时长。
-		try
-		{
-			usedTime = DateTime.Now - _lastActivationTime;
-			totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
-				pastUsedTime + usedTime : usedTime;
-			_windowsUsedTime[name] = totalUsedTime;
-			TotalUsedTime += usedTime;
-		}
-		catch (Exception ex)
-		{
-			throw new Exception("在记录上次被激活窗口的使用时长到 WindowsUsedTime 中时触发了异常。", ex);
-		}
-
-		// 将使用时长记录到记录文件中：
-		try
-		{
-			// 获取记录文件的所有行。
-			string[] lines = GetUsedTime();
-			StringBuilder writeLines = new();
-			bool hasFound = false;
-
-			foreach (string line in lines)
+			else if (result == SystemHelper.ERROR_INSUFFICIENT_BUFFER)
 			{
-				if (line.StartsWith(name))
+				// 如果是有应用包的应用：
+				StringBuilder packageFullName = new((int) packageFullNameLength);
+				result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, packageFullName);
+				if (result != SystemHelper.ERROR_SUCCESS)
 				{
-					// 如果在文件中找到了进程，则更新记录。
+					WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+					info = GetDefaultInfo(process);
+					goto Finish;
+				}
+				else
+				{
+					// 如果获取包全名成功：
+					PackageManager packageManager = new();
+					Package[] packages = packageManager.FindPackagesForUser(string.Empty)
+						.OrderByDescending(pkg => pkg.Id.FullName.Length)
+						.ToArray();
+					Package? package = packages.FirstOrDefault(pkg => pkg.Id.FullName
+					== packageFullName.ToString());
+
+					if (package == null)
+					{
+						WriteLog(LogLevel.Warning, $"出于未知原因，未找到进程 {name} 的包信息。");
+						info = GetDefaultInfo(process);
+						goto Finish;
+					}
+
+					// 加载图标并将图标保存到缓存文件夹中。
+					string iconUri;
+					try
+					{
+						string iconPath = package.Logo.LocalPath;
+						StorageFile iconFile1 = await StorageFile.GetFileFromPathAsync(iconPath);
+						IRandomAccessStreamWithContentType iconStream = await iconFile1.OpenReadAsync();
+
+						// 获取图标的实际内容范围。
+						BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
+						PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
+						byte[] pixels = pixelData.DetachPixelData();
+						uint width = decoder.PixelWidth, height = decoder.PixelHeight;
+						uint minX = 0, minY = 0, maxX = 0, maxY = 0;
+						bool exit;
+
+						// 从左向右遍历每一列，找到最左边有内容的像素列。
+						exit = false;
+						for (uint column = 0; column < width && !exit; column++)
+						{
+							for (uint pixel = 0; pixel < height && !exit; pixel++)
+							{
+								if (pixels[(pixel * width + column) * 4 + 3] > 0)
+								{
+									minX = column;
+									exit = true;
+								}
+							}
+						}
+
+						// 从右向左遍历每一列，找到最右边有内容的像素列。
+						exit = false;
+						for (uint column = width - 1; column >= 0 && !exit; column--)
+						{
+							for (uint pixel = 0; pixel < height && !exit; pixel++)
+							{
+								if (pixels[(pixel * width + column) * 4 + 3] > 0)
+								{
+									maxX = column;
+									exit = true;
+								}
+							}
+						}
+
+						// 从上向下遍历每一行，找到最上边有内容的像素行。
+						exit = false;
+						for (uint row = 0; row < height && !exit; row++)
+						{
+							for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
+							{
+								if (pixels[(row * width + pixel) * 4 + 3] > 0)
+								{
+									minY = row;
+									exit = true;
+								}
+							}
+						}
+
+						// 从下向上遍历每一行，找到最下边有内容的像素行。
+						exit = false;
+						for (uint row = height - 1; row >= 0 && !exit; row--)
+						{
+							for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
+							{
+								if (pixels[(row * width + pixel) * 4 + 3] > 0)
+								{
+									maxY = row;
+									exit = true;
+								}
+							}
+						}
+
+						uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
+
+						// 图标裁剪区域至少为 32 * 32 像素，且裁剪区域坐标不能为负。
+						if (cropWidth < 32 && cropHeight < 32)
+						{
+							cropWidth = cropHeight = 32;
+							minX = Round((width - cropWidth) / 2);
+							minY = Round((width - cropHeight) / 2);
+						}
+						minX = minX < 0 ? 0 : minX;
+						minY = minY < 0 ? 0 : minY;
+
+						//裁剪图标。
+						InMemoryRandomAccessStream croppedStream = new();
+						BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
+						encoder.BitmapTransform.Bounds = new()
+						{
+							X = minX,
+							Y = minY,
+							Width = cropWidth,
+							Height = cropHeight,
+						};
+						await encoder.FlushAsync();
+						croppedStream.Seek(0);
+
+						// 保存图标。
+						StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
+							Path.Combine(LocalCachePath, "Icons"));
+						StorageFile iconFile = await iconfolder.CreateFileAsync(
+							$"{name}.png", CreationCollisionOption.ReplaceExisting);
+						_ = await RandomAccessStream.CopyAndCloseAsync(
+							croppedStream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
+
+						iconUri = new Uri(Path.Combine(LocalCachePath,
+							"Icons", $"{name}.png")).ToString();
+					}
+					catch (Exception ex)
+					{
+						WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
+						iconUri = "ms-appx:///Icons/Default.png";
+					}
+
+					info = new()
+					{
+						ProcessName = name,
+						DisplayName = string.IsNullOrWhiteSpace(package.DisplayName) ?
+						(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name :
+						process.MainWindowTitle) : package.DisplayName,
+						IconUri = iconUri
+					};
+				}
+			}
+			else
+			{
+				WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+				info = GetDefaultInfo(process);
+			}
+
+			Finish:
+			processesInfo.Add(info);
+			try
+			{
+				File.WriteAllText(InfoFilePath,
+					SerializeJson(processesInfo, JsonSerializeMetadata.Default.ListProcessInfo));
+			}
+			catch (Exception ex)
+			{
+				WriteLog(LogLevel.Error, $"写入记录文件 [{InfoFilePath}] 时触发异常：{ex}");
+				CanSend = ReminderHelper.SendReminder("提示用户无法写入记录文件",
+					Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"));
+				return;
+			}
+			_currentRecordProcessName = string.Empty;
+			WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
+		}
+
+		/// <summary>
+		/// 记录上次被激活窗口的使用时长。
+		/// </summary>
+		private void RecordUsedTime()
+		{
+			if (_lastProcess is null)
+			{
+				WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
+				return;
+			}
+
+			string name = _lastProcess.ProcessName;
+			TimeSpan usedTime;
+			TimeSpan totalUsedTime;
+
+			// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。在 TotalUsedTime 中记录总使用时长。
+			try
+			{
+				usedTime = DateTime.Now - _lastActivationTime;
+				totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
+					pastUsedTime + usedTime : usedTime;
+				_windowsUsedTime[name] = totalUsedTime;
+				TotalUsedTime += usedTime;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception("在记录上次被激活窗口的使用时长到 WindowsUsedTime 中时触发了异常。", ex);
+			}
+
+			// 将使用时长记录到记录文件中：
+			try
+			{
+				// 获取记录文件的所有行。
+				string[] lines = GetUsedTime();
+				StringBuilder writeLines = new();
+				bool hasFound = false;
+
+				foreach (string line in lines)
+				{
+					if (line.StartsWith(name))
+					{
+						// 如果在文件中找到了进程，则更新记录。
+						_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
+						hasFound = true;
+					}
+					else if (!string.IsNullOrWhiteSpace(line))
+					{
+						// 否则直接复制。
+						_ = writeLines.AppendLine(line);
+					}
+				}
+
+				if (!hasFound)
+				{
+					// 如果没找着则追加记录。
 					_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
-					hasFound = true;
 				}
-				else if (!string.IsNullOrWhiteSpace(line))
+
+				using FileStream fstream = new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+				using BinaryWriter bwriter = new(fstream, Encoding.UTF8);
+				bwriter.Write(writeLines.ToString());
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"在记录上次被激活窗口的使用时长到文件 [{_recordFilePath}] 中时触发了异常。", ex);
+			}
+			//WriteLog(LogLevel.Debug, $"已记录进程 {_lastProcess.ProcessName} 的使用时长：{usedTime:hh\\:mm\\:ss} 。");
+		}
+
+		private void Timer_Tick(object? sender, object e)
+		{
+			// 检查是否达到了结束使用时间。
+			TimeSpan currentTimeWithoutSeconds = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
+			if (EndUsingTime == currentTimeWithoutSeconds && EndUsingTime != TimeSpan.Zero)
+			{
+				CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeReminder);
+				EndUsingTime = TimeSpan.Zero;
+			}
+
+			IntPtr windowHandle = SystemHelper.GetForegroundWindow();
+
+			if (windowHandle == IntPtr.Zero)
+			{
+				// 如果桌面上没有被激活窗口:
+				//WriteLog(LogLevel.Debug, "没有被激活窗口。");
+				NoProcessNow();
+				return;
+			}
+
+			// 获取被激活窗口的进程ID。
+			if (SystemHelper.GetWindowThreadProcessId(windowHandle, out uint processId) == 0)
+			{
+				WriteLog(LogLevel.Error, $"获取进程 ID [Handle={windowHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+				NoProcessNow();
+				return;
+			}
+
+			// 通过进程ID获取进程信息。
+			Process process;
+			try
+			{
+				process = Process.GetProcessById((int) processId);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(LogLevel.Error, $"获取进程信息 [ID={processId}] 时触发异常：{ex}");
+				NoProcessNow();
+				return;
+			}
+
+			string name = process.ProcessName;
+
+			// 过滤无需记录的进程。
+			string[] noTimeNamesArr;
+			string noTimeNamesStr = (string) LocalSettings["NoTimeNames"];
+			if (_lastNoTimeNamesStr != noTimeNamesStr)
+			{
+				// 如果过滤字符串有更新，则更新缓存。
+				_lastNoTimeNamesArr = noTimeNamesStr.Split(',');
+				_lastNoTimeNamesStr = noTimeNamesStr;
+			}
+			noTimeNamesArr = _lastNoTimeNamesArr;
+
+			if (noTimeNamesArr.Contains(name))
+			{
+				// 如果是无需记录的进程：
+				NoProcessNow();
+				return;
+			}
+
+			if (name == "explorer")
+			{
+				// 判断是桌面还是用户打开的窗口：
+
+				IntPtr? childHandle = SystemHelper.FindWindowEx(windowHandle, IntPtr.Zero, null!, null!);
+
+				if (childHandle == null)
 				{
-					// 否则直接复制。
-					_ = writeLines.AppendLine(line);
+					WriteLog(LogLevel.Error, $"获取 explorer 子进程的句柄时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+					NoProcessNow();
+					return;
+				}
+				if (childHandle == IntPtr.Zero)
+				{
+					//WriteLog(LogLevel.Debug, $"没有被激活窗口。");
+					NoProcessNow();
+					return;
+				}
+
+				StringBuilder className = new(256);
+				int classNameLength = SystemHelper.GetClassName((IntPtr) childHandle, className, className.Capacity);
+
+				if (classNameLength == 0)
+				{
+					WriteLog(LogLevel.Error, $"获取 explorer 子进程 [Handle={childHandle}] 的类名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+					NoProcessNow();
+					return;
+				}
+
+				if (className.ToString() is "Windows.UI.Core.CoreWindow" or "SHELLDLL_DefView")
+				{
+					// 如果是任务栏或者桌面则不记录。
+					//WriteLog(LogLevel.Debug, $" explorer 子进程 [ClassName={_className}] 是任务栏或者桌面。");
+					NoProcessNow();
+					return;
+				}
+				// 如果是用户打开的窗口，则继续记录。
+			}
+
+			if (name == "ApplicationFrameHost")
+			{
+				// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
+
+				IntPtr? childHandle = SystemHelper.FindWindowEx(
+					windowHandle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
+
+				if (childHandle == null)
+				{
+					WriteLog(LogLevel.Error, $"获取 UWP 进程句柄时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+					NoProcessNow();
+					return;
+				}
+
+				if (childHandle == IntPtr.Zero)
+				{
+					WriteLog(LogLevel.Warning, "未获取到 UWP 进程句柄。");
+					NoProcessNow();
+					return;
+				}
+
+				if (SystemHelper.GetWindowThreadProcessId((IntPtr) childHandle, out uint UWPId) == 0)
+				{
+					WriteLog(LogLevel.Error, $"获取 UWP 进程ID [Handle={childHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+					NoProcessNow();
+					return;
+				}
+
+				try
+				{
+					process = Process.GetProcessById((int) UWPId);
+				}
+				catch (Exception ex)
+				{
+					WriteLog(LogLevel.Error, $"获取 UWP 进程信息 [ID={UWPId}] 时触发异常：{ex}");
+					NoProcessNow();
+					return;
 				}
 			}
 
-			if (!hasFound)
+			// 更新总使用时长和连续使用时长。
+			_totalUsedTime += _oneSecond;
+			// 如果窗口被激活时长超过 5 秒则记录。
+			if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
 			{
-				// 如果没找着则追加记录。
-				_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
+				// 如果时长到达 6 秒则把之前的 6 秒全部加上。 一般情况加 1 秒。
+				_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6) ?
+				TimeSpan.FromSeconds(6) : _oneSecond;
+			}
+			_lastRecordTime = DateTime.Now;
+
+			//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
+
+			// 检查是否需要显示提醒通知。
+			ShowTotalReminderIfNeed();
+			if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"]
+				&& _continuousUsedTime != TimeSpan.Zero)
+			{
+				CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
+				_continuousUsedTime = TimeSpan.Zero;
 			}
 
-			using FileStream fstream = new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-			using BinaryWriter bwriter = new(fstream, Encoding.UTF8);
-			bwriter.Write(writeLines.ToString());
-		}
-		catch (Exception ex)
-		{
-			throw new Exception($"在记录上次被激活窗口的使用时长到文件 [{_recordFilePath}] 中时触发了异常。", ex);
-		}
-		//WriteLog(LogLevel.Debug, $"已记录进程 {_lastProcess.ProcessName} 的使用时长：{usedTime:hh\\:mm\\:ss} 。");
-	}
-
-	private void Timer_Tick(object? sender, object e)
-	{
-		// 检查是否达到了结束使用时间。
-		TimeSpan currentTimeWithoutSeconds = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
-		if (EndUsingTime == currentTimeWithoutSeconds && EndUsingTime != TimeSpan.Zero)
-		{
-			CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeReminder);
-			EndUsingTime = TimeSpan.Zero;
-		}
-
-		IntPtr windowHandle = SystemHelper.GetForegroundWindow();
-
-		if (windowHandle == IntPtr.Zero)
-		{
-			// 如果桌面上没有被激活窗口:
-			//WriteLog(LogLevel.Debug, "没有被激活窗口。");
-			NoProcessNow();
-			return;
-		}
-
-		// 获取被激活窗口的进程ID。
-		if (SystemHelper.GetWindowThreadProcessId(windowHandle, out uint processId) == 0)
-		{
-			WriteLog(LogLevel.Error, $"获取进程 ID [Handle={windowHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-			NoProcessNow();
-			return;
-		}
-
-		// 通过进程ID获取进程信息。
-		Process process;
-		try
-		{
-			process = Process.GetProcessById((int) processId);
-		}
-		catch (Exception ex)
-		{
-			WriteLog(LogLevel.Error, $"获取进程信息 [ID={processId}] 时触发异常：{ex}");
-			NoProcessNow();
-			return;
-		}
-
-		string name = process.ProcessName;
-
-		// 过滤无需记录的进程。
-		string[] noTimeNamesArr;
-		string noTimeNamesStr = (string) LocalSettings["NoTimeNames"];
-		if (_lastNoTimeNamesStr != noTimeNamesStr)
-		{
-			// 如果过滤字符串有更新，则更新缓存。
-			_lastNoTimeNamesArr = noTimeNamesStr.Split(',');
-			_lastNoTimeNamesStr = noTimeNamesStr;
-		}
-		noTimeNamesArr = _lastNoTimeNamesArr;
-
-		if (noTimeNamesArr.Contains(name))
-		{
-			// 如果是无需记录的进程：
-			NoProcessNow();
-			return;
-		}
-
-		if (name == "explorer")
-		{
-			// 判断是桌面还是用户打开的窗口：
-
-			IntPtr? childHandle = SystemHelper.FindWindowEx(windowHandle, IntPtr.Zero, null!, null!);
-
-			if (childHandle == null)
+			if (_lastProcess != null)
 			{
-				WriteLog(LogLevel.Error, $"获取 explorer 子进程的句柄时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				NoProcessNow();
-				return;
-			}
-			if (childHandle == IntPtr.Zero)
-			{
-				//WriteLog(LogLevel.Debug, $"没有被激活窗口。");
-				NoProcessNow();
-				return;
+				// 如果上次有记录：
+				if (_lastProcess.ProcessName == name)
+				{
+					// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
+					_singleContinuousUsedTime += _oneSecond;
+					return;
+				}
+
+				_singleContinuousUsedTime = TimeSpan.Zero;
+				try
+				{
+					RecordUsedTime();
+				}
+				catch (Exception ex)
+				{
+					WriteLog(LogLevel.Error, ex.ToString());
+					CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
+						Loader.GetString("ErrorOrWarningTitle"),
+						Loader.GetString("ECanNotRecordTime"));
+				}
 			}
 
-			StringBuilder className = new(256);
-			int classNameLength = SystemHelper.GetClassName((IntPtr) childHandle, className, className.Capacity);
+			//记录这次的进程实例、信息和激活时间。
+			_lastProcess = process;
+			_lastActivationTime = DateTime.Now;
 
-			if (classNameLength == 0)
+			if (!GetNoInfoArr().Contains(name))
 			{
-				WriteLog(LogLevel.Error, $"获取 explorer 子进程 [Handle={childHandle}] 的类名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				NoProcessNow();
-				return;
+				// 如果进程不是只记录使用时长的则记录信息。
+				_ = Task.Run(RecordProcessInfo);
 			}
-
-			if (className.ToString() is "Windows.UI.Core.CoreWindow" or "SHELLDLL_DefView")
-			{
-				// 如果是任务栏或者桌面则不记录。
-				//WriteLog(LogLevel.Debug, $" explorer 子进程 [ClassName={_className}] 是任务栏或者桌面。");
-				NoProcessNow();
-				return;
-			}
-			// 如果是用户打开的窗口，则继续记录。
-		}
-
-		if (name == "ApplicationFrameHost")
-		{
-			// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
-
-			IntPtr? childHandle = SystemHelper.FindWindowEx(
-				windowHandle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
-
-			if (childHandle == null)
-			{
-				WriteLog(LogLevel.Error, $"获取 UWP 进程句柄时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				NoProcessNow();
-				return;
-			}
-
-			if (childHandle == IntPtr.Zero)
-			{
-				WriteLog(LogLevel.Warning, "未获取到 UWP 进程句柄。");
-				NoProcessNow();
-				return;
-			}
-
-			if (SystemHelper.GetWindowThreadProcessId((IntPtr) childHandle, out uint UWPId) == 0)
-			{
-				WriteLog(LogLevel.Error, $"获取 UWP 进程ID [Handle={childHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				NoProcessNow();
-				return;
-			}
-
-			try
-			{
-				process = Process.GetProcessById((int) UWPId);
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"获取 UWP 进程信息 [ID={UWPId}] 时触发异常：{ex}");
-				NoProcessNow();
-				return;
-			}
-		}
-
-		// 更新总使用时长和连续使用时长。
-		_totalUsedTime += _oneSecond;
-		// 如果窗口被激活时长超过 5 秒则记录。
-		if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
-		{
-			// 如果时长到达 6 秒则把之前的 6 秒全部加上。 一般情况加 1 秒。
-			_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6) ?
-			TimeSpan.FromSeconds(6) : _oneSecond;
-		}
-		_lastRecordTime = DateTime.Now;
-
-		//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
-
-		// 检查是否需要显示提醒通知。
-		ShowTotalReminderIfNeed();
-		if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"]
-			&& _continuousUsedTime != TimeSpan.Zero)
-		{
-			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
-			_continuousUsedTime = TimeSpan.Zero;
-		}
-
-		if (_lastProcess != null)
-		{
-			// 如果上次有记录：
-			if (_lastProcess.ProcessName == name)
-			{
-				// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
-				_singleContinuousUsedTime += _oneSecond;
-				return;
-			}
-
-			_singleContinuousUsedTime = TimeSpan.Zero;
-			try
-			{
-				RecordUsedTime();
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, ex.ToString());
-				CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotRecordTime"));
-			}
-		}
-
-		//记录这次的进程实例、信息和激活时间。
-		_lastProcess = process;
-		_lastActivationTime = DateTime.Now;
-
-		if (!GetNoInfoArr().Contains(name))
-		{
-			// 如果进程不是只记录使用时长的则记录信息。
-			_ = Task.Run(RecordProcessInfo);
 		}
 	}
 }
