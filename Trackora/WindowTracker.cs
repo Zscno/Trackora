@@ -188,26 +188,10 @@ namespace Zscno.Trackora
 #endif
 
 			DateTimeOffset realToday = new(DateTime.Now.Date);
-			if (!LocalSettings.TryGetValue("Today", out object? today) || (DateTimeOffset) today != realToday)
+			if (!LocalSettings.TryGetValue("Today", out object? today) ||
+				(DateTimeOffset) today != realToday)
 			{
-				// 如果今天的记录不存在或不是今天，则重置记录。
-				LocalSettings["Today"] = realToday;
-				TotalUsedTime = TimeSpan.Zero;
-				EndUsingTime = TimeSpan.Zero;
-				HasTotalReminded = false;
-
-				// 重置记录文件。
-				try
-				{
-					File.WriteAllText(_recordFilePath, string.Empty);
-				}
-				catch (Exception ex)
-				{
-					WriteLog(LogLevel.Error, $"在重置/创建记录文件 [{_recordFilePath}] 时触发异常：{ex}");
-					CanSend = ReminderHelper.SendReminder("提示用户无法管理今天的记录",
-						Loader.GetString("ErrorOrWarningTitle"),
-						Loader.GetString("ECanNotSetRecord"));
-				}
+				ResetRecord(realToday);
 			}
 			else
 			{
@@ -881,6 +865,26 @@ namespace Zscno.Trackora
 				throw new Exception($"在记录上次被激活窗口的使用时长到文件 [{_recordFilePath}] 中时触发了异常。", ex);
 			}
 			//WriteLog(LogLevel.Debug, $"已记录进程 {_lastProcess.ProcessName} 的使用时长：{usedTime:hh\\:mm\\:ss} 。");
+		}
+
+		/// <summary>
+		/// 如果今天的记录不存在或不是今天，则重置记录。
+		/// </summary>
+		/// <param name="realToday">今天日期的 <see cref="DateTimeOffset"/> 对象。</param>
+		private void ResetRecord(DateTimeOffset today)
+		{
+			// 重置本地设置。
+			LocalSettings["Today"] = today;
+			TotalUsedTime = TimeSpan.Zero;
+			EndUsingTime = TimeSpan.Zero;
+
+			// 重置记录文件。
+			_ = new SafeCaller()
+				.SetLogMessage($"无法重置/创建记录文件 [{_recordFilePath}] ")
+				.SetReminderType(CallerReminderType.Reminder)
+				.SetReminderMessage("无法管理今天的记录")
+				.SetContentResName("ECanNotSetRecord")
+				.CallActionForInit(() => File.WriteAllText(_recordFilePath, string.Empty));
 		}
 
 		private void Timer_Tick(object? sender, object e)
