@@ -5,57 +5,73 @@ using System.Threading.Tasks;
 namespace Zscno.Trackora
 {
 	/// <summary>
-	/// 安全地调用方法。
+	/// 调用器的日志类型。
 	/// </summary>
-	internal static class SafeCaller
+	internal enum CallerLogType
+	{
+		Normal,
+
+		Crash
+	}
+
+	/// <summary>
+	/// 调用器的提醒类型。
+	/// </summary>
+	internal enum CallerReminderType
+	{
+		None,
+
+		Dialog,
+
+		Reminder
+	}
+
+	/// <summary>
+	/// 安全的方法调用器。
+	/// </summary>
+	internal class SafeCaller
 	{
 		/// <summary>
-		/// 执行 <paramref name="action"/> 方法，如果触发异常则记录（崩溃）日志，并发送提醒通知。如果 <paramref name="exit"/> 是 <see langword="true"/> ，程序将退出。
+		/// 提醒内容的资源名称。
 		/// </summary>
-		/// <param name="action">要执行的方法。</param>
-		/// <param name="message">日志的内容。</param>
-		/// <param name="reminderMessage">如果发送通知触发了异常则以此作为日志内容。</param>
-		/// <param name="contentResName">对话框内容的资源名称。</param>
-		/// <param name="useLog">指示是否在触发异常时记录日志，如果是 <see langword="false"/> 则记录崩溃日志。</param>
-		/// <param name="exit">指示触发异常执行完所有操作后是否退出。</param>
-		public static void CallFatal(Action action, string message,
-			string reminderMessage, string contentResName, bool useLog = true, bool exit = false)
-		{
-			try
-			{
-				action();
-			}
-			catch (Exception ex)
-			{
-				if (useLog)
-				{
-					LogSystem.WriteLog(LogLevel.Error, $"{message}：{ex}");
-				}
-				else
-				{
-					File.WriteAllText(
-						$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash", $"{message}：{ex}");
-				}
-				App.CanSend = ReminderHelper.SendReminder(reminderMessage,
-					App.Loader.GetString("ErrorOrWarningTitle"), App.Loader.GetString(contentResName));
-				if (exit)
-				{
-					Environment.Exit(1);
-				}
-			}
-		}
+		protected string ContentResName = string.Empty;
 
 		/// <summary>
-		/// 执行 <paramref name="action"/> 方法，如果触发异常则记录日志，并根据需要显示对话框。
+		/// 指示触发异常执行完所有操作后是否退出。
 		/// </summary>
-		/// <param name="action">要执行的方法。</param>
-		/// <param name="level">日志的等级。</param>
-		/// <param name="message">日志的内容。</param>
-		/// <param name="useDialog">指示是否使用对话框。</param>
-		/// <param name="contentResName">对话框内容的资源名称。</param>
+		protected bool Exit = false;
+
+		/// <summary>
+		/// 日志的等级。
+		/// </summary>
+		protected LogLevel LogLevel = LogLevel.Error;
+
+		/// <summary>
+		/// 日志的标识。
+		/// </summary>
+		protected string LogMessage = string.Empty;
+
+		/// <summary>
+		/// 日志的类型。
+		/// </summary>
+		protected CallerLogType LogType = CallerLogType.Normal;
+
+		/// <summary>
+		/// 如果发送通知触发了异常则以此作为日志标识。
+		/// </summary>
+		protected string ReminderMessage = string.Empty;
+
+		/// <summary>
+		/// 提醒的类型。
+		/// </summary>
+		protected CallerReminderType ReminderType = CallerReminderType.None;
+
+		/// <summary>
+		/// 调用 <paramref name="action"/> 方法。
+		/// </summary>
+		/// <param name="action">要调用的方法。</param>
 		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
-		public static async Task<bool> CallNormal(Action action, LogLevel level, string message,
-			bool useDialog = false, string exMessage = "", string contentResName = "")
+		public async Task<bool> CallAction(Action action)
 		{
 			try
 			{
@@ -64,67 +80,24 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				LogSystem.WriteLog(level, $"{message}：{ex}");
-				if (useDialog && exMessage is not "" && contentResName is not "")
-				{
-					await ReminderHelper.ShowDialog(
-						App.Loader.GetString("ErrorOrWarningTitle"),
-						App.Loader.GetString(contentResName),
-						exMessage);
-				}
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
 				return false;
 			}
 		}
 
 		/// <summary>
-		/// 执行 <paramref name="action"/> 方法，如果触发异常则记录日志，并根据需要发送提醒通知。
+		/// 调用 <paramref name="action"/> 方法并捕获 <typeparamref name="T"/> 类型的异常。
 		/// </summary>
-		/// <param name="action">要执行的方法。</param>
-		/// <param name="level">日志的等级。</param>
-		/// <param name="message">日志的内容。</param>
-		/// <param name="useReminder">指示是否使用提醒通知。</param>
-		/// <param name="reminderMessage">如果发送通知触发了异常则以此作为日志内容。</param>
-		/// <param name="exit">指示触发异常执行完所有操作后是否退出。</param>
+		/// <typeparam name="T">要捕获的特定异常。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="level">特定的日志等级。</param>
+		/// <param name="message">特定的日志标识。</param>
+		/// <param name="func">（可选）特定异常附加的判断条件。</param>
 		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
-		public static bool CallNormal(Action action, LogLevel level, string message,
-			bool useReminder = false, string reminderMessage = "", bool exit = false)
-		{
-			try
-			{
-				action();
-				return true;
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(level, $"{message}：{ex}");
-				if (useReminder && reminderMessage is not "")
-				{
-					App.CanSend = ReminderHelper.SendReminder(reminderMessage,
-						App.Loader.GetString("ErrorOrWarningTitle"),
-						App.Loader.GetString("ErrorOccurredContent"));
-				}
-				if (exit)
-				{
-					Environment.Exit(1);
-				}
-				return false;
-			}
-		}
-
-		/// <summary>
-		/// 执行 <paramref name="action"/> 方法，如果触发异常则记录日志。当捕获到指定的异常时，使用特殊的日志等级和内容记录日志。
-		/// </summary>
-		/// <typeparam name="T">指定的异常。</typeparam>
-		/// <param name="action">要执行的方法。</param>
-		/// <param name="level">特殊的日志等级。</param>
-		/// <param name="message">特殊的日志内容。</param>
-		/// <param name="normalLevel">一般的日志等级。</param>
-		/// <param name="normalMessage">一般的日志内容。</param>
-		/// <param name="func">附加对指定异常的判定条件。</param>
-		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
-		public static bool CallSpecial<T>(Action action,
-			LogLevel level, string message,
-			LogLevel normalLevel, string normalMessage, Func<T, bool>? func = null) where T : Exception
+		public async Task<bool> CallAction<T>(Action action, LogLevel level,
+			string message, Func<T, bool>? func = null) where T : Exception
 		{
 			try
 			{
@@ -133,13 +106,181 @@ namespace Zscno.Trackora
 			}
 			catch (T ex) when (func is null || func(ex))
 			{
-				LogSystem.WriteLog(level, $"{message}：{ex}");
+				WriteLog(ex, level, message);
+				await RemindUser();
+				ExitIfNeed();
 				return false;
 			}
 			catch (Exception ex)
 			{
-				LogSystem.WriteLog(normalLevel, $"{normalMessage}：{ex}");
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
 				return false;
+			}
+		}
+
+		/// <summary>
+		/// 设置提醒内容的资源名称。
+		/// </summary>
+		/// <param name="resName">要设置提醒内容的资源名称。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetContentResName(string resName)
+		{
+			ContentResName = resName;
+			return this;
+		}
+
+		/// <summary>
+		/// 设置触发异常执行完所有操作后是否退出。
+		/// </summary>
+		/// <param name="exit">指示触发异常执行完所有操作后是否退出。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetExit(bool exit)
+		{
+			Exit = exit;
+			return this;
+		}
+
+		/// <summary>
+		/// 设置日志类型。
+		/// </summary>
+		/// <param name="level">要设置的日志类型。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetLogLevel(LogLevel level)
+		{
+			LogLevel = level;
+			return this;
+		}
+
+		/// <summary>
+		/// 设置日志的标识。
+		/// </summary>
+		/// <param name="message">要设置的日志的标识。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetLogMessage(string message)
+		{
+			LogMessage = message;
+			return this;
+		}
+
+		/// <summary>
+		/// 设置日志的类型。
+		/// </summary>
+		/// <param name="type">要设置的日志的类型。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetLogType(CallerLogType type)
+		{
+			LogType = type;
+			return this;
+		}
+
+		/// <summary>
+		/// 设置一个 <see cref="string"/> ，如果发送通知触发了异常则以此作为日志标识。
+		/// </summary>
+		/// <param name="message">要设置的 <see cref="string"/> 。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetReminderMessage(string message)
+		{
+			ReminderMessage = message;
+			return this;
+		}
+
+		/// <summary>
+		/// 设置提醒的类型。
+		/// </summary>
+		/// <param name="type">要设置的提醒的类型。</param>
+		/// <returns>设置完成的新实例。</returns>
+		public SafeCaller SetReminderType(CallerReminderType type)
+		{
+			ReminderType = type;
+			return this;
+		}
+
+		/// <summary>
+		/// 退出应用（如果需要）。
+		/// </summary>
+		private void ExitIfNeed()
+		{
+			if (Exit)
+			{
+				Environment.Exit(1);
+			}
+		}
+
+		/// <summary>
+		/// 使用 <see cref="ReminderType"/> 中的提醒类型提醒用户。
+		/// </summary>
+		private async Task RemindUser()
+		{
+			if (string.IsNullOrWhiteSpace(ReminderMessage) ||
+				string.IsNullOrWhiteSpace(ContentResName))
+			{
+				ReminderType = CallerReminderType.None;
+			}
+			switch (ReminderType)
+			{
+				case CallerReminderType.Dialog:
+					await ReminderHelper.ShowDialog(
+						ReminderMessage,
+						App.Loader.GetString("ErrorOrWarningTitle"),
+						App.Loader.GetString(ContentResName));
+					break;
+
+				case CallerReminderType.Reminder:
+					App.CanSend = ReminderHelper.SendReminder(
+						ReminderMessage,
+						App.Loader.GetString("ErrorOrWarningTitle"),
+						App.Loader.GetString(ContentResName));
+					break;
+
+				case CallerReminderType.None:
+				default:
+					break;
+			}
+		}
+
+		/// <summary>
+		/// 写入特定的（崩溃）日志。
+		/// </summary>
+		/// <param name="ex">要记录的异常。</param>
+		/// <param name="level">特定的日志等级。</param>
+		/// <param name="message">特定的日志标识。</param>
+		private void WriteLog(Exception ex, LogLevel level, string message)
+		{
+			switch (LogType)
+			{
+				case CallerLogType.Normal:
+					LogSystem.WriteLog(level, $"{message}：{ex}");
+					break;
+
+				case CallerLogType.Crash:
+					File.WriteAllText(
+						$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash", $"{message}：{ex}");
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		/// <summary>
+		/// 记录（崩溃）日志。
+		/// </summary>
+		/// <param name="ex">要记录的异常。</param>
+		private void WriteLog(Exception ex)
+		{
+			switch (LogType)
+			{
+				case CallerLogType.Normal:
+					LogSystem.WriteLog(LogLevel, $"{LogMessage}：{ex}");
+					break;
+
+				case CallerLogType.Crash:
+					break;
+
+				default:
+					break;
 			}
 		}
 	}
