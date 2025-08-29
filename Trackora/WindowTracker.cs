@@ -187,49 +187,24 @@ namespace Zscno.Trackora
 			_jsonOpitons.Indented = true;
 #endif
 
-			DateTimeOffset realToday = new(DateTime.Now.Date);
 			if (!LocalSettings.TryGetValue("Today", out object? today) ||
-				(DateTimeOffset) today != realToday)
+				(DateTimeOffset) today != new DateTimeOffset(DateTime.Now.Date))
 			{
-				ResetRecord(realToday);
+				_ = new SafeCaller()
+					.SetReminderType(CallerReminderType.Reminder)
+					.SetReminderMessage("无法管理今天的记录")
+					.SetContentResName("ECanNotSetRecord")
+					.CallActionForInit(ResetRecord);
 			}
 			else
 			{
 				// 获取记录的使用时长。
 				_totalUsedTime = TotalUsedTime;
-				try
-				{
-					string[] lines = GetUsedTime();
-					foreach (string line in lines)
-					{
-						if (string.IsNullOrWhiteSpace(line))
-						{
-							// 如果有空行则跳过。
-							if (line != lines[^1])
-							{
-								WriteLog(LogLevel.Warning, "记录文件中有空行。");
-							}
-							// 如果是最后一行不算。
-							continue;
-						}
-						string[] keyValuePair = line.Split('|');
-						if (keyValuePair.Length != 2 ||
-							!double.TryParse(keyValuePair[1], out double result))
-						{
-							// 如果文本结构不正确则跳过。
-							WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
-							continue;
-						}
-						_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
-					}
-				}
-				catch (Exception ex)
-				{
-					WriteLog(LogLevel.Error, $"在读取记录文件 [{_recordFilePath}] 时触发异常：{ex}");
-					CanSend = ReminderHelper.SendReminder("提示用户无法获取今天的记录",
-						Loader.GetString("ErrorOrWarningTitle"),
-						Loader.GetString("ECanNotGetRecord"));
-				}
+				_ = new SafeCaller()
+					.SetReminderType(CallerReminderType.Reminder)
+					.SetReminderMessage("提示用户无法获取今天的记录")
+					.SetContentResName("ECanNotGetRecord")
+					.CallAction(GetUsedTimeFromRecordFile);
 
 				// 如果已经达到了今日使用时长，则每次启动都提醒。
 				ShowTotalReminderIfNeed();
@@ -446,7 +421,7 @@ namespace Zscno.Trackora
 		/// 获取记录文件中的记录。如果文件中没有内容就返回空数组。
 		/// </summary>
 		/// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
-		private string[] GetUsedTime()
+		private string[] GetRecordFileLines()
 		{
 			using FileStream fstream = new(_recordFilePath, FileMode.OpenOrCreate,
 				FileAccess.Read, FileShare.ReadWrite);
@@ -459,6 +434,43 @@ namespace Zscno.Trackora
 			else
 			{
 				return Array.Empty<string>();
+			}
+		}
+
+		/// <summary>
+		/// 从记录文件中获取今天的记录。
+		/// </summary>
+		private void GetUsedTimeFromRecordFile()
+		{
+			try
+			{
+				string[] lines = GetRecordFileLines();
+				foreach (string line in lines)
+				{
+					if (string.IsNullOrWhiteSpace(line))
+					{
+						// 如果有空行则跳过。
+						if (line != lines[^1])
+						{
+							WriteLog(LogLevel.Warning, "记录文件中有空行。");
+						}
+						// 如果是最后一行不算。
+						continue;
+					}
+					string[] keyValuePair = line.Split('|');
+					if (keyValuePair.Length != 2 ||
+						!double.TryParse(keyValuePair[1], out double result))
+					{
+						// 如果文本结构不正确则跳过。
+						WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
+						continue;
+					}
+					_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法从记录文件 [{_recordFilePath}] 获取今天的记录。", ex);
 			}
 		}
 
@@ -831,7 +843,7 @@ namespace Zscno.Trackora
 			try
 			{
 				// 获取记录文件的所有行。
-				string[] lines = GetUsedTime();
+				string[] lines = GetRecordFileLines();
 				StringBuilder writeLines = new();
 				bool hasFound = false;
 
@@ -871,20 +883,22 @@ namespace Zscno.Trackora
 		/// 如果今天的记录不存在或不是今天，则重置记录。
 		/// </summary>
 		/// <param name="realToday">今天日期的 <see cref="DateTimeOffset"/> 对象。</param>
-		private void ResetRecord(DateTimeOffset today)
+		private void ResetRecord()
 		{
 			// 重置本地设置。
-			LocalSettings["Today"] = today;
+			LocalSettings["Today"] = new DateTimeOffset(DateTime.Now.Date);
 			TotalUsedTime = TimeSpan.Zero;
 			EndUsingTime = TimeSpan.Zero;
 
 			// 重置记录文件。
-			_ = new SafeCaller()
-				.SetLogMessage($"无法重置/创建记录文件 [{_recordFilePath}] ")
-				.SetReminderType(CallerReminderType.Reminder)
-				.SetReminderMessage("无法管理今天的记录")
-				.SetContentResName("ECanNotSetRecord")
-				.CallActionForInit(() => File.WriteAllText(_recordFilePath, string.Empty));
+			try
+			{
+				File.WriteAllText(_recordFilePath, string.Empty);
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法重置/创建记录文件 [{_recordFilePath}] 。", ex);
+			}
 		}
 
 		private void Timer_Tick(object? sender, object e)
