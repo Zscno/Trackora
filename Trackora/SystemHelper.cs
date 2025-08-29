@@ -184,11 +184,11 @@ internal static class ReminderHelper
 	/// <summary>
 	/// 显示一个对话框。
 	/// </summary>
+	/// <param name="exMessage">如果触发了异常，则以本信息为异常的标识。</param>
 	/// <param name="title">对话框标题。</param>
 	/// <param name="content">对话框内容。</param>
-	/// <param name="exMessage">如果触发了异常，则以本信息为异常的标识。</param>
 	/// <returns>指示对话框是否能正常显示。</returns>
-	public static async Task<bool> ShowDialog(string title, string content, string exMessage)
+	public static async Task<bool> ShowDialog(string exMessage, string title, string content)
 	{
 		try
 		{
