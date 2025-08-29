@@ -121,6 +121,41 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 调用 <paramref name="action"/> 方法（在构造函数中调用）。
+		/// </summary>
+		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
+		/// <param name="action">要调用的方法。</param>
+		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
+		public bool CallActionForInit(Action action)
+		{
+			try
+			{
+				action();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				switch (ReminderType)
+				{
+					case CallerReminderType.Reminder:
+						App.CanSend = ReminderHelper.SendReminder(
+							ReminderMessage,
+							App.Loader.GetString("ErrorOrWarningTitle"),
+							App.Loader.GetString(ContentResName));
+						break;
+
+					case CallerReminderType.Dialog:
+					case CallerReminderType.None:
+					default:
+						break;
+				}
+				ExitIfNeed();
+				return false;
+			}
+		}
+
+		/// <summary>
 		/// 设置提醒内容的资源名称。
 		/// </summary>
 		/// <param name="resName">要设置提醒内容的资源名称。</param>
