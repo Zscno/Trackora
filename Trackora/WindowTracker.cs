@@ -211,20 +211,18 @@ namespace Zscno.Trackora
 			}
 
 			// 初始化并启动计时器。
-			try
-			{
-				_timer.Tick += Timer_Tick;
-				_timer.Interval = _oneSecond;
-				_timer.Start();
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在初始化计时器时触发异常，将在提醒用户后退出：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法初始化计时器",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotInitTimer"));
-				Application.Current.Exit();
-			}
+			_ = new SafeCaller()
+				.SetLogMessage("无法启动计时器。提醒用户后退出。")
+				.SetReminderType(CallerReminderType.Reminder)
+				.SetReminderMessage("提示用户无法启动计时器")
+				.SetContentResName("ECanNotStartTimer")
+				.SetExit(true)
+				.CallAction(() =>
+				{
+					_timer.Tick += Timer_Tick;
+					_timer.Interval = _oneSecond;
+					_timer.Start();
+				});
 		}
 
 		/// <summary>
