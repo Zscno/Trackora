@@ -179,6 +179,29 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 调用 <paramref name="func"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <param name="func">要调用的方法。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
+			<T, TResult>(Func<T, TResult> func, T param)
+		{
+			try
+			{
+				TResult result = func(param);
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
 		/// 设置提醒内容的资源名称。
 		/// </summary>
 		/// <param name="resName">要设置提醒内容的资源名称。</param>
