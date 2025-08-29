@@ -184,7 +184,7 @@ namespace Zscno.Trackora
 			AppMainWindow = new MainWindow();
 			AppMainWindow.Activate();
 
-			SystemHelper.HideWindow(AppMainWindow);
+			NativeApi.HideWindow(AppMainWindow);
 		}
 
 		/// <summary>

@@ -561,9 +561,9 @@ namespace Zscno.Trackora
 			long result;
 			try
 			{
-				result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, null!);
+				result = NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, null!);
 			}
-			catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
+			catch (Win32Exception we) when (we.NativeErrorCode == NativeApi.ERROR_ACCESS_DENIED)
 			{
 				WriteLog(LogLevel.Warning, $"获取进程 {name} 的包全名时触发异常：{we}");
 				info = GetDefaultInfo(process);
@@ -576,7 +576,7 @@ namespace Zscno.Trackora
 				goto Finish;
 			}
 
-			if (result == SystemHelper.APPMODEL_ERROR_NO_PACKAGE)
+			if (result == NativeApi.APPMODEL_ERROR_NO_PACKAGE)
 			{
 				// 如果是 Win32 应用：
 				string path;
@@ -584,7 +584,7 @@ namespace Zscno.Trackora
 				{
 					path = process.MainModule!.FileName;
 				}
-				catch (Win32Exception we) when (we.NativeErrorCode == SystemHelper.ERROR_ACCESS_DENIED)
+				catch (Win32Exception we) when (we.NativeErrorCode == NativeApi.ERROR_ACCESS_DENIED)
 				{
 					WriteLog(LogLevel.Warning, $"获取进程 {name} 的包全名时触发异常：{we}");
 					info = GetDefaultInfo(process);
@@ -638,12 +638,12 @@ namespace Zscno.Trackora
 					IconUri = iconUri
 				};
 			}
-			else if (result == SystemHelper.ERROR_INSUFFICIENT_BUFFER)
+			else if (result == NativeApi.ERROR_INSUFFICIENT_BUFFER)
 			{
 				// 如果是有应用包的应用：
 				StringBuilder packageFullName = new((int) packageFullNameLength);
-				result = SystemHelper.GetPackageFullName(process.Handle, ref packageFullNameLength, packageFullName);
-				if (result != SystemHelper.ERROR_SUCCESS)
+				result = NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, packageFullName);
+				if (result != NativeApi.ERROR_SUCCESS)
 				{
 					WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
 					info = GetDefaultInfo(process);
@@ -893,7 +893,7 @@ namespace Zscno.Trackora
 				EndUsingTime = TimeSpan.Zero;
 			}
 
-			IntPtr windowHandle = SystemHelper.GetForegroundWindow();
+			IntPtr windowHandle = NativeApi.GetForegroundWindow();
 
 			if (windowHandle == IntPtr.Zero)
 			{
@@ -904,7 +904,7 @@ namespace Zscno.Trackora
 			}
 
 			// 获取被激活窗口的进程ID。
-			if (SystemHelper.GetWindowThreadProcessId(windowHandle, out uint processId) == 0)
+			if (NativeApi.GetWindowThreadProcessId(windowHandle, out uint processId) == 0)
 			{
 				WriteLog(LogLevel.Error, $"获取进程 ID [Handle={windowHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
 				NoProcessNow();
@@ -948,7 +948,7 @@ namespace Zscno.Trackora
 			{
 				// 判断是桌面还是用户打开的窗口：
 
-				IntPtr? childHandle = SystemHelper.FindWindowEx(windowHandle, IntPtr.Zero, null!, null!);
+				IntPtr? childHandle = NativeApi.FindWindowEx(windowHandle, IntPtr.Zero, null!, null!);
 
 				if (childHandle == null)
 				{
@@ -964,7 +964,7 @@ namespace Zscno.Trackora
 				}
 
 				StringBuilder className = new(256);
-				int classNameLength = SystemHelper.GetClassName((IntPtr) childHandle, className, className.Capacity);
+				int classNameLength = NativeApi.GetClassName((IntPtr) childHandle, className, className.Capacity);
 
 				if (classNameLength == 0)
 				{
@@ -987,7 +987,7 @@ namespace Zscno.Trackora
 			{
 				// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
 
-				IntPtr? childHandle = SystemHelper.FindWindowEx(
+				IntPtr? childHandle = NativeApi.FindWindowEx(
 					windowHandle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
 
 				if (childHandle == null)
@@ -1004,7 +1004,7 @@ namespace Zscno.Trackora
 					return;
 				}
 
-				if (SystemHelper.GetWindowThreadProcessId((IntPtr) childHandle, out uint UWPId) == 0)
+				if (NativeApi.GetWindowThreadProcessId((IntPtr) childHandle, out uint UWPId) == 0)
 				{
 					WriteLog(LogLevel.Error, $"获取 UWP 进程ID [Handle={childHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
 					NoProcessNow();

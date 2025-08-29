@@ -66,14 +66,14 @@ namespace Zscno.Trackora
 			{
 				return;
 			}
-			_ = SystemHelper.ShowWindow(hwnd, SystemHelper.SW_SHOW);
-			_ = SystemHelper.SetForegroundWindow(hwnd);
+			_ = NativeApi.ShowWindow(hwnd, NativeApi.SW_SHOW);
+			_ = NativeApi.SetForegroundWindow(hwnd);
 		}
 
 		private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
 		{
 			args.Cancel = true;
-			SystemHelper.HideWindow(this);
+			NativeApi.HideWindow(this);
 		}
 
 		[RelayCommand]

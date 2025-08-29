@@ -9,9 +9,9 @@ using WinRT.Interop;
 namespace Zscno.Trackora
 {
 	/// <summary>
-	/// Win32 API + 文件系统的封装。
+	/// 包含所需原生 Windows API 的 P/Invoke 声明和相关常量。
 	/// </summary>
-	internal static class SystemHelper
+	internal static partial class NativeApi
 	{
 		/// <summary>
 		/// 进程没有程序包标识符。
@@ -97,9 +97,10 @@ namespace Zscno.Trackora
 		/// 将指定的窗口置于 Z 顺序的顶部。如果窗口是顶级窗口，则会激活它。如果窗口是子窗口，则会激活与子窗口关联的顶级父窗口。
 		/// </summary>
 		/// <param name="hWnd">要置于 Z 顺序顶部的窗口的句柄。</param>
-		/// <returns>如果该函数成功，则返回值为非零值。如果函数失败，则返回值为零。 要获得更多的错误信息，请调用 <see cref="Marshal.GetLastWin32Error"/>。</returns>
-		[DllImport("user32.dll")]
-		public static extern bool BringWindowToTop(IntPtr hWnd);
+		/// <returns>如果该函数成功，则返回值为非零值。如果函数失败，则返回值为零。/&gt;。</returns>
+		[LibraryImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static partial bool BringWindowToTop(IntPtr hWnd);
 
 		/// <summary>
 		/// 检索其类名称和窗口名称与指定字符串匹配的窗口的句柄。
@@ -109,8 +110,8 @@ namespace Zscno.Trackora
 		/// <param name="lpszClass">指定窗口类名。</param>
 		/// <param name="lpszWindow">窗口名称（窗口的标题）。</param>
 		/// <returns>如果函数成功，则返回值是具有指定类和窗口名称的窗口的句柄。如果函数失败，则返回值 <see langword="null"/>。</returns>
-		[DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-		public static extern IntPtr FindWindowEx(IntPtr hWndParent, IntPtr hWndChildAfter, string lpszClass, string lpszWindow);
+		[LibraryImport("user32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+		public static partial IntPtr FindWindowEx(IntPtr hWndParent, IntPtr hWndChildAfter, string lpszClass, string lpszWindow);
 
 		/// <summary>
 		/// 检索指定窗口所属的类的名称。
@@ -126,8 +127,8 @@ namespace Zscno.Trackora
 		/// 检索前台窗口的句柄，(用户当前正在使用) 窗口。
 		/// </summary>
 		/// <returns>返回值是前台窗口的句柄。在某些情况下（例如，当窗口丢失激活时），前台窗口可以为 <see langword="null"/> 。</returns>
-		[DllImport("user32.dll")]
-		public static extern IntPtr GetForegroundWindow();
+		[LibraryImport("user32.dll")]
+		public static partial IntPtr GetForegroundWindow();
 
 		/// <summary>
 		/// 获取指定进程的包标识符 (ID)。
@@ -145,8 +146,8 @@ namespace Zscno.Trackora
 		/// <param name="hWnd">窗口的句柄。</param>
 		/// <param name="lpdwProcessId">指向接收进程标识符的变量的指针。函数会将进程的标识符复制到变量。如果函数失败，则变量的值保持不变。</param>
 		/// <returns>如果函数成功，则返回值是创建窗口的线程的标识符。如果窗口句柄无效，则返回值为零。</returns>
-		[DllImport("user32.dll", SetLastError = true)]
-		public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
+		[LibraryImport("user32.dll", SetLastError = true)]
+		public static partial uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
 		/// <summary>
 		/// （自行封装）隐藏窗口。
@@ -163,8 +164,9 @@ namespace Zscno.Trackora
 		/// </summary>
 		/// <param name="hWnd">应激活并带到前台的窗口的句柄。</param>
 		/// <returns>如果窗口已带到前台，则返回值为非零值。如果未将窗口带到前台，则返回值为零。</returns>
-		[DllImport("user32.dll")]
-		public static extern bool SetForegroundWindow(IntPtr hWnd);
+		[LibraryImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static partial bool SetForegroundWindow(IntPtr hWnd);
 
 		/// <summary>
 		/// 设置指定窗口的显示状态。
@@ -172,8 +174,9 @@ namespace Zscno.Trackora
 		/// <param name="hWnd">窗口的句柄。</param>
 		/// <param name="nCmdShow">控制窗口的显示方式。 如果启动应用程序的程序提供 <c>STARTUPINFO</c> 结构，则应用程序首次调用函数时将忽略此参数。 否则，首次调用函数时，该值应为 <c>WinMain</c> 函数在其 <c>nCmdShow</c> 参数中获取的值。</param>
 		/// <returns>如果窗口以前可见，则返回值为非零值。 如果以前隐藏窗口，则返回值为零。</returns>
-		[DllImport("user32.dll")]
-		public static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+		[LibraryImport("user32.dll")]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static partial bool ShowWindow(IntPtr hWnd, int nCmdShow);
 	}
 
 	/// <summary>
