@@ -167,7 +167,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.ContinuousUsedTimeSoundTest);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
@@ -180,7 +180,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.EndUsingTimeSoundTest);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
@@ -292,7 +292,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeSoundTest);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeSoundTest);
 			button.IsEnabled = true;
 		}
 	}

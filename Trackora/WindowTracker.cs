@@ -453,7 +453,7 @@ internal class WindowTracker
 	{
 		if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
 		{
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeReminders);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
 			HasTotalReminded = true;
 		}
 	}
@@ -889,7 +889,7 @@ internal class WindowTracker
 		TimeSpan currentTimeWithoutSeconds = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 		if (EndUsingTime == currentTimeWithoutSeconds && EndUsingTime != TimeSpan.Zero)
 		{
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.EndUsingTimeReminders);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeReminder);
 			EndUsingTime = TimeSpan.Zero;
 		}
 
@@ -1041,7 +1041,7 @@ internal class WindowTracker
 		if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"]
 			&& _continuousUsedTime != TimeSpan.Zero)
 		{
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.ContinuousUsedTimeReminders);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
 			_continuousUsedTime = TimeSpan.Zero;
 		}
 

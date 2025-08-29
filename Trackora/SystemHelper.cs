@@ -15,12 +15,12 @@ namespace Zscno.Trackora;
 /// <summary>
 /// 提醒通知类型。
 /// </summary>
-internal enum ReminderKinds
+internal enum ReminderKind
 {
 	/// <summary>
 	/// 总使用时长提醒。
 	/// </summary>
-	TotalUsedTimeReminders,
+	TotalUsedTimeReminder,
 
 	/// <summary>
 	/// 总使用时长提醒提示音的测试通知。
@@ -30,7 +30,7 @@ internal enum ReminderKinds
 	/// <summary>
 	/// 连续使用时长提醒。
 	/// </summary>
-	ContinuousUsedTimeReminders,
+	ContinuousUsedTimeReminder,
 
 	/// <summary>
 	/// 连续使用时长提醒提示音的测试通知。
@@ -40,7 +40,7 @@ internal enum ReminderKinds
 	/// <summary>
 	/// 结束使用时间提醒。
 	/// </summary>
-	EndUsingTimeReminders,
+	EndUsingTimeReminder,
 
 	/// <summary>
 	/// 结束使用时间提醒提示音的测试通知。
@@ -58,7 +58,7 @@ internal static class ReminderHelper
 	/// </summary>
 	/// <param name="reminderKind">通知的类型。</param>
 	/// <returns>指示通知是否能正常显示。</returns>
-	public static bool SendReminder(ReminderKinds reminderKind)
+	public static bool SendReminder(ReminderKind reminderKind)
 	{
 		string logInfo;
 		string logError;
@@ -68,7 +68,7 @@ internal static class ReminderHelper
 
 		switch (reminderKind)
 		{
-			case ReminderKinds.TotalUsedTimeReminders:
+			case ReminderKind.TotalUsedTimeReminder:
 				logInfo = $"总使用时长已达设置中的值" +
 					$" [{(TimeSpan) LocalSettings["TotalUsedRemindTime"]:hh\\:mm\\:ss}] 。";
 				logError = "在发送 总使用时间提醒通知 时触发异常：";
@@ -79,7 +79,7 @@ internal static class ReminderHelper
 				audio.Src = new(CommonSounds[(string) LocalSettings["TotalUsedTimeSound"]]);
 				break;
 
-			case ReminderKinds.TotalUsedTimeSoundTest:
+			case ReminderKind.TotalUsedTimeSoundTest:
 				logInfo = string.Empty;
 				logError = "在发送 总使用时长提醒提示音的测试通知 时触发异常：";
 				title = Loader.GetString("Test/Content");
@@ -87,7 +87,7 @@ internal static class ReminderHelper
 				audio.Src = new(CommonSounds[(string) LocalSettings["TotalUsedTimeSound"]]);
 				break;
 
-			case ReminderKinds.ContinuousUsedTimeReminders:
+			case ReminderKind.ContinuousUsedTimeReminder:
 				logInfo = $"连续使用时长已达设置中的值" +
 					$" [{(TimeSpan) LocalSettings["ContinuousUsedRemindTime"]:hh\\:mm\\:ss}] 。";
 				logError = "在发送 连续使用时间提醒通知 时触发异常：";
@@ -98,7 +98,7 @@ internal static class ReminderHelper
 				audio.Src = new Uri(CommonSounds[(string) LocalSettings["ContinuousUsedTimeSound"]]);
 				break;
 
-			case ReminderKinds.ContinuousUsedTimeSoundTest:
+			case ReminderKind.ContinuousUsedTimeSoundTest:
 				logInfo = string.Empty;
 				logError = "在发送 连续使用时长提醒提示音的测试通知 时触发异常：";
 				title = Loader.GetString("Test/Content");
@@ -106,7 +106,7 @@ internal static class ReminderHelper
 				audio.Src = new Uri(CommonSounds[(string) LocalSettings["ContinuousUsedTimeSound"]]);
 				break;
 
-			case ReminderKinds.EndUsingTimeReminders:
+			case ReminderKind.EndUsingTimeReminder:
 				logInfo = $"结束使用时间已达设置中的值：{WindowTracker.EndUsingTime:hh\\:mm\\:ss}";
 				logError = "在发送 结束使用时间提醒通知 时触发异常：";
 				title = Loader.GetString("EndUsingReminderTitle");
@@ -116,7 +116,7 @@ internal static class ReminderHelper
 				audio.Src = new Uri(AlarmSounds[(string) LocalSettings["EndUsingTimeSound"]]);
 				break;
 
-			case ReminderKinds.EndUsingTimeSoundTest:
+			case ReminderKind.EndUsingTimeSoundTest:
 				logInfo = string.Empty;
 				logError = "在发送 结束使用时间提醒提示音的测试通知 时触发异常：";
 				title = Loader.GetString("Test/Content");
