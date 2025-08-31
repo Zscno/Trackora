@@ -182,6 +182,7 @@ namespace Zscno.Trackora
 		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
 		/// </summary>
 		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <typeparam name="T">参数类型。</typeparam>
 		/// <param name="action">要调用的方法。</param>
 		/// <param name="arg"><paramref name="action"/> 方法的参数。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
@@ -206,6 +207,8 @@ namespace Zscno.Trackora
 		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
 		/// </summary>
 		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <typeparam name="T1">参数 1 的类型。</typeparam>
+		/// <typeparam name="T2">参数 2 的类型。</typeparam>
 		/// <param name="action">要调用的方法。</param>
 		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
 		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
@@ -216,6 +219,34 @@ namespace Zscno.Trackora
 			try
 			{
 				TResult result = action(arg1, arg2);
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <typeparam name="T1">参数 1 的类型。</typeparam>
+		/// <typeparam name="T2">参数 2 的类型。</typeparam>
+		/// <typeparam name="T3">参数 3 的类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
+		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
+			<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> action, T1 arg1, T2 arg2, T3 arg3)
+		{
+			try
+			{
+				TResult result = action(arg1, arg2, arg3);
 				return (true, result);
 			}
 			catch (Exception ex)
