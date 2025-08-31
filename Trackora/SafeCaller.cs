@@ -156,17 +156,17 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
-		/// 调用 <paramref name="func"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
 		/// </summary>
 		/// <typeparam name="TResult">返回值类型。</typeparam>
-		/// <param name="func">要调用的方法。</param>
+		/// <param name="action">要调用的方法。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
 		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
-			<TResult>(Func<TResult> func)
+			<TResult>(Func<TResult> action)
 		{
 			try
 			{
-				TResult result = func();
+				TResult result = action();
 				return (true, result);
 			}
 			catch (Exception ex)
@@ -183,13 +183,39 @@ namespace Zscno.Trackora
 		/// </summary>
 		/// <typeparam name="TResult">返回值类型。</typeparam>
 		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg"><paramref name="action"/> 方法的参数。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
 		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
-			<T, TResult>(Func<T, TResult> action, T param)
+			<T, TResult>(Func<T, TResult> action, T arg)
 		{
 			try
 			{
-				TResult result = action(param);
+				TResult result = action(arg);
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
+		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
+			<T1, T2, TResult>(Func<T1, T2, TResult> action, T1 arg1, T2 arg2)
+		{
+			try
+			{
+				TResult result = action(arg1, arg2);
 				return (true, result);
 			}
 			catch (Exception ex)
