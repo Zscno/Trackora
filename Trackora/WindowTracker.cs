@@ -112,7 +112,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 用于过滤只记录时间的进程名称的字符串数组
 		/// </summary>
-		private static string[] _lastNotInfoNamesArr = Array.Empty<string>();
+		private static string[] _lastNotInfoNamesArr = [];
 
 		/// <summary>
 		/// 用于触发提醒的总使用时长。
@@ -122,7 +122,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
 		/// </summary>
-		private static Dictionary<string, TimeSpan> _windowsUsedTime = new();
+		private static Dictionary<string, TimeSpan> _windowsUsedTime = [];
 
 		/// <summary>
 		/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -152,7 +152,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 用于过滤进程名称的字符串数组。
 		/// </summary>
-		private string[] _lastNoTimeNamesArr = Array.Empty<string>();
+		private string[] _lastNoTimeNamesArr = [];
 
 		/// <summary>
 		/// 用于过滤进程名称的字符串（以英文逗号分隔）。
@@ -285,7 +285,7 @@ namespace Zscno.Trackora
 				throw new Exception($"在获取记录文件 [Path={InfoFilePath}] 的文本时触发了异常。", ex);
 			}
 
-			List<ProcessInfo> processesInfo = new();
+			List<ProcessInfo> processesInfo = [];
 			bool isEmpty = string.IsNullOrWhiteSpace(processesListText);
 			if (isEmpty)
 			{
@@ -299,7 +299,7 @@ namespace Zscno.Trackora
 					List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText,
 						JsonSerializeMetadata.Default.ListProcessInfo);
 					Dictionary<string, ProcessInfo> dict = list?.ToDictionary(value => value.ProcessName)
-						?? new();
+						?? [];
 					return dict;
 				}
 				catch (Exception ex)
@@ -805,7 +805,7 @@ namespace Zscno.Trackora
 				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
 				return textStream.Length > 0
 					? JsonSerializer.Deserialize(textStream,
-						JsonSerializeMetadata.Default.ListProcessInfo) ?? new() : new();
+						JsonSerializeMetadata.Default.ListProcessInfo) ?? [] : [];
 			}
 			catch (Exception ex)
 			{
@@ -829,7 +829,7 @@ namespace Zscno.Trackora
 			}
 			else
 			{
-				return Array.Empty<string>();
+				return [];
 			}
 		}
 

@@ -106,7 +106,7 @@ namespace Zscno.Trackora
 				}
 			}
 
-			string[] sizes = { "B", "KB", "MB", "GB" };
+			string[] sizes = ["B", "KB", "MB", "GB"];
 			int count = 0;
 			while (size >= 1024 && count < sizes.Length - 1)
 			{
