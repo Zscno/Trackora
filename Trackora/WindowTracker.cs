@@ -329,6 +329,126 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 裁剪图标。
+		/// </summary>
+		/// <param name="decoder">图标的 <see cref="BitmapDecoder"/> 实例。</param>
+		/// <param name="x">要裁剪区域左上角的 X 坐标。</param>
+		/// <param name="y">要裁剪区域左上角的 Y 坐标。</param>
+		/// <param name="w">要裁剪区域的宽度。</param>
+		/// <param name="h">要裁剪区域的高度。</param>
+		/// <returns>裁剪后的图标所在的位置归零的流。</returns>
+		private static async Task<InMemoryRandomAccessStream> CropIcon
+			(BitmapDecoder decoder, uint x, uint y, uint w, uint h)
+		{
+			InMemoryRandomAccessStream croppedStream = new();
+			BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
+			encoder.BitmapTransform.Bounds = new()
+			{
+				X = x,
+				Y = y,
+				Width = w,
+				Height = h,
+			};
+			await encoder.FlushAsync();
+			croppedStream.Seek(0);
+			return croppedStream;
+		}
+
+		/// <summary>
+		/// 从下向上遍历每一行，找到最下边有内容的像素行。
+		/// </summary>
+		/// <param name="pixels">图标的像素数据。</param>
+		/// <param name="width">图标的宽度。</param>
+		/// <param name="height">图标的高度。</param>
+		/// <param name="minX">图标内容最左侧的 X 坐标。</param>
+		/// <param name="maxX">图像内容最右侧的 X 坐标。</param>
+		/// <returns>图像内容最低的 Y 坐标。未找到则返回 0 。</returns>
+		private static uint ForeachFromBottomToTop(byte[] pixels, uint width, uint height,
+			uint minX, uint maxX)
+		{
+			for (uint row = height - 1; row >= 0; row--)
+			{
+				for (uint pixel = minX; pixel <= maxX; pixel++)
+				{
+					if (pixels[(row * width + pixel) * 4 + 3] > 0)
+					{
+						return row;
+					}
+				}
+			}
+			return 0;
+		}
+
+		/// <summary>
+		/// 从左向右遍历每一列，找到最左边有内容的像素列。
+		/// </summary>
+		/// <param name="pixels">图标的像素数据。</param>
+		/// <param name="width">图标的宽度。</param>
+		/// <param name="height">图标的高度。</param>
+		/// <returns>图像内容最左侧的 X 坐标。未找到则返回 0 。</returns>
+		private static uint ForeachFromLeftToRight(byte[] pixels, uint width, uint height)
+		{
+			for (uint column = 0; column < width; column++)
+			{
+				for (uint pixel = 0; pixel < height; pixel++)
+				{
+					if (pixels[(pixel * width + column) * 4 + 3] > 0)
+					{
+						return column;
+					}
+				}
+			}
+			return 0;
+		}
+
+		/// <summary>
+		/// 从右向左遍历每一列，找到最右边有内容的像素列。
+		/// </summary>
+		/// <param name="pixels">图标的像素数据。</param>
+		/// <param name="width">图标的宽度。</param>
+		/// <param name="height">图标的高度。</param>
+		/// <returns>图像内容最右侧的 X 坐标。未找到则返回 0 。</returns>
+		private static uint ForeachFromRightToLeft(byte[] pixels, uint width, uint height)
+		{
+			for (uint column = width - 1; column >= 0; column--)
+			{
+				for (uint pixel = 0; pixel < height; pixel++)
+				{
+					if (pixels[(pixel * width + column) * 4 + 3] > 0)
+					{
+						return column;
+					}
+				}
+			}
+			return 0;
+		}
+
+		/// <summary>
+		/// 从上向下遍历每一行，找到最上边有内容的像素行。
+		/// </summary>
+		/// <param name="pixels">图标的像素数据。</param>
+		/// <param name="width">图标的宽度。</param>
+		/// <param name="height">图标的高度。</param>
+		/// <param name="minX">图标内容最左侧的 X 坐标。</param>
+		/// <param name="maxX">图像内容最右侧的 X 坐标。</param>
+		/// <returns>图像内容最高的 Y 坐标。未找到则返回 0 。</returns>
+		private static uint ForeachFromTopToBottom(byte[] pixels, uint width, uint height,
+			uint minX, uint maxX)
+		{
+			for (uint row = 0; row < height; row++)
+			{
+				for (uint pixel = minX; pixel <= maxX; pixel++)
+				{
+					if (pixels[(row * width + pixel) * 4 + 3] > 0)
+					{
+						return row;
+					}
+				}
+			}
+			return 0;
+		}
+
+		/// <summary>
 		/// 获取默认的进程信息（当无法获取到进程信息时使用）。
 		/// </summary>
 		/// <param name="process">要获取的进程。</param>
@@ -339,7 +459,7 @@ namespace Zscno.Trackora
 			return new()
 			{
 				ProcessName = process.ProcessName,
-				DisplayName = string.IsNullOrWhiteSpace(title) ? process.ProcessName : title,
+				DisplayName = GetDisplayName(process.ProcessName, title),
 				IconUri = _defaultIconUri,
 			};
 		}
@@ -360,6 +480,118 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 获取进程的显示名称（保证获取到的名称一定不是空白）。
+		/// </summary>
+		/// <param name="processName">进程名称。</param>
+		/// <param name="windowTitle">窗口标题。</param>
+		/// <param name="friendlyName">友好名称。</param>
+		/// <returns>进程的显示名称。</returns>
+		private static string GetDisplayName(string processName,
+			string windowTitle, string? friendlyName = null)
+		{
+			if (!string.IsNullOrWhiteSpace(friendlyName))
+			{
+				return friendlyName;
+			}
+			return string.IsNullOrWhiteSpace(windowTitle) ? processName : windowTitle;
+		}
+
+		/// <summary>
+		/// 获取图标内容的实际大小。
+		/// </summary>
+		/// <param name="pixels">图标的像素数据。</param>
+		/// <param name="width">图标的宽度。</param>
+		/// <param name="height">图标的高度。</param>
+		/// <returns>图标内容左上角的坐标、宽度和高度。</returns>
+		private static (uint RealX, uint RealY, uint RealWidth, uint RealHeight) GetIconContentSize(
+			byte[] pixels, uint width, uint height)
+		{
+			uint minX = ForeachFromLeftToRight(pixels, width, height);
+			uint maxX = ForeachFromRightToLeft(pixels, width, height);
+			uint minY = ForeachFromTopToBottom(pixels, width, height, minX, maxX);
+			uint maxY = ForeachFromBottomToTop(pixels, width, height, minX, maxX);
+
+			return (minX, minY, maxX - minX + 1, maxY - minY + 1);
+		}
+
+		/// <summary>
+		/// 获取有包标识的应用的图标并保存到缓存文件夹中。
+		/// </summary>
+		/// <param name="iconPath">图标的路径。</param>
+		/// <param name="name">进程名称。</param>
+		/// <returns>图标的 Uri 。</returns>
+		private static async Task<string> GetIconForPackage(string iconPath, string name)
+		{
+			try
+			{
+				StorageFile iconFile = await StorageFile.GetFileFromPathAsync(iconPath);
+				IRandomAccessStreamWithContentType iconStream = await iconFile.OpenReadAsync();
+				BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
+				PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
+				byte[] pixels = pixelData.DetachPixelData();
+				uint width = decoder.PixelWidth;
+				(uint realX, uint realY, uint realWidth, uint realHeight) = GetIconContentSize(
+					pixels, width, decoder.PixelHeight);
+
+				// 图标裁剪区域至少为 32 * 32 像素，且裁剪区域坐标不能为负。
+				if (realWidth < 32 && realHeight < 32)
+				{
+					realWidth = realHeight = 32;
+					realX = Round((width - realWidth) / 2);
+					realY = Round((width - realHeight) / 2);
+				}
+				realX = realX < 0 ? 0 : realX;
+				realY = realY < 0 ? 0 : realY;
+
+				InMemoryRandomAccessStream croppedStream = await CropIcon(decoder,
+					realX, realY, realWidth, realHeight);
+				return await SaveIcon(name, croppedStream);
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法保存进程 {name} 的图标。", ex);
+			}
+		}
+
+		/// <summary>
+		/// 获取 Win32 应用的图标并保存到缓存文件夹中。
+		/// </summary>
+		/// <param name="name">进程名称。</param>
+		/// <param name="path">应用主模块路径。</param>
+		/// <returns>图标的 Uri 。</returns>
+		private static string GetIconForWin32(string name, string path)
+		{
+			try
+			{
+				Icon preIcon = Icon.ExtractAssociatedIcon(path)!;
+				Icon icon = new(preIcon, 32, 32);
+				preIcon.Dispose();
+
+				if (icon is not null)
+				{
+					// 加载图标并将图标保存到缓存文件夹中。
+					string iconPath = Path.Combine(LocalCachePath,
+						"Icons", $"{name}.png");
+					using FileStream iconStream = new(iconPath, FileMode.Create,
+						FileAccess.ReadWrite, FileShare.None);
+					icon.ToBitmap().Save(iconStream, ImageFormat.Png);
+					icon.Dispose();
+
+					// 返回图标的 Uri。
+					return new Uri(iconPath).ToString();
+				}
+				else
+				{
+					throw new InvalidOperationException($"出于未知原因，未获取到进程 {name} 的图标。");
+				}
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法保存进程 {name} 的图标。", ex);
+			}
+		}
+
+		/// <summary>
 		/// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
 		/// </summary>
 		/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
@@ -377,6 +609,109 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 获取进程 <paramref name="name"/> 的包信息。
+		/// </summary>
+		/// <param name="packageFullName">进程 <paramref name="name"/> 的包全名。</param>
+		/// <param name="name">进程名称。</param>
+		/// <returns>进程 <paramref name="name"/> 的包信息。</returns>
+		private static Package GetPackageInfo(string packageFullName, string name)
+		{
+			try
+			{
+				Dictionary<string, Package> packages = new PackageManager()
+					.FindPackagesForUser(string.Empty)
+					.OrderByDescending(pkg => pkg.Id.FullName.Length)
+					.ToDictionary(pack => pack.Id.FullName);
+				_ = packages.TryGetValue(packageFullName, out Package? package);
+
+				if (package is null)
+				{
+					throw new($"出于未知原因，未找到进程 {name} 的包信息。");
+				}
+
+				return package;
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法获取进程 {name} 的包信息。", ex);
+			}
+		}
+
+		/// <summary>
+		/// 获取有包标识的应用的进程信息。
+		/// </summary>
+		/// <param name="process">进程实例。</param>
+		/// <param name="name">进程名称。</param>
+		/// <param name="packageFullNameLength">包全名长度。</param>
+		/// <returns>图标的 Uri 和显示名称。</returns>
+		private static async Task<(string IconUri, string DisplayName)> GetProcessInfoForPackage
+			(Process process, string name, uint packageFullNameLength)
+		{
+			try
+			{
+				StringBuilder packageFullName = new((int) packageFullNameLength);
+				long result = NativeApi.GetPackageFullName(
+					process.Handle, ref packageFullNameLength, packageFullName);
+				if (result != NativeApi.ERROR_SUCCESS)
+				{
+					throw new Win32Exception(Marshal.GetLastWin32Error(), $"无法获取进程 {name} 的包全名。");
+				}
+
+				Package package = GetPackageInfo(packageFullName.ToString(), name);
+
+				return (await GetIconForPackage(package.Logo.LocalPath, name), package.DisplayName);
+			}
+			catch (Exception)
+			{
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// 获取 Win32 应用的进程信息。
+		/// </summary>
+		/// <param name="process">进程实例。</param>
+		/// <param name="name">进程名称。</param>
+		/// <returns>图标的 Uri 和显示名称。</returns>
+		private static (string, string?) GetProcessInfoForWin32(Process process, string name)
+		{
+			try
+			{
+				ProcessModule mainModule = process.MainModule!;
+				string path = GetProcessModulePath(mainModule, name);
+				if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+				{
+					// 如果路径无效：
+					throw new FileNotFoundException($"进程 {name} 的主模块路径 {path} 无效。");
+				}
+
+				return (GetIconForWin32(name, path), mainModule.FileVersionInfo.FileDescription);
+			}
+			catch (Exception)
+			{
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// 获取进程模块的路径。
+		/// </summary>
+		/// <param name="module">要获取的进程模块。</param>
+		/// <param name="name">进程名称。</param>
+		/// <returns>进程模块的路径。</returns>
+		private static string GetProcessModulePath(ProcessModule module, string name)
+		{
+			try
+			{
+				return module.FileName;
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法获取进程 {name} 的路径。", ex);
+			}
+		}
+
+		/// <summary>
 		/// 舍入 <paramref name="value"/> 为 <see langword="uint"/> 整数。遵循一般的四舍五入规则。当 <paramref name="value"/> 的小数部分为 0.5 时，向下舍入。
 		/// </summary>
 		/// <param name="value">要操作的 <see langword="double"/> 值。</param>
@@ -385,6 +720,24 @@ namespace Zscno.Trackora
 		{
 			uint intValue = (uint) value;
 			return (value - intValue) < 0.5 ? intValue : intValue - 1;
+		}
+
+		/// <summary>
+		/// 保存图标到缓存文件夹。
+		/// </summary>
+		/// <param name="name">进程名称。</param>
+		/// <param name="stream">图标所在的流。</param>
+		/// <returns>图标的 Uri 。</returns>
+		private static async Task<string> SaveIcon(string name, InMemoryRandomAccessStream stream)
+		{
+			StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
+				Path.Combine(LocalCachePath, "Icons"));
+			StorageFile iconFile = await iconfolder.CreateFileAsync(
+				$"{name}.png", CreationCollisionOption.ReplaceExisting);
+			_ = await RandomAccessStream.CopyAndCloseAsync(
+				stream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
+			return new Uri(Path.Combine(LocalCachePath,
+				"Icons", $"{name}.png")).ToString();
 		}
 
 		/// <summary>
@@ -412,6 +765,51 @@ namespace Zscno.Trackora
 			{
 				CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
 				HasTotalReminded = true;
+			}
+		}
+
+		/// <summary>
+		/// 检查进程是否可用（不为 null 且不是正在记录的进程）。
+		/// </summary>
+		/// <param name="process">要检查的进程。</param>
+		/// <returns>指示进程是否可用。</returns>
+		private bool CheckProcessUsability(Process? process)
+		{
+			if (process is null)
+			{
+				WriteLog(LogLevel.Warning, "要记录的进程为 null （理论上不可遇到）或是正在记录，将跳过。");
+				return false;
+			}
+
+			if (process.ProcessName == _currentRecordProcessName)
+			{
+				WriteLog(LogLevel.Info, $"已开始记录进程 {process.ProcessName} ，将跳过。");
+				return false;
+			}
+
+			// 更新当前正在记录的进程名称以防止重复记录。
+			_currentRecordProcessName = process.ProcessName;
+			return true;
+		}
+
+		/// <summary>
+		/// 从 Json 文件中获取进程信息列表。
+		/// </summary>
+		/// <returns>进程信息列表。</returns>
+		private List<ProcessInfo> GetProcessInfoList()
+		{
+			try
+			{
+				using FileStream textStream =
+					new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
+				return textStream.Length > 0
+					? JsonSerializer.Deserialize(textStream,
+						JsonSerializeMetadata.Default.ListProcessInfo) ?? new() : new();
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法从 Json 文件 [{InfoFilePath}] 获取进程信息列表。", ex);
 			}
 		}
 
@@ -510,300 +908,99 @@ namespace Zscno.Trackora
 		/// </summary>
 		private async Task RecordProcessInfo()
 		{
-			if (_lastProcess is null)
+			Process? process = _lastProcess;
+
+			if (!CheckProcessUsability(process))
 			{
-				WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
 				return;
 			}
 
-			Process process = _lastProcess;
-			string name = process.ProcessName;
-			// 如果已经在记录进程则退出，防止重复记录。
-			if (name == _currentRecordProcessName)
-			{
-				return;
-			}
-			_currentRecordProcessName = name;
+			string name = process!.ProcessName;
 
-			List<ProcessInfo> processesInfo;
-			try
+			(bool success, List<ProcessInfo>? list) = await new SafeCaller()
+				.SetReminderType(CallerReminderType.Reminder)
+				.SetReminderMessage("提示用户无法读取进程信息")
+				.SetContentResName("ECanNotGetInfo")
+				.CallActionWithReturn(GetProcessInfoList);
+			if (success)
 			{
-				using FileStream textStream =
-					new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
-				processesInfo = textStream.Length > 0 ?
-					JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo) ??
-					new() : new();
+				list ??= [];
 			}
-			catch (Exception ex)
+			else
 			{
-				WriteLog(LogLevel.Error, $"在读取记录文件 [{InfoFilePath}] 时触发异常：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法读取进程信息",
-					Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotGetInfo"));
 				_currentRecordProcessName = string.Empty;
 				return;
 			}
 
-			if (processesInfo.Any(info => info.ProcessName == process.ProcessName))
+			if (list.Any(info => info.ProcessName == process.ProcessName))
 			{
+				// 如果已经有信息则不再记录。
 				_currentRecordProcessName = string.Empty;
 				return;
 			}
 
 			ProcessInfo info;
 			uint packageFullNameLength = 0;
-			long result;
-			try
+			(success, long result) = await new SafeCaller()
+				.SetLogMessage($"无法获取进程 {name} 的包全名。")
+				.CallActionWithReturn(
+				() => NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, null!));
+			if (!success)
 			{
-				result = NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, null!);
-			}
-			catch (Win32Exception we) when (we.NativeErrorCode == NativeApi.ERROR_ACCESS_DENIED)
-			{
-				WriteLog(LogLevel.Warning, $"获取进程 {name} 的包全名时触发异常：{we}");
-				info = GetDefaultInfo(process);
-				goto Finish;
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常：{ex}");
 				info = GetDefaultInfo(process);
 				goto Finish;
 			}
 
-			if (result == NativeApi.APPMODEL_ERROR_NO_PACKAGE)
+			(string IconUri, string FriendlyName) infoTuple;
+			switch (result)
 			{
-				// 如果是 Win32 应用：
-				string path;
-				try
-				{
-					path = process.MainModule!.FileName;
-				}
-				catch (Win32Exception we) when (we.NativeErrorCode == NativeApi.ERROR_ACCESS_DENIED)
-				{
-					WriteLog(LogLevel.Warning, $"获取进程 {name} 的包全名时触发异常：{we}");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
-				catch (Exception ex)
-				{
-					WriteLog(LogLevel.Error, $"获取进程 {name} 的路径时触发异常：{ex}");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
-
-				string iconUri;
-				try
-				{
-					Icon preIcon = Icon.ExtractAssociatedIcon(path)!;
-					Icon icon = new(preIcon, 32, 32);
-					preIcon.Dispose();
-
-					if (icon != null)
+				case NativeApi.APPMODEL_ERROR_NO_PACKAGE:
+					(success, infoTuple) = await new SafeCaller()
+						.CallActionWithReturn(GetProcessInfoForWin32, process, name);
+					if (!success)
 					{
-						// 加载图标并将图标保存到缓存文件夹中。
-						string iconPath = Path.Combine(LocalCachePath,
-							"Icons", $"{name}.png");
-						using FileStream iconStream = new(iconPath, FileMode.Create,
-							FileAccess.ReadWrite, FileShare.None);
-						icon.ToBitmap().Save(iconStream, ImageFormat.Png);
-						icon.Dispose();
-
-						iconUri = new Uri(iconPath).ToString();
-					}
-					else
-					{
-						WriteLog(LogLevel.Warning, $"出于未知原因，未获取到进程 {name} 的图标。");
-						iconUri = _defaultIconUri;
-					}
-				}
-				catch (Exception ex)
-				{
-					WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
-					iconUri = _defaultIconUri;
-				}
-
-				string? displayName = process.MainModule.FileVersionInfo.FileDescription;
-				info = new()
-				{
-					ProcessName = name,
-					DisplayName = string.IsNullOrWhiteSpace(displayName) ?
-					(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name : process.MainWindowTitle)
-					: displayName,
-					IconUri = iconUri
-				};
-			}
-			else if (result == NativeApi.ERROR_INSUFFICIENT_BUFFER)
-			{
-				// 如果是有应用包的应用：
-				StringBuilder packageFullName = new((int) packageFullNameLength);
-				result = NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, packageFullName);
-				if (result != NativeApi.ERROR_SUCCESS)
-				{
-					WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-					info = GetDefaultInfo(process);
-					goto Finish;
-				}
-				else
-				{
-					// 如果获取包全名成功：
-					PackageManager packageManager = new();
-					Package[] packages = packageManager.FindPackagesForUser(string.Empty)
-						.OrderByDescending(pkg => pkg.Id.FullName.Length)
-						.ToArray();
-					Package? package = packages.FirstOrDefault(pkg => pkg.Id.FullName
-					== packageFullName.ToString());
-
-					if (package == null)
-					{
-						WriteLog(LogLevel.Warning, $"出于未知原因，未找到进程 {name} 的包信息。");
 						info = GetDefaultInfo(process);
 						goto Finish;
 					}
+					break;
 
-					// 加载图标并将图标保存到缓存文件夹中。
-					string iconUri;
-					try
+				case NativeApi.ERROR_INSUFFICIENT_BUFFER:
+					(success, Task<(string, string)>? infoTask) = await new SafeCaller()
+						.CallActionWithReturn(GetProcessInfoForPackage,
+						process, name, packageFullNameLength);
+					if (!success || infoTask is null)
 					{
-						string iconPath = package.Logo.LocalPath;
-						StorageFile iconFile1 = await StorageFile.GetFileFromPathAsync(iconPath);
-						IRandomAccessStreamWithContentType iconStream = await iconFile1.OpenReadAsync();
-
-						// 获取图标的实际内容范围。
-						BitmapDecoder decoder = await BitmapDecoder.CreateAsync(iconStream);
-						PixelDataProvider pixelData = await decoder.GetPixelDataAsync();
-						byte[] pixels = pixelData.DetachPixelData();
-						uint width = decoder.PixelWidth, height = decoder.PixelHeight;
-						uint minX = 0, minY = 0, maxX = 0, maxY = 0;
-						bool exit;
-
-						// 从左向右遍历每一列，找到最左边有内容的像素列。
-						exit = false;
-						for (uint column = 0; column < width && !exit; column++)
-						{
-							for (uint pixel = 0; pixel < height && !exit; pixel++)
-							{
-								if (pixels[(pixel * width + column) * 4 + 3] > 0)
-								{
-									minX = column;
-									exit = true;
-								}
-							}
-						}
-
-						// 从右向左遍历每一列，找到最右边有内容的像素列。
-						exit = false;
-						for (uint column = width - 1; column >= 0 && !exit; column--)
-						{
-							for (uint pixel = 0; pixel < height && !exit; pixel++)
-							{
-								if (pixels[(pixel * width + column) * 4 + 3] > 0)
-								{
-									maxX = column;
-									exit = true;
-								}
-							}
-						}
-
-						// 从上向下遍历每一行，找到最上边有内容的像素行。
-						exit = false;
-						for (uint row = 0; row < height && !exit; row++)
-						{
-							for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
-							{
-								if (pixels[(row * width + pixel) * 4 + 3] > 0)
-								{
-									minY = row;
-									exit = true;
-								}
-							}
-						}
-
-						// 从下向上遍历每一行，找到最下边有内容的像素行。
-						exit = false;
-						for (uint row = height - 1; row >= 0 && !exit; row--)
-						{
-							for (uint pixel = minX; pixel <= maxX && !exit; pixel++)
-							{
-								if (pixels[(row * width + pixel) * 4 + 3] > 0)
-								{
-									maxY = row;
-									exit = true;
-								}
-							}
-						}
-
-						uint cropWidth = maxX - minX + 1, cropHeight = maxY - minY + 1;
-
-						// 图标裁剪区域至少为 32 * 32 像素，且裁剪区域坐标不能为负。
-						if (cropWidth < 32 && cropHeight < 32)
-						{
-							cropWidth = cropHeight = 32;
-							minX = Round((width - cropWidth) / 2);
-							minY = Round((width - cropHeight) / 2);
-						}
-						minX = minX < 0 ? 0 : minX;
-						minY = minY < 0 ? 0 : minY;
-
-						//裁剪图标。
-						InMemoryRandomAccessStream croppedStream = new();
-						BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
-						encoder.BitmapTransform.Bounds = new()
-						{
-							X = minX,
-							Y = minY,
-							Width = cropWidth,
-							Height = cropHeight,
-						};
-						await encoder.FlushAsync();
-						croppedStream.Seek(0);
-
-						// 保存图标。
-						StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
-							Path.Combine(LocalCachePath, "Icons"));
-						StorageFile iconFile = await iconfolder.CreateFileAsync(
-							$"{name}.png", CreationCollisionOption.ReplaceExisting);
-						_ = await RandomAccessStream.CopyAndCloseAsync(
-							croppedStream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
-
-						iconUri = new Uri(Path.Combine(LocalCachePath,
-							"Icons", $"{name}.png")).ToString();
+						info = GetDefaultInfo(process);
+						goto Finish;
 					}
-					catch (Exception ex)
-					{
-						WriteLog(LogLevel.Error, $"在保存进程 {name} 的图标时触发异常：{ex}");
-						iconUri = "ms-appx:///Icons/Default.png";
-					}
+					infoTuple = await infoTask;
+					break;
 
-					info = new()
-					{
-						ProcessName = name,
-						DisplayName = string.IsNullOrWhiteSpace(package.DisplayName) ?
-						(string.IsNullOrWhiteSpace(process.MainWindowTitle) ? name :
-						process.MainWindowTitle) : package.DisplayName,
-						IconUri = iconUri
-					};
-				}
+				default:
+					WriteLog(LogLevel.Error,
+						$"无法获取进程 {name} 的包全名，错误代码：{Marshal.GetLastWin32Error()}。");
+					info = GetDefaultInfo(process);
+					goto Finish;
 			}
-			else
+
+			info = new()
 			{
-				WriteLog(LogLevel.Error, $"获取进程 {name} 的包全名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				info = GetDefaultInfo(process);
-			}
+				ProcessName = name,
+				DisplayName = GetDisplayName(name, process.MainWindowTitle, infoTuple.FriendlyName),
+				IconUri =
+					string.IsNullOrWhiteSpace(infoTuple.IconUri) ? _defaultIconUri : infoTuple.IconUri,
+			};
 
 			Finish:
-			processesInfo.Add(info);
-			try
-			{
-				File.WriteAllText(InfoFilePath,
-					SerializeJson(processesInfo, JsonSerializeMetadata.Default.ListProcessInfo));
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"写入记录文件 [{InfoFilePath}] 时触发异常：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法写入记录文件",
-					Loader.GetString("ErrorOrWarningTitle"), Loader.GetString("ECanNotWriteInfo"));
-				return;
-			}
+			list.Add(info);
+
+			_ = new SafeCaller()
+				.SetLogMessage($"无法写入记录文件 [{InfoFilePath}] 。")
+				.SetReminderType(CallerReminderType.Reminder)
+				.SetReminderMessage("提示用户无法写入记录文件")
+				.SetContentResName("ECanNotWriteInfo")
+				.CallAction(() => File.WriteAllText(
+					InfoFilePath, SerializeJson(list, JsonSerializeMetadata.Default.ListProcessInfo)));
 			_currentRecordProcessName = string.Empty;
 			WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
 		}
