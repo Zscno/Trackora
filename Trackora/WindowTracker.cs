@@ -1217,7 +1217,7 @@ namespace Zscno.Trackora
 					return;
 				}
 
-				if (NativeApi.GetWindowThreadProcessId((IntPtr) childHandle, out uint UWPId) == 0)
+				if (NativeApi.GetWindowThreadProcessId((IntPtr) childHandle, out uint uwpId) == 0)
 				{
 					WriteLog(LogLevel.Error, $"获取 UWP 进程ID [Handle={childHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
 					NoProcessNow();
@@ -1226,11 +1226,11 @@ namespace Zscno.Trackora
 
 				try
 				{
-					process = Process.GetProcessById((int) UWPId);
+					process = Process.GetProcessById((int) uwpId);
 				}
 				catch (Exception ex)
 				{
-					WriteLog(LogLevel.Error, $"获取 UWP 进程信息 [ID={UWPId}] 时触发异常：{ex}");
+					WriteLog(LogLevel.Error, $"获取 UWP 进程信息 [ID={uwpId}] 时触发异常：{ex}");
 					NoProcessNow();
 					return;
 				}
