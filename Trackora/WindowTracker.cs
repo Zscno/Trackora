@@ -268,11 +268,11 @@ namespace Zscno.Trackora
 		public static List<ProcessInfo> GetProcessesInfo(int count)
 		{
 			// 获取使用时长最长的六个进程的名称（排除无需记录信息的进程）。
-			List<string> processNames = WindowsUsedTime
+			string[] processNames = WindowsUsedTime
 				.OrderByDescending(x => x.Value)
 				.Take(count)
 				.Select(x => x.Key)
-				.ToList();
+				.ToArray();
 
 			string processesListText;
 			try
