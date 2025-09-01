@@ -292,21 +292,9 @@ namespace Zscno.Trackora
 				WriteLog(LogLevel.Warning, $"程序尚未开始监测和记录（json 文件中无内容） [Path={InfoFilePath}] 。");
 			}
 
-			Lazy<Dictionary<string, ProcessInfo>> processesDict = new(() =>
-			{
-				try
-				{
-					List<ProcessInfo>? list = JsonSerializer.Deserialize(processesListText,
-						JsonSerializeMetadata.Default.ListProcessInfo);
-					Dictionary<string, ProcessInfo> dict = list?.ToDictionary(value => value.ProcessName)
-						?? [];
-					return dict;
-				}
-				catch (Exception ex)
-				{
-					throw new Exception($"在反序列化记录文件 [Path={InfoFilePath}] 时触发了异常。", ex);
-				}
-			});
+			List<ProcessInfo> list = GetProcessesInfoFromJson();
+			Dictionary<string, ProcessInfo> processesDict = list.Count == 0 ?
+				[] : list.ToDictionary(value => value.ProcessName);
 
 			foreach (string name in processNames)
 			{
@@ -316,7 +304,7 @@ namespace Zscno.Trackora
 				{
 					info = GetDefaultInfo(name);
 				}
-				else if (!processesDict.Value.TryGetValue(name, out info) || info is null)
+				else if (!processesDict.TryGetValue(name, out info) || info is null)
 				{
 					// 如果 json 文件中已有记录，则反序列化并查找当前进程。
 					WriteLog(LogLevel.Warning, $"在记录文件 [Path={InfoFilePath}] 中未找到进程 {name} 的信息。");
@@ -638,6 +626,27 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 从 Json 文件中获取进程信息列表。如果没有内容创建新列表。
+		/// </summary>
+		/// <returns>进程信息列表。如果没有内容创建新列表。</returns>
+		private static List<ProcessInfo> GetProcessesInfoFromJson()
+		{
+			try
+			{
+				using FileStream textStream =
+					new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
+				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
+				return textStream.Length > 0
+					? JsonSerializer.Deserialize(textStream,
+						JsonSerializeMetadata.Default.ListProcessInfo) ?? [] : [];
+			}
+			catch (Exception ex)
+			{
+				throw new($"无法从 Json 文件 [{InfoFilePath}] 获取进程信息列表。", ex);
+			}
+		}
+
+		/// <summary>
 		/// 获取有包标识的应用的进程信息。
 		/// </summary>
 		/// <param name="process">进程实例。</param>
@@ -793,27 +802,6 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
-		/// 从 Json 文件中获取进程信息列表。
-		/// </summary>
-		/// <returns>进程信息列表。</returns>
-		private List<ProcessInfo> GetProcessInfoList()
-		{
-			try
-			{
-				using FileStream textStream =
-					new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
-				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
-				return textStream.Length > 0
-					? JsonSerializer.Deserialize(textStream,
-						JsonSerializeMetadata.Default.ListProcessInfo) ?? [] : [];
-			}
-			catch (Exception ex)
-			{
-				throw new($"无法从 Json 文件 [{InfoFilePath}] 获取进程信息列表。", ex);
-			}
-		}
-
-		/// <summary>
 		/// 获取记录文件中的记录。如果文件中没有内容就返回空数组。
 		/// </summary>
 		/// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
@@ -921,7 +909,7 @@ namespace Zscno.Trackora
 				.SetReminderType(CallerReminderType.Reminder)
 				.SetReminderMessage("提示用户无法读取进程信息")
 				.SetContentResName("ECanNotGetInfo")
-				.CallActionWithReturn(GetProcessInfoList);
+				.CallActionWithReturn(GetProcessesInfoFromJson);
 			if (success)
 			{
 				list ??= [];
