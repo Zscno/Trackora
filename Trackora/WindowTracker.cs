@@ -1097,24 +1097,6 @@ namespace Zscno.Trackora
 			}
 		}
 
-		/// <summary>
-		/// 尝试获取前台窗口的句柄。
-		/// </summary>
-		/// <remarks>当 <paramref name="handle"/> 为 <see cref="nint.Zero"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
-		/// <param name="handle">前台窗口的句柄。</param>
-		/// <returns>指示 <paramref name="handle"/> 是否为 <see cref="nint.Zero"/> 。</returns>
-		private bool TryGetForegroundWindowHandle(out nint handle)
-		{
-			handle = NativeApi.GetForegroundWindow();
-			if (handle == nint.Zero)
-			{
-				//WriteLog(LogLevel.Debug, "没有被激活窗口。");
-				NoProcessNow();
-				return false;
-			}
-			return true;
-		}
-
 		private void Timer_Tick(object? sender, object e)
 		{
 			SendEndUsingReminderIfNeed();
@@ -1299,6 +1281,24 @@ namespace Zscno.Trackora
 				// 如果进程不是只记录使用时长的则记录信息。
 				_ = Task.Run(RecordProcessInfo);
 			}
+		}
+
+		/// <summary>
+		/// 尝试获取前台窗口的句柄。
+		/// </summary>
+		/// <remarks>当 <paramref name="handle"/> 为 <see cref="nint.Zero"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
+		/// <param name="handle">前台窗口的句柄。</param>
+		/// <returns>指示 <paramref name="handle"/> 是否为 <see cref="nint.Zero"/> 。</returns>
+		private bool TryGetForegroundWindowHandle(out nint handle)
+		{
+			handle = NativeApi.GetForegroundWindow();
+			if (handle == nint.Zero)
+			{
+				//WriteLog(LogLevel.Debug, "没有被激活窗口。");
+				NoProcessNow();
+				return false;
+			}
+			return true;
 		}
 	}
 }
