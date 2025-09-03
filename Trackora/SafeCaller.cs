@@ -136,20 +136,7 @@ namespace Zscno.Trackora
 			catch (Exception ex)
 			{
 				WriteLog(ex);
-				switch (ReminderType)
-				{
-					case CallerReminderType.Reminder:
-						App.CanSend = ReminderHelper.SendReminder(
-							ReminderMessage,
-							App.Loader.GetString("ErrorOrWarningTitle"),
-							App.Loader.GetString(ContentResName));
-						break;
-
-					case CallerReminderType.Dialog:
-					case CallerReminderType.None:
-					default:
-						break;
-				}
+				RemindUserSync();
 				ExitIfNeed();
 				return false;
 			}
@@ -294,6 +281,149 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 同步调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public (bool Success, TResult? Result) CallActionWithReturnSync
+			<TResult>(Func<TResult> action)
+		{
+			try
+			{
+				TResult result = action();
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				RemindUserSync();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 同步调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <typeparam name="T">参数类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg"><paramref name="action"/> 方法的参数。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public (bool Success, TResult? Result) CallActionWithReturnSync
+			<T, TResult>(Func<T, TResult> action, T arg)
+		{
+			try
+			{
+				TResult result = action(arg);
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				RemindUserSync();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 同步调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <typeparam name="T1">参数 1 的类型。</typeparam>
+		/// <typeparam name="T2">参数 2 的类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
+		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public (bool Success, TResult? Result) CallActionWithReturnSync
+			<T1, T2, TResult>(Func<T1, T2, TResult> action, T1 arg1, T2 arg2)
+		{
+			try
+			{
+				TResult result = action(arg1, arg2);
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				RemindUserSync();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 同步调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
+		/// </summary>
+		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <typeparam name="T1">参数 1 的类型。</typeparam>
+		/// <typeparam name="T2">参数 2 的类型。</typeparam>
+		/// <typeparam name="T3">参数 3 的类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
+		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
+		public (bool Success, TResult? Result) CallActionWithReturnSync
+			<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> action, T1 arg1, T2 arg2, T3 arg3)
+		{
+			try
+			{
+				TResult result = action(arg1, arg2, arg3);
+				return (true, result);
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				RemindUserSync();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
+		/// 同步调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。同时捕获 <typeparamref name="TEx"/> 类型的异常。
+		/// </summary>
+		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
+		/// <typeparam name="TEx">要捕获的特定异常。</typeparam>
+		/// <typeparam name="TResult">返回值类型。</typeparam>
+		/// <param name="action">要调用的方法。</param>
+		/// <param name="level">特定的日志等级。</param>
+		/// <param name="message">特定的日志标识。</param>
+		/// <param name="func">（可选）特定异常附加的判断条件。</param>
+		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
+		public (bool Success, TResult? Result) CallActionWithReturnSync<TEx, TResult>(
+			Func<TResult> action, LogLevel level, string message,
+			Func<TEx, bool>? func = null) where TEx : Exception
+		{
+			try
+			{
+				TResult result = action();
+				return (true, result);
+			}
+			catch (TEx ex) when (func is null || func(ex))
+			{
+				WriteLog(ex, level, message);
+				RemindUserSync();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				RemindUserSync();
+				ExitIfNeed();
+				return (false, default(TResult));
+			}
+		}
+
+		/// <summary>
 		/// 设置提醒内容的资源名称。
 		/// </summary>
 		/// <param name="resName">要设置提醒内容的资源名称。</param>
@@ -407,6 +537,27 @@ namespace Zscno.Trackora
 						App.Loader.GetString(ContentResName));
 					break;
 
+				case CallerReminderType.None:
+				default:
+					break;
+			}
+		}
+
+		/// <summary>
+		/// 只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。
+		/// </summary>
+		private void RemindUserSync()
+		{
+			switch (ReminderType)
+			{
+				case CallerReminderType.Reminder:
+					App.CanSend = ReminderHelper.SendReminder(
+						ReminderMessage,
+						App.Loader.GetString("ErrorOrWarningTitle"),
+						App.Loader.GetString(ContentResName));
+					break;
+
+				case CallerReminderType.Dialog:
 				case CallerReminderType.None:
 				default:
 					break;
