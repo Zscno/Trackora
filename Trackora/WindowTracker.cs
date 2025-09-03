@@ -207,7 +207,7 @@ namespace Zscno.Trackora
 					.CallAction(GetUsedTimeFromRecordFile);
 
 				// 如果已经达到了今日使用时长，则每次启动都提醒。
-				ShowTotalReminderIfNeed();
+				SendTotalReminderIfNeed();
 			}
 
 			// 初始化并启动计时器。
@@ -750,6 +750,18 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
+		/// </summary>
+		private static void SendTotalReminderIfNeed()
+		{
+			if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
+			{
+				CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
+				HasTotalReminded = true;
+			}
+		}
+
+		/// <summary>
 		/// 将提供的值转换为 Json <see langword="string"/> 。
 		/// </summary>
 		/// <typeparam name="T">要序列化的值的类型。</typeparam>
@@ -763,18 +775,6 @@ namespace Zscno.Trackora
 			JsonSerializer.Serialize(writer, value, info);
 			writer.Flush();
 			return Encoding.UTF8.GetString(stream.ToArray());
-		}
-
-		/// <summary>
-		/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
-		/// </summary>
-		private static void ShowTotalReminderIfNeed()
-		{
-			if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
-			{
-				CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
-				HasTotalReminded = true;
-			}
 		}
 
 		/// <summary>
@@ -1238,7 +1238,7 @@ namespace Zscno.Trackora
 			//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
 
 			// 检查是否需要显示提醒通知。
-			ShowTotalReminderIfNeed();
+			SendTotalReminderIfNeed();
 			if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"]
 				&& _continuousUsedTime != TimeSpan.Zero)
 			{
