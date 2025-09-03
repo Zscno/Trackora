@@ -1101,16 +1101,12 @@ namespace Zscno.Trackora
 		{
 			SendEndUsingReminderIfNeed();
 
-			if (TryGetForegroundWindowHandle(out nint handle))
+			if (!TryGetForegroundWindowHandle(out nint handle))
 			{
 				return;
 			}
-
-			// 获取被激活窗口的进程ID。
-			if (NativeApi.GetWindowThreadProcessId(handle, out uint processId) == 0)
+			if (!TryGetWindowThreadProcessId(handle, out uint processId))
 			{
-				WriteLog(LogLevel.Error, $"获取进程 ID [Handle={handle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-				NoProcessNow();
 				return;
 			}
 
@@ -1295,6 +1291,25 @@ namespace Zscno.Trackora
 			if (handle == nint.Zero)
 			{
 				//WriteLog(LogLevel.Debug, "没有被激活窗口。");
+				NoProcessNow();
+				return false;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// 尝试获取创建句柄为 <paramref name="handle"/> 的窗口的进程的 Id 。
+		/// </summary>
+		/// <remarks>当 <paramref name="processId"/> 获取失败时会调用 <see cref="NoProcessNow"/> 方法并写入日志。</remarks>
+		/// <param name="handle">窗口句柄。</param>
+		/// <param name="processId">创建句柄为 <paramref name="handle"/> 的窗口的进程的 Id 。</param>
+		/// <returns>指示是否成功获取 <paramref name="processId"/> 。</returns>
+		private bool TryGetWindowThreadProcessId(nint handle, out uint processId)
+		{
+			if (NativeApi.GetWindowThreadProcessId(handle, out processId) == 0)
+			{
+				WriteLog(LogLevel.Error,
+					$"获取进程 ID [Handle={handle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
 				NoProcessNow();
 				return false;
 			}
