@@ -815,6 +815,22 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 获取用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。
+		/// </summary>
+		/// <returns>用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。</returns>
+		private HashSet<string> GetNoTimeArr()
+		{
+			string noTimeNamesStr = (string) LocalSettings["NoTimeNames"];
+			if (_lastNoTimeNamesStr != noTimeNamesStr)
+			{
+				// 如果过滤字符串有更新，则更新缓存。
+				_lastNoTimeNamesArr = noTimeNamesStr.Split(',');
+				_lastNoTimeNamesStr = noTimeNamesStr;
+			}
+			return new(_lastNoTimeNamesArr);
+		}
+
+		/// <summary>
 		/// 获取记录文件中的记录。如果文件中没有内容就返回空数组。
 		/// </summary>
 		/// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
@@ -1116,18 +1132,7 @@ namespace Zscno.Trackora
 
 			string name = process.ProcessName;
 
-			// 过滤无需记录的进程。
-			string[] noTimeNamesArr;
-			string noTimeNamesStr = (string) LocalSettings["NoTimeNames"];
-			if (_lastNoTimeNamesStr != noTimeNamesStr)
-			{
-				// 如果过滤字符串有更新，则更新缓存。
-				_lastNoTimeNamesArr = noTimeNamesStr.Split(',');
-				_lastNoTimeNamesStr = noTimeNamesStr;
-			}
-			noTimeNamesArr = _lastNoTimeNamesArr;
-
-			if (noTimeNamesArr.Contains(name))
+			if (GetNoTimeArr().Contains(name))
 			{
 				// 如果是无需记录的进程：
 				NoProcessNow();
