@@ -121,12 +121,12 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
-		/// 调用 <paramref name="action"/> 方法（在构造函数中调用）。
+		/// 同步调用 <paramref name="action"/> 方法。
 		/// </summary>
 		/// <remarks>只有当 <see cref="ReminderType"/> 是 <see cref="CallerReminderType.Reminder"/> 时才会提醒用户。</remarks>
 		/// <param name="action">要调用的方法。</param>
 		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
-		public bool CallActionForInit(Action action)
+		public bool CallActionSync(Action action)
 		{
 			try
 			{

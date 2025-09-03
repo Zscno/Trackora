@@ -194,7 +194,7 @@ namespace Zscno.Trackora
 					.SetReminderType(CallerReminderType.Reminder)
 					.SetReminderMessage("无法管理今天的记录")
 					.SetContentResName("ECanNotSetRecord")
-					.CallActionForInit(ResetRecord);
+					.CallActionSync(ResetRecord);
 			}
 			else
 			{
