@@ -61,8 +61,9 @@ namespace Zscno.Trackora
 				}
 			}
 
-			IntPtr hwnd = WindowNative.GetWindowHandle(window);
-			if (hwnd == IntPtr.Zero)
+			
+			nint hwnd = WindowNative.GetWindowHandle(window);
+			if (hwnd == nint.Zero)
 			{
 				return;
 			}
