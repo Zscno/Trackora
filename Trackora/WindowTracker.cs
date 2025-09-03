@@ -750,6 +750,19 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 如果达到了结束使用时间则发送结束使用时间提醒。
+		/// </summary>
+		private static void SendEndUsingReminderIfNeed()
+		{
+			TimeSpan currentTimeWithoutSeconds = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
+			if (EndUsingTime == currentTimeWithoutSeconds && EndUsingTime != TimeSpan.Zero)
+			{
+				CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeReminder);
+				EndUsingTime = TimeSpan.Zero;
+			}
+		}
+
+		/// <summary>
 		/// 如果达到了总使用提醒时长且未提醒过则发送总使用时长提醒。
 		/// </summary>
 		private static void SendTotalReminderIfNeed()
@@ -1086,13 +1099,7 @@ namespace Zscno.Trackora
 
 		private void Timer_Tick(object? sender, object e)
 		{
-			// 检查是否达到了结束使用时间。
-			TimeSpan currentTimeWithoutSeconds = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
-			if (EndUsingTime == currentTimeWithoutSeconds && EndUsingTime != TimeSpan.Zero)
-			{
-				CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeReminder);
-				EndUsingTime = TimeSpan.Zero;
-			}
+			SendEndUsingReminderIfNeed();
 
 			IntPtr windowHandle = NativeApi.GetForegroundWindow();
 
