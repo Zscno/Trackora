@@ -111,7 +111,11 @@ namespace Zscno.Trackora
 		/// <param name="lpszWindow">窗口名称（窗口的标题）。</param>
 		/// <returns>如果函数成功，则返回值是具有指定类和窗口名称的窗口的句柄。如果函数失败，则返回值 <see langword="null"/>。</returns>
 		[LibraryImport("user32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-		public static partial IntPtr FindWindowEx(IntPtr hWndParent, IntPtr hWndChildAfter, string lpszClass, string lpszWindow);
+		public static partial IntPtr FindWindowEx(
+			IntPtr hWndParent,
+			IntPtr hWndChildAfter,
+			string? lpszClass,
+			string? lpszWindow);
 
 		/// <summary>
 		/// 检索指定窗口所属的类的名称。
@@ -138,7 +142,10 @@ namespace Zscno.Trackora
 		/// <param name="packageFullName">包全名。</param>
 		/// <returns>如果函数成功，则返回 <c>ERROR_SUCCESS</c>。否则，函数将返回错误代码。</returns>
 		[DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-		public static extern long GetPackageFullName(IntPtr hProcess, ref uint packageFullNameLength, StringBuilder packageFullName);
+		public static extern long GetPackageFullName(
+			IntPtr hProcess,
+			ref uint packageFullNameLength,
+			StringBuilder packageFullName);
 
 		/// <summary>
 		/// 检索创建指定窗口的线程的标识符，以及创建该窗口的进程（可选）的标识符。
