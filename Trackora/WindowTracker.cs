@@ -750,7 +750,7 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
-		/// 如果达到了总使用提醒时长且未提醒过则显示总使用时长提醒。
+		/// 如果达到了总使用提醒时长且未提醒过则发送总使用时长提醒。
 		/// </summary>
 		private static void SendTotalReminderIfNeed()
 		{
