@@ -1109,17 +1109,8 @@ namespace Zscno.Trackora
 			{
 				return;
 			}
-
-			// 通过进程ID获取进程信息。
-			Process process;
-			try
+			if (!TryGetProcessById((int) processId, out Process process))
 			{
-				process = Process.GetProcessById((int) processId);
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"获取进程信息 [ID={processId}] 时触发异常：{ex}");
-				NoProcessNow();
 				return;
 			}
 
@@ -1295,6 +1286,26 @@ namespace Zscno.Trackora
 				return false;
 			}
 			return true;
+		}
+
+		/// <summary>
+		/// 尝试通过 Id 获取进程信息。
+		/// </summary>
+		/// <remarks>如果获取失败则 <paramref name="process"/> 为一个 <see cref="Process"/> 的新实例。</remarks>
+		/// <param name="processId">进程的 Id 。</param>
+		/// <param name="process">通过 Id 获取到的进程信息。</param>
+		/// <returns>指示是否成功获取 <paramref name="process"/> 。</returns>
+		private bool TryGetProcessById(int processId, out Process process)
+		{
+			(bool success, Process? p) = new SafeCaller()
+				.SetLogMessage($"无法获取进程 [ID={processId}] 的信息。")
+				.CallActionWithReturnSync(Process.GetProcessById, processId);
+			process = p ?? new();
+			if (!success)
+			{
+				NoProcessNow();
+			}
+			return success;
 		}
 
 		/// <summary>
