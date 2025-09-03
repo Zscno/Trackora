@@ -1097,24 +1097,37 @@ namespace Zscno.Trackora
 			}
 		}
 
+		/// <summary>
+		/// 尝试获取前台窗口的句柄。
+		/// </summary>
+		/// <remarks>当 <paramref name="handle"/> 为 <see cref="nint.Zero"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
+		/// <param name="handle">前台窗口的句柄。</param>
+		/// <returns>指示 <paramref name="handle"/> 是否为 <see cref="nint.Zero"/> 。</returns>
+		private bool TryGetForegroundWindowHandle(out nint handle)
+		{
+			handle = NativeApi.GetForegroundWindow();
+			if (handle == nint.Zero)
+			{
+				//WriteLog(LogLevel.Debug, "没有被激活窗口。");
+				NoProcessNow();
+				return false;
+			}
+			return true;
+		}
+
 		private void Timer_Tick(object? sender, object e)
 		{
 			SendEndUsingReminderIfNeed();
 
-			IntPtr windowHandle = NativeApi.GetForegroundWindow();
-
-			if (windowHandle == IntPtr.Zero)
+			if (TryGetForegroundWindowHandle(out nint handle))
 			{
-				// 如果桌面上没有被激活窗口:
-				//WriteLog(LogLevel.Debug, "没有被激活窗口。");
-				NoProcessNow();
 				return;
 			}
 
 			// 获取被激活窗口的进程ID。
-			if (NativeApi.GetWindowThreadProcessId(windowHandle, out uint processId) == 0)
+			if (NativeApi.GetWindowThreadProcessId(handle, out uint processId) == 0)
 			{
-				WriteLog(LogLevel.Error, $"获取进程 ID [Handle={windowHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+				WriteLog(LogLevel.Error, $"获取进程 ID [Handle={handle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
 				NoProcessNow();
 				return;
 			}
@@ -1156,7 +1169,7 @@ namespace Zscno.Trackora
 			{
 				// 判断是桌面还是用户打开的窗口：
 
-				IntPtr? childHandle = NativeApi.FindWindowEx(windowHandle, IntPtr.Zero, null!, null!);
+				IntPtr? childHandle = NativeApi.FindWindowEx(handle, IntPtr.Zero, null!, null!);
 
 				if (childHandle == null)
 				{
@@ -1196,7 +1209,7 @@ namespace Zscno.Trackora
 				// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
 
 				IntPtr? childHandle = NativeApi.FindWindowEx(
-					windowHandle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
+					handle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
 
 				if (childHandle == null)
 				{
