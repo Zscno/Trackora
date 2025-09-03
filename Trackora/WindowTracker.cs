@@ -791,6 +791,31 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 排除任务栏和桌面。
+		/// </summary>
+		/// <param name="handle">进程句柄。</param>
+		/// <returns>指示是否继续记录进程。</returns>
+		private bool CheckExplorerProcess(nint handle)
+		{
+			if (!TryGetChildWindowHandle(handle, out nint childHandle,
+				$"无法获取 explorer 进程的子窗口句柄。") ||
+
+				!TryGetWindowClassName(childHandle, out string className,
+				$"无法获取 explorer 子进程 [Handle={childHandle}] 的类名。"))
+			{
+				return false;
+			}
+			if (className is "Windows.UI.Core.CoreWindow" or "SHELLDLL_DefView")
+			{
+				// 如果是任务栏或者桌面则不记录。
+				//WriteLog(LogLevel.Debug, $" explorer 子进程 [ClassName={className}] 是任务栏或者桌面。");
+				NoProcessNow();
+				return false;
+			}
+			return true;
+		}
+
+		/// <summary>
 		/// 检查进程是否可用（不为 null 且不是正在记录的进程）。
 		/// </summary>
 		/// <param name="process">要检查的进程。</param>
@@ -828,6 +853,44 @@ namespace Zscno.Trackora
 				_lastNoTimeNamesStr = noTimeNamesStr;
 			}
 			return new(_lastNoTimeNamesArr);
+		}
+
+		/// <summary>
+		/// 排除任务栏和桌面，并获取真正的 UWP 进程。
+		/// </summary>
+		/// <remarks>当返回的 <see langword="bool"/> 值为 <see langword="false"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
+		/// <param name="name">进程名称。</param>
+		/// <param name="handle">进程句柄。</param>
+		/// <returns><see langword="bool"/> 值指示是否继续记录进程， <see cref="Process"/> 值是真正的 UWP 进程，如果未获取到则返回 <see langword="null"/>。</returns>
+		private (bool Continue, Process? Result) GetRealProcess(string name, nint handle)
+		{
+			return name switch
+			{
+				"explorer" => (CheckExplorerProcess(handle), null),
+				"ApplicationFrameHost" => GetRealUwpProcess(handle),
+				_ => (false, null),
+			};
+		}
+
+		/// <summary>
+		/// 获取真正的 UWP 进程。
+		/// </summary>
+		/// <param name="handle">进程句柄。</param>
+		/// <returns><see langword="bool"/> 值指示是否继续记录进程， <see cref="Process"/> 值是真正的 UWP 进程，如果未获取到则返回 <see langword="null"/>。</returns>
+		private (bool Success, Process? Result) GetRealUwpProcess(nint handle)
+		{
+			if (TryGetChildWindowHandle(handle, out nint childHandle,
+				$"无法获取 UWP 进程子窗口的句柄。", "Windows.UI.Core.CoreWindow") &&
+
+				TryGetWindowThreadProcessId(childHandle, out uint uwpId,
+				$"无法获取 UWP 进程 [Handle={childHandle}] 的 Id 。") &&
+
+				TryGetProcessById((int) uwpId, out Process process,
+				$"无法获取 UWP 进程 [ID={uwpId}] 的信息。"))
+			{
+				return (true, process);
+			}
+			return (false, null);
 		}
 
 		/// <summary>
@@ -1117,15 +1180,13 @@ namespace Zscno.Trackora
 		{
 			SendEndUsingReminderIfNeed();
 
-			if (!TryGetForegroundWindowHandle(out nint handle))
-			{
-				return;
-			}
-			if (!TryGetWindowThreadProcessId(handle, out uint processId))
-			{
-				return;
-			}
-			if (!TryGetProcessById((int) processId, out Process process))
+			if (!TryGetForegroundWindowHandle(out nint handle) ||
+
+				!TryGetWindowThreadProcessId(handle, out uint processId,
+				$"无法获取进程 [{handle}] 的 Id 。") ||
+
+				!TryGetProcessById((int) processId, out Process process,
+				$"无法获取进程 [ID={processId}] 的信息。"))
 			{
 				return;
 			}
@@ -1139,83 +1200,14 @@ namespace Zscno.Trackora
 				return;
 			}
 
-			if (name == "explorer")
+			(bool success, Process? p) = GetRealProcess(name, handle);
+			if (!success)
 			{
-				// 判断是桌面还是用户打开的窗口：
-
-				IntPtr? childHandle = NativeApi.FindWindowEx(handle, IntPtr.Zero, null!, null!);
-
-				if (childHandle == null)
-				{
-					WriteLog(LogLevel.Error, $"获取 explorer 子进程的句柄时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-					NoProcessNow();
-					return;
-				}
-				if (childHandle == IntPtr.Zero)
-				{
-					//WriteLog(LogLevel.Debug, $"没有被激活窗口。");
-					NoProcessNow();
-					return;
-				}
-
-				StringBuilder className = new(256);
-				int classNameLength = NativeApi.GetClassName((IntPtr) childHandle, className, className.Capacity);
-
-				if (classNameLength == 0)
-				{
-					WriteLog(LogLevel.Error, $"获取 explorer 子进程 [Handle={childHandle}] 的类名时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-					NoProcessNow();
-					return;
-				}
-
-				if (className.ToString() is "Windows.UI.Core.CoreWindow" or "SHELLDLL_DefView")
-				{
-					// 如果是任务栏或者桌面则不记录。
-					//WriteLog(LogLevel.Debug, $" explorer 子进程 [ClassName={_className}] 是任务栏或者桌面。");
-					NoProcessNow();
-					return;
-				}
-				// 如果是用户打开的窗口，则继续记录。
+				return;
 			}
-
-			if (name == "ApplicationFrameHost")
+			if (p is not null)
 			{
-				// 如果是 UWP 进程的宿主进程，则获取实际 UWP 进程的实例。
-
-				IntPtr? childHandle = NativeApi.FindWindowEx(
-					handle, IntPtr.Zero, "Windows.UI.Core.CoreWindow", null!);
-
-				if (childHandle == null)
-				{
-					WriteLog(LogLevel.Error, $"获取 UWP 进程句柄时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-					NoProcessNow();
-					return;
-				}
-
-				if (childHandle == IntPtr.Zero)
-				{
-					WriteLog(LogLevel.Warning, "未获取到 UWP 进程句柄。");
-					NoProcessNow();
-					return;
-				}
-
-				if (NativeApi.GetWindowThreadProcessId((IntPtr) childHandle, out uint uwpId) == 0)
-				{
-					WriteLog(LogLevel.Error, $"获取 UWP 进程ID [Handle={childHandle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
-					NoProcessNow();
-					return;
-				}
-
-				try
-				{
-					process = Process.GetProcessById((int) uwpId);
-				}
-				catch (Exception ex)
-				{
-					WriteLog(LogLevel.Error, $"获取 UWP 进程信息 [ID={uwpId}] 时触发异常：{ex}");
-					NoProcessNow();
-					return;
-				}
+				process = p;
 			}
 
 			// 更新总使用时长和连续使用时长。
@@ -1276,6 +1268,31 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 尝试获取句柄为 <paramref name="parentHandle"/> 的进程的子窗口句柄。
+		/// </summary>
+		/// <remarks>当返回值为 <see langword="false"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
+		/// <param name="parentHandle">进程句柄。</param>
+		/// <param name="childHandle">子窗口句柄。</param>
+		/// <param name="className">指定子窗口的类名。</param>
+		/// <param name="logSymbol">如果返回值为 <see langword="false"/> ，则将此日志标识和错误写入日志。</param>
+		/// <returns>指示 <paramref name="childHandle"/> 是否为 <see cref="nint.Zero"/> 。</returns>
+		private bool TryGetChildWindowHandle(nint parentHandle, out nint childHandle,
+			string logSymbol, string? className = null)
+		{
+			childHandle = NativeApi.FindWindowEx(parentHandle, nint.Zero, className, null);
+			if (childHandle == nint.Zero)
+			{
+				WriteLog(LogLevel.Error, $"{logSymbol}错误代码：{Marshal.GetLastWin32Error()}。");
+				NoProcessNow();
+				return false;
+			}
+			else
+			{
+				return true;
+			}
+		}
+
+		/// <summary>
 		/// 尝试获取前台窗口的句柄。
 		/// </summary>
 		/// <remarks>当 <paramref name="handle"/> 为 <see cref="nint.Zero"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
@@ -1299,11 +1316,12 @@ namespace Zscno.Trackora
 		/// <remarks>如果获取失败则 <paramref name="process"/> 为一个 <see cref="Process"/> 的新实例。</remarks>
 		/// <param name="processId">进程的 Id 。</param>
 		/// <param name="process">通过 Id 获取到的进程信息。</param>
+		/// <param name="logSymbol">如果返回值为 <see langword="false"/> ，则将此日志标识和错误写入日志。</param>
 		/// <returns>指示是否成功获取 <paramref name="process"/> 。</returns>
-		private bool TryGetProcessById(int processId, out Process process)
+		private bool TryGetProcessById(int processId, out Process process, string logSymbol)
 		{
 			(bool success, Process? p) = new SafeCaller()
-				.SetLogMessage($"无法获取进程 [ID={processId}] 的信息。")
+				.SetLogMessage(logSymbol)
 				.CallActionWithReturnSync(Process.GetProcessById, processId);
 			process = p ?? new();
 			if (!success)
@@ -1314,18 +1332,44 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 尝试获取窗口的类名。
+		/// </summary>
+		/// <remarks>当返回值为 <see langword="false"/> 时会调用 <see cref="NoProcessNow"/> 方法。</remarks>
+		/// <param name="handle">窗口的句柄。</param>
+		/// <param name="className">窗口的类名。</param>
+		/// <param name="logSymbol">如果返回值为 <see langword="false"/> ，则将此日志标识和错误写入日志。</param>
+		/// <returns>指示是否成功获取窗口类名。</returns>
+		private bool TryGetWindowClassName(nint handle, out string className, string logSymbol)
+		{
+			StringBuilder classNameBuilder = new(256);
+			int classNameLength = NativeApi.GetClassName(handle, classNameBuilder, classNameBuilder.Capacity);
+			if (classNameLength == 0)
+			{
+				WriteLog(LogLevel.Error, $"{logSymbol}错误代码：{Marshal.GetLastWin32Error()}。");
+				className = string.Empty;
+				NoProcessNow();
+				return false;
+			}
+			else
+			{
+				className = classNameBuilder.ToString();
+				return true;
+			}
+		}
+
+		/// <summary>
 		/// 尝试获取创建句柄为 <paramref name="handle"/> 的窗口的进程的 Id 。
 		/// </summary>
 		/// <remarks>当 <paramref name="processId"/> 获取失败时会调用 <see cref="NoProcessNow"/> 方法并写入日志。</remarks>
 		/// <param name="handle">窗口句柄。</param>
 		/// <param name="processId">创建句柄为 <paramref name="handle"/> 的窗口的进程的 Id 。</param>
+		/// <param name="logSymbol">如果返回值为 <see langword="false"/> ，则将此日志标识和错误写入日志。</param>
 		/// <returns>指示是否成功获取 <paramref name="processId"/> 。</returns>
-		private bool TryGetWindowThreadProcessId(nint handle, out uint processId)
+		private bool TryGetWindowThreadProcessId(nint handle, out uint processId, string logSymbol)
 		{
 			if (NativeApi.GetWindowThreadProcessId(handle, out processId) == 0)
 			{
-				WriteLog(LogLevel.Error,
-					$"获取进程 ID [Handle={handle}] 时触发异常，错误代码：{Marshal.GetLastWin32Error()}。");
+				WriteLog(LogLevel.Error, $"{logSymbol}错误代码：{Marshal.GetLastWin32Error()}。");
 				NoProcessNow();
 				return false;
 			}
