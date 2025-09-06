@@ -1088,13 +1088,22 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 记录上次被激活窗口的使用时长。
 		/// </summary>
-		private void RecordUsedTime()
+		private void RecordUsedTime(string currentProcessName = "")
 		{
 			if (_lastProcess is null)
 			{
 				WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
 				return;
 			}
+
+			if (_lastProcess.ProcessName == currentProcessName)
+			{
+				// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
+				_singleContinuousUsedTime += _oneSecond;
+				return;
+			}
+
+			_singleContinuousUsedTime = TimeSpan.Zero;
 
 			string name = _lastProcess.ProcessName;
 			TimeSpan usedTime;
@@ -1176,7 +1185,20 @@ namespace Zscno.Trackora
 			}
 		}
 
-		private void Timer_Tick(object? sender, object e)
+		/// <summary>
+		/// 如果达到了连续使用提醒时长则发送连续使用时长提醒。
+		/// </summary>
+		private void SendContinuousReminderIfNeed()
+		{
+			if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"] &&
+				_continuousUsedTime != TimeSpan.Zero)
+			{
+				CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
+				_continuousUsedTime = TimeSpan.Zero;
+			}
+		}
+
+		private async void Timer_Tick(object? sender, object e)
 		{
 			SendEndUsingReminderIfNeed();
 
@@ -1205,61 +1227,19 @@ namespace Zscno.Trackora
 			{
 				return;
 			}
-			if (p is not null)
-			{
-				process = p;
-			}
-
-			// 更新总使用时长和连续使用时长。
-			_totalUsedTime += _oneSecond;
-			// 如果窗口被激活时长超过 5 秒则记录。
-			if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
-			{
-				// 如果时长到达 6 秒则把之前的 6 秒全部加上。 一般情况加 1 秒。
-				_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6) ?
-				TimeSpan.FromSeconds(6) : _oneSecond;
-			}
-			_lastRecordTime = DateTime.Now;
-
-			//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
-
-			// 检查是否需要显示提醒通知。
+			process = p ?? process;
+			UpdateUsageTime();
+			_ = await new SafeCaller()
+				.SetReminderType(CallerReminderType.Reminder)
+				.SetReminderMessage("提醒用户无法记录时间")
+				.SetContentResName("ECanNotRecordTime")
+				.CallActionWithArgs(RecordUsedTime, name);
 			SendTotalReminderIfNeed();
-			if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"]
-				&& _continuousUsedTime != TimeSpan.Zero)
-			{
-				CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
-				_continuousUsedTime = TimeSpan.Zero;
-			}
-
-			if (_lastProcess != null)
-			{
-				// 如果上次有记录：
-				if (_lastProcess.ProcessName == name)
-				{
-					// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
-					_singleContinuousUsedTime += _oneSecond;
-					return;
-				}
-
-				_singleContinuousUsedTime = TimeSpan.Zero;
-				try
-				{
-					RecordUsedTime();
-				}
-				catch (Exception ex)
-				{
-					WriteLog(LogLevel.Error, ex.ToString());
-					CanSend = ReminderHelper.SendReminder("提示用户无法记录时间",
-						Loader.GetString("ErrorOrWarningTitle"),
-						Loader.GetString("ECanNotRecordTime"));
-				}
-			}
+			SendContinuousReminderIfNeed();
 
 			//记录这次的进程实例、信息和激活时间。
 			_lastProcess = process;
 			_lastActivationTime = DateTime.Now;
-
 			if (!GetNoInfoArr().Contains(name))
 			{
 				// 如果进程不是只记录使用时长的则记录信息。
@@ -1374,6 +1354,23 @@ namespace Zscno.Trackora
 				return false;
 			}
 			return true;
+		}
+
+		/// <summary>
+		/// 更新总使用时长和连续使用时长。
+		/// </summary>
+		private void UpdateUsageTime()
+		{
+			_totalUsedTime += _oneSecond;
+			// 如果窗口被激活时长超过 5 秒则记录。
+			if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
+			{
+				// 如果时长到达 6 秒则把之前的 6 秒全部加上。 一般情况加 1 秒。
+				_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6) ?
+				TimeSpan.FromSeconds(6) : _oneSecond;
+			}
+			_lastRecordTime = DateTime.Now;
+			//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");
 		}
 	}
 }
