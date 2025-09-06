@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Windows.ApplicationModel;
 using Windows.Graphics.Imaging;
 using Windows.Management.Deployment;
@@ -1086,47 +1087,14 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
-		/// 记录上次被激活窗口的使用时长。
+		/// 在文件中记录进程 <paramref name="name"/> 的总使用时长。
 		/// </summary>
-		private void RecordUsedTime(string currentProcessName = "")
+		/// <param name="name">要记录的进程名称。</param>
+		/// <param name="totalUsedTime">进程的总使用时长。</param>
+		private void RecordUsageTimeIntoFile(string name, TimeSpan totalUsedTime)
 		{
-			if (_lastProcess is null)
-			{
-				WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
-				return;
-			}
-
-			if (_lastProcess.ProcessName == currentProcessName)
-			{
-				// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
-				_singleContinuousUsedTime += _oneSecond;
-				return;
-			}
-
-			_singleContinuousUsedTime = TimeSpan.Zero;
-
-			string name = _lastProcess.ProcessName;
-			TimeSpan usedTime;
-			TimeSpan totalUsedTime;
-
-			// 在 WindowsUsedTime 中记录上次被激活窗口的使用时长。在 TotalUsedTime 中记录总使用时长。
 			try
 			{
-				usedTime = DateTime.Now - _lastActivationTime;
-				totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
-					pastUsedTime + usedTime : usedTime;
-				_windowsUsedTime[name] = totalUsedTime;
-				TotalUsedTime += usedTime;
-			}
-			catch (Exception ex)
-			{
-				throw new Exception("在记录上次被激活窗口的使用时长到 WindowsUsedTime 中时触发了异常。", ex);
-			}
-
-			// 将使用时长记录到记录文件中：
-			try
-			{
-				// 获取记录文件的所有行。
 				string[] lines = GetRecordFileLines();
 				StringBuilder writeLines = new();
 				bool hasFound = false;
@@ -1152,15 +1120,63 @@ namespace Zscno.Trackora
 					_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
 				}
 
-				using FileStream fstream = new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
+				using FileStream fstream =
+					new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
 				using BinaryWriter bwriter = new(fstream, Encoding.UTF8);
 				bwriter.Write(writeLines.ToString());
 			}
 			catch (Exception ex)
 			{
-				throw new Exception($"在记录上次被激活窗口的使用时长到文件 [{_recordFilePath}] 中时触发了异常。", ex);
+				throw new Exception($"无法在文件 [{_recordFilePath}] 中记录进程 {name} 的总使用时长。", ex);
 			}
-			//WriteLog(LogLevel.Debug, $"已记录进程 {_lastProcess.ProcessName} 的使用时长：{usedTime:hh\\:mm\\:ss} 。");
+		}
+
+		/// <summary>
+		/// 在内存中记录进程 <paramref name="name"/> 的单次使用时长和总使用时长。
+		/// </summary>
+		/// <param name="name">要记录的进程名称。</param>
+		/// <returns>进程 <paramref name="name"/> 的总使用时长。</returns>
+		private TimeSpan RecordUsageTimeIntoMemory(string name)
+		{
+			try
+			{
+				TimeSpan usedTime = DateTime.Now - _lastActivationTime;
+				TimeSpan totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
+					pastUsedTime + usedTime : usedTime;
+				_windowsUsedTime[name] = totalUsedTime;
+				TotalUsedTime += usedTime;
+				return totalUsedTime;
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"无法在内存中记录进程 {name} 的使用时长。", ex);
+			}
+		}
+
+		/// <summary>
+		/// 记录上次被激活窗口的使用时长。
+		/// </summary>
+		private void RecordUsedTime(string currentProcessName = "")
+		{
+			if (_lastProcess is null)
+			{
+				WriteLog(LogLevel.Warning, "将要记录的进程是 null ，已忽略（理论上不可遇到）。");
+				return;
+			}
+
+			string name = _lastProcess.ProcessName;
+
+			if (name == currentProcessName)
+			{
+				// 如果被激活窗口没有变化，则不记录但增加连续使用时长。
+				_singleContinuousUsedTime += _oneSecond;
+				return;
+			}
+			_singleContinuousUsedTime = TimeSpan.Zero;
+
+			TimeSpan totalUsedTime = RecordUsageTimeIntoMemory(name);
+			RecordUsageTimeIntoFile(name, totalUsedTime);
+			//WriteLog(LogLevel.Debug, $"已记录进程 {name} 的使用时长。");
 		}
 
 		/// <summary>
