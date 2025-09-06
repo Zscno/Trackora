@@ -143,6 +143,27 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 调用带参数的 <paramref name="action"/> 方法。
+		/// </summary>
+		/// <param name="action">要调用的方法。</param>
+		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
+		public async Task<bool> CallActionWithArgs<T>(Action<T> action, T arg)
+		{
+			try
+			{
+				action(arg);
+				return true;
+			}
+			catch (Exception ex)
+			{
+				WriteLog(ex);
+				await RemindUser();
+				ExitIfNeed();
+				return false;
+			}
+		}
+
+		/// <summary>
 		/// 调用 <paramref name="action"/> 方法并返回 <typeparamref name="TResult"/> 类型的值。
 		/// </summary>
 		/// <typeparam name="TResult">返回值类型。</typeparam>
