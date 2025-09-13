@@ -1004,19 +1004,9 @@ namespace Zscno.Trackora
 				.SetReminderMessage("提示用户无法读取进程信息")
 				.SetContentResName("ECanNotGetInfo")
 				.CallActionWithReturn(GetProcessesInfoFromJson);
-			if (success)
+			if (!success || list is null || list.Any(info => info.ProcessName == process.ProcessName))
 			{
-				list ??= [];
-			}
-			else
-			{
-				_currentRecordProcessName = string.Empty;
-				return;
-			}
-
-			if (list.Any(info => info.ProcessName == process.ProcessName))
-			{
-				// 如果已经有信息则不再记录。
+				// 如果获取失败或已经有信息则不再记录。
 				_currentRecordProcessName = string.Empty;
 				return;
 			}
