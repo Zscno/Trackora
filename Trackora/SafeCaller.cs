@@ -39,7 +39,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 指示触发异常执行完所有操作后是否退出。
 		/// </summary>
-		protected bool Exit = false;
+		protected bool Exit;
 
 		/// <summary>
 		/// 日志的等级。

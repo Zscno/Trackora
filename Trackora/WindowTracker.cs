@@ -65,7 +65,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 指示总使用时长提醒是否已经显示。
 		/// </summary>
-		public static bool HasTotalReminded { get; set; } = false;
+		public static bool HasTotalReminded { get; set; }
 
 		/// <summary>
 		/// 用于显示的总使用时长。
@@ -102,7 +102,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// Json 序列化时使用的配置。
 		/// </summary>
-		private static JsonWriterOptions _jsonOptions = new();
+		private static JsonWriterOptions _jsonOptions;
 
 		/// <summary>
 		/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
