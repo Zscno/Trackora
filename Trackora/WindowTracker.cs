@@ -13,7 +13,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using Windows.ApplicationModel;
 using Windows.Graphics.Imaging;
 using Windows.Management.Deployment;
@@ -820,23 +819,27 @@ namespace Zscno.Trackora
 		/// 检查进程是否可用（不为 null 且不是正在记录的进程）。
 		/// </summary>
 		/// <param name="process">要检查的进程。</param>
+		/// <param name="copyProcess">如果进程可用，该参数是进程的副本；否则是一个新实例。</param>
 		/// <returns>指示进程是否可用。</returns>
-		private bool CheckProcessUsability(Process? process)
+		private bool CheckProcessUsability(Process? process, out Process copyProcess)
 		{
 			if (process is null)
 			{
-				WriteLog(LogLevel.Warning, "要记录的进程为 null （理论上不可遇到）或是正在记录，将跳过。");
+				WriteLog(LogLevel.Warning, "要记录的进程为 null ，将跳过。");
+				copyProcess = new();
 				return false;
 			}
 
 			if (process.ProcessName == _currentRecordProcessName)
 			{
 				WriteLog(LogLevel.Info, $"已开始记录进程 {process.ProcessName} ，将跳过。");
+				copyProcess = new();
 				return false;
 			}
 
 			// 更新当前正在记录的进程名称以防止重复记录。
 			_currentRecordProcessName = process.ProcessName;
+			copyProcess = process;
 			return true;
 		}
 
@@ -989,14 +992,12 @@ namespace Zscno.Trackora
 		/// </summary>
 		private async Task RecordProcessInfo()
 		{
-			Process? process = _lastProcess;
-
-			if (!CheckProcessUsability(process))
+			if (!CheckProcessUsability(_lastProcess, out Process process))
 			{
 				return;
 			}
 
-			string name = process!.ProcessName;
+			string name = process.ProcessName;
 
 			(bool success, List<ProcessInfo>? list) = await new SafeCaller()
 				.SetReminderType(CallerReminderType.Reminder)
