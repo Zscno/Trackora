@@ -97,7 +97,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 当无法获取到进程图标时使用的默认图标。
 		/// </summary>
-		private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
+		private const string DEFAULT_ICON_URI = "ms-appx:///Icons/Default.png";
 
 		/// <summary>
 		/// Json 序列化时使用的配置。
@@ -122,7 +122,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
 		/// </summary>
-		private static Dictionary<string, TimeSpan> _windowsUsedTime = [];
+		private static readonly Dictionary<string, TimeSpan> _windowsUsedTime = [];
 
 		/// <summary>
 		/// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
@@ -132,7 +132,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 记录当天进程名称和使用时长的文本文件路径。
 		/// </summary>
-		private readonly string _recordFilePath = string.Empty;
+		private readonly string _recordFilePath;
 
 		/// <summary>
 		/// 连续使用时长。
@@ -177,7 +177,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 计时器。
 		/// </summary>
-		private DispatcherTimer _timer = new();
+		private readonly DispatcherTimer _timer = new();
 
 		public WindowTracker()
 		{
@@ -448,7 +448,7 @@ namespace Zscno.Trackora
 			{
 				ProcessName = process.ProcessName,
 				DisplayName = GetDisplayName(process.ProcessName, title),
-				IconUri = _defaultIconUri,
+				IconUri = DEFAULT_ICON_URI,
 			};
 		}
 
@@ -463,7 +463,7 @@ namespace Zscno.Trackora
 			{
 				ProcessName = processName,
 				DisplayName = processName,
-				IconUri = _defaultIconUri,
+				IconUri = DEFAULT_ICON_URI,
 			};
 		}
 
@@ -1083,7 +1083,7 @@ namespace Zscno.Trackora
 				ProcessName = name,
 				DisplayName = GetDisplayName(name, process.MainWindowTitle, infoTuple.FriendlyName),
 				IconUri =
-					string.IsNullOrWhiteSpace(infoTuple.IconUri) ? _defaultIconUri : infoTuple.IconUri,
+					string.IsNullOrWhiteSpace(infoTuple.IconUri) ? DEFAULT_ICON_URI : infoTuple.IconUri,
 			};
 			await RecordInfoIntoFile(info, list);
 		}
