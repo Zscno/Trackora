@@ -2,7 +2,6 @@
 using Microsoft.Windows.AppLifecycle;
 using System;
 using System.Collections.Generic;
-using System.Drawing.Printing;
 using System.IO;
 using Windows.ApplicationModel.Resources;
 using Windows.Foundation.Collections;
