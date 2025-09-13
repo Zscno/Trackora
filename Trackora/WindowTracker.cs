@@ -102,7 +102,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// Json 序列化时使用的配置。
 		/// </summary>
-		private static JsonWriterOptions _jsonOpitons = new();
+		private static JsonWriterOptions _jsonOptions = new();
 
 		/// <summary>
 		/// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
@@ -184,7 +184,7 @@ namespace Zscno.Trackora
 			_recordFilePath = Path.Join(LocalCachePath,
 				"Record.dat");
 #if DEBUG
-			_jsonOpitons.Indented = true;
+			_jsonOptions.Indented = true;
 #endif
 
 			if (!LocalSettings.TryGetValue("Today", out object? today) ||
@@ -739,9 +739,9 @@ namespace Zscno.Trackora
 		/// <returns>图标的 Uri 。</returns>
 		private static async Task<string> SaveIcon(string name, InMemoryRandomAccessStream stream)
 		{
-			StorageFolder iconfolder = await StorageFolder.GetFolderFromPathAsync(
+			StorageFolder iconFolder = await StorageFolder.GetFolderFromPathAsync(
 				Path.Combine(LocalCachePath, "Icons"));
-			StorageFile iconFile = await iconfolder.CreateFileAsync(
+			StorageFile iconFile = await iconFolder.CreateFileAsync(
 				$"{name}.png", CreationCollisionOption.ReplaceExisting);
 			_ = await RandomAccessStream.CopyAndCloseAsync(
 				stream, await iconFile.OpenAsync(FileAccessMode.ReadWrite));
@@ -784,7 +784,7 @@ namespace Zscno.Trackora
 		private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
 		{
 			using MemoryStream stream = new();
-			using Utf8JsonWriter writer = new(stream, _jsonOpitons);
+			using Utf8JsonWriter writer = new(stream, _jsonOptions);
 			JsonSerializer.Serialize(writer, value, info);
 			writer.Flush();
 			return Encoding.UTF8.GetString(stream.ToArray());
@@ -903,11 +903,11 @@ namespace Zscno.Trackora
 		/// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
 		private string[] GetRecordFileLines()
 		{
-			using FileStream fstream = new(_recordFilePath, FileMode.OpenOrCreate,
+			using FileStream stream = new(_recordFilePath, FileMode.OpenOrCreate,
 				FileAccess.Read, FileShare.ReadWrite);
-			if (fstream.Length > 0)
+			if (stream.Length > 0)
 			{
-				using BinaryReader breader = new(fstream, Encoding.UTF8);
+				using BinaryReader breader = new(stream, Encoding.UTF8);
 				string text = breader.ReadString();
 				return text.Split("\r\n");
 			}
@@ -1122,10 +1122,10 @@ namespace Zscno.Trackora
 					_ = writeLines.AppendLine($"{name}|{totalUsedTime.TotalSeconds}");
 				}
 
-				using FileStream fstream =
+				using FileStream stream =
 					new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-				using BinaryWriter bwriter = new(fstream, Encoding.UTF8);
-				bwriter.Write(writeLines.ToString());
+				using BinaryWriter writer = new(stream, Encoding.UTF8);
+				writer.Write(writeLines.ToString());
 			}
 			catch (Exception ex)
 			{

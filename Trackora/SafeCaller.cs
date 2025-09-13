@@ -312,7 +312,7 @@ namespace Zscno.Trackora
 		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
 		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
-		public async Task<(bool Success, TResult? Result)> CallActionWithReturnAsnyc
+		public async Task<(bool Success, TResult? Result)> CallActionWithReturnAsync
 			<T1, T2, T3, TResult>(Func<T1, T2, T3, Task<TResult>> action, T1 arg1, T2 arg2, T3 arg3)
 		{
 			try
