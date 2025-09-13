@@ -13,6 +13,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Windows.ApplicationModel;
 using Windows.Graphics.Imaging;
 using Windows.Management.Deployment;
@@ -988,6 +989,29 @@ namespace Zscno.Trackora
 		}
 
 		/// <summary>
+		/// 在文件中记录指定的进程信息。
+		/// </summary>
+		/// <param name="info">指定的进程信息。</param>
+		/// <param name="allProcessInfos">所有已记录的进程信息。</param>
+		private async Task RecordInfoIntoFile(ProcessInfo info, List<ProcessInfo> allProcessInfos)
+		{
+			allProcessInfos.Add(info);
+			bool result = await new SafeCaller()
+				.SetLogMessage($"无法写入记录文件 [{InfoFilePath}] 。")
+				.SetReminderType(CallerReminderType.Reminder)
+				.SetReminderMessage("提示用户无法写入记录文件")
+				.SetContentResName("ECanNotWriteInfo")
+				.CallAction(() => File.WriteAllText(
+					InfoFilePath, SerializeJson(allProcessInfos,
+					JsonSerializeMetadata.Default.ListProcessInfo)));
+			_currentRecordProcessName = string.Empty;
+			if (result)
+			{
+				WriteLog(LogLevel.Info, $"已记录进程 {info.ProcessName} 的信息。");
+			}
+		}
+
+		/// <summary>
 		/// 记录进程信息到 JSON 文件中。
 		/// </summary>
 		private async Task RecordProcessInfo()
@@ -1019,8 +1043,8 @@ namespace Zscno.Trackora
 				() => NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, null!));
 			if (!success)
 			{
-				info = GetDefaultInfo(process);
-				goto Finish;
+				await RecordInfoIntoFile(GetDefaultInfo(process), list);
+				return;
 			}
 
 			(string IconUri, string FriendlyName) infoTuple;
@@ -1031,8 +1055,8 @@ namespace Zscno.Trackora
 						.CallActionWithReturn(GetProcessInfoForWin32, process, name);
 					if (!success)
 					{
-						info = GetDefaultInfo(process);
-						goto Finish;
+						await RecordInfoIntoFile(GetDefaultInfo(process), list);
+						return;
 					}
 					break;
 
@@ -1042,8 +1066,8 @@ namespace Zscno.Trackora
 						process, name, packageFullNameLength);
 					if (!success || infoTask is null)
 					{
-						info = GetDefaultInfo(process);
-						goto Finish;
+						await RecordInfoIntoFile(GetDefaultInfo(process), list);
+						return;
 					}
 					infoTuple = await infoTask;
 					break;
@@ -1051,8 +1075,8 @@ namespace Zscno.Trackora
 				default:
 					WriteLog(LogLevel.Error,
 						$"无法获取进程 {name} 的包全名，错误代码：{Marshal.GetLastWin32Error()}。");
-					info = GetDefaultInfo(process);
-					goto Finish;
+					await RecordInfoIntoFile(GetDefaultInfo(process), list);
+					return;
 			}
 
 			info = new()
@@ -1062,19 +1086,7 @@ namespace Zscno.Trackora
 				IconUri =
 					string.IsNullOrWhiteSpace(infoTuple.IconUri) ? _defaultIconUri : infoTuple.IconUri,
 			};
-
-			Finish:
-			list.Add(info);
-
-			_ = new SafeCaller()
-				.SetLogMessage($"无法写入记录文件 [{InfoFilePath}] 。")
-				.SetReminderType(CallerReminderType.Reminder)
-				.SetReminderMessage("提示用户无法写入记录文件")
-				.SetContentResName("ECanNotWriteInfo")
-				.CallAction(() => File.WriteAllText(
-					InfoFilePath, SerializeJson(list, JsonSerializeMetadata.Default.ListProcessInfo)));
-			_currentRecordProcessName = string.Empty;
-			WriteLog(LogLevel.Info, $"已记录进程 {name} 的信息。");
+			await RecordInfoIntoFile(info, list);
 		}
 
 		/// <summary>
