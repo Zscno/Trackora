@@ -25,14 +25,12 @@ namespace Zscno.Trackora
 			AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 			AppWindow.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
 			SetTitleBar(TitleBar);
-			if ((string) LocalSettings["Theme"] == "DarkTheme")
+			AppWindow.TitleBar.ButtonForegroundColor = (string)LocalSettings["Theme"] switch
 			{
-				AppWindow.TitleBar.ButtonForegroundColor = Colors.White;
-			}
-			else if ((string) LocalSettings["Theme"] == "LightTheme")
-			{
-				AppWindow.TitleBar.ButtonForegroundColor = Colors.Black;
-			}
+				"DarkTheme" => Colors.White,
+				"LightTheme" => Colors.Black,
+				_ => AppWindow.TitleBar.ButtonForegroundColor,
+			};
 		}
 
 		[RelayCommand]
@@ -44,7 +42,7 @@ namespace Zscno.Trackora
 				return;
 			}
 
-			if ((MainView.SelectedItem as NavigationViewItem) != Home)
+			if (MainView.SelectedItem as NavigationViewItem != Home)
 			{
 				MainView.SelectedItem = Home;
 			}
@@ -54,13 +52,10 @@ namespace Zscno.Trackora
 				{
 					return;
 				}
-				else
-				{
-					await page.LoadControlsThatNeed();
-				}
+
+				await page.LoadControlsThatNeed();
 			}
 
-			
 			nint hwnd = WindowNative.GetWindowHandle(window);
 			if (hwnd == nint.Zero)
 			{
@@ -84,9 +79,10 @@ namespace Zscno.Trackora
 			Application.Current.Exit();
 		}
 
-		private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+		private void NavigationView_SelectionChanged(NavigationView sender,
+			NavigationViewSelectionChangedEventArgs args)
 		{
-			if (((NavigationViewItem) args.SelectedItem).Name == "Home")
+			if (((NavigationViewItem)args.SelectedItem).Name == "Home")
 			{
 				_ = MainFrame.Navigate(typeof(HomePage));
 				sender.Header = Loader.GetString("HomeHeader");

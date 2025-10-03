@@ -190,5 +190,6 @@ namespace Zscno.Trackora
 	/// </summary>
 	[JsonSerializable(typeof(List<ProcessInfo>))]
 	internal partial class JsonSerializeMetadata : JsonSerializerContext
-	{ }
+	{
+	}
 }

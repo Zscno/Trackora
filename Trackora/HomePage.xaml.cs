@@ -15,7 +15,7 @@ namespace Zscno.Trackora
 	{
 		private static bool _firstLoad;
 
-		private static TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
+		private static readonly TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 
 		public HomePage()
 		{
@@ -30,8 +30,9 @@ namespace Zscno.Trackora
 			LoadingRing.IsActive = true;
 			// 如果结束使用时间未设置或已过，则不显示。
 			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
-				WindowTracker.EndUsingTime <= _timeNow ?
-				null : WindowTracker.EndUsingTime;
+									WindowTracker.EndUsingTime <= _timeNow
+				? null
+				: WindowTracker.EndUsingTime;
 			TimePickReminder.Text = string.Empty;
 			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
 			if (!_firstLoad)
@@ -44,14 +45,13 @@ namespace Zscno.Trackora
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
 				// 超过 6 项时显示按钮。
-				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
-					Visibility.Visible : Visibility.Collapsed;
+				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
 			}
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
 				All.Visibility = Visibility.Collapsed;
-				await ReminderHelper.ShowDialog("无法加载应用列表", 
+				await ReminderHelper.ShowDialog("无法加载应用列表",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
@@ -62,7 +62,7 @@ namespace Zscno.Trackora
 		{
 			LoadingRing.IsActive = true;
 			All.IsEnabled = false;
-			bool isRetract = (string) All.Content == Loader.GetString("Retract");
+			bool isRetract = (string)All.Content == Loader.GetString("Retract");
 
 			try
 			{
@@ -72,7 +72,7 @@ namespace Zscno.Trackora
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法加载应用列表", 
+				await ReminderHelper.ShowDialog("无法加载应用列表",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetInfo"));
 			}
@@ -108,9 +108,9 @@ namespace Zscno.Trackora
 		{
 			_firstLoad = true;
 			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
-			Total.Time = (TimeSpan) LocalSettings["TotalUsedRemindTime"];
-			Continuous.Time = (TimeSpan) LocalSettings["ContinuousUsedRemindTime"];
-			ResetContinuous.Time = (TimeSpan) LocalSettings["ContinuousUsedResetTime"];
+			Total.Time = (TimeSpan)LocalSettings["TotalUsedRemindTime"];
+			Continuous.Time = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
+			ResetContinuous.Time = (TimeSpan)LocalSettings["ContinuousUsedResetTime"];
 			await LoadControlsThatNeed();
 			_firstLoad = false;
 		}

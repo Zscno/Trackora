@@ -11,7 +11,7 @@ namespace Zscno.Trackora
 	{
 		Normal,
 
-		Crash
+		Crash,
 	}
 
 	/// <summary>
@@ -23,7 +23,7 @@ namespace Zscno.Trackora
 
 		Dialog,
 
-		Reminder
+		Reminder,
 	}
 
 	/// <summary>
@@ -146,6 +146,7 @@ namespace Zscno.Trackora
 		/// 调用带参数的 <paramref name="action"/> 方法。
 		/// </summary>
 		/// <param name="action">要调用的方法。</param>
+		/// <param name="arg"><paramref name="action"/> 方法的参数。</param>
 		/// <returns>指示 <paramref name="action"/> 方法是否成功执行。</returns>
 		public async Task<bool> CallActionWithArgs<T>(Action<T> action, T arg)
 		{
@@ -182,7 +183,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -207,7 +208,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -234,7 +235,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -248,6 +249,7 @@ namespace Zscno.Trackora
 		/// <param name="action">要调用的方法。</param>
 		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
 		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <param name="arg3"><paramref name="action"/> 方法的参数3。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
 		public async Task<(bool Success, TResult? Result)> CallActionWithReturn
 			<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> action, T1 arg1, T2 arg2, T3 arg3)
@@ -262,7 +264,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -290,14 +292,14 @@ namespace Zscno.Trackora
 				WriteLog(ex, level, message);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 			catch (Exception ex)
 			{
 				WriteLog(ex);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -311,6 +313,7 @@ namespace Zscno.Trackora
 		/// <param name="action">要调用的方法。</param>
 		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
 		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <param name="arg3"><paramref name="action"/> 方法的参数3。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
 		public async Task<(bool Success, TResult? Result)> CallActionWithReturnAsync
 			<T1, T2, T3, TResult>(Func<T1, T2, T3, Task<TResult>> action, T1 arg1, T2 arg2, T3 arg3)
@@ -325,7 +328,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				await RemindUser();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -349,7 +352,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				RemindUserSync();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -375,7 +378,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				RemindUserSync();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -403,7 +406,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				RemindUserSync();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -418,6 +421,7 @@ namespace Zscno.Trackora
 		/// <param name="action">要调用的方法。</param>
 		/// <param name="arg1"><paramref name="action"/> 方法的参数1。</param>
 		/// <param name="arg2"><paramref name="action"/> 方法的参数2。</param>
+		/// <param name="arg3"><paramref name="action"/> 方法的参数3。</param>
 		/// <returns><see langword="bool"/> 值指示 <paramref name="action"/> 方法是否成功执行， <typeparamref name="TResult"/> 值是返回结果。</returns>
 		public (bool Success, TResult? Result) CallActionWithReturnSync
 			<T1, T2, T3, TResult>(Func<T1, T2, T3, TResult> action, T1 arg1, T2 arg2, T3 arg3)
@@ -432,7 +436,7 @@ namespace Zscno.Trackora
 				WriteLog(ex);
 				RemindUserSync();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -461,14 +465,14 @@ namespace Zscno.Trackora
 				WriteLog(ex, level, message);
 				RemindUserSync();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 			catch (Exception ex)
 			{
 				WriteLog(ex);
 				RemindUserSync();
 				ExitIfNeed();
-				return (false, default(TResult));
+				return (false, default(TResult?));
 			}
 		}
 
@@ -631,9 +635,6 @@ namespace Zscno.Trackora
 					File.WriteAllText(
 						$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash", $"{message}：{ex}");
 					break;
-
-				default:
-					break;
 			}
 		}
 
@@ -650,9 +651,6 @@ namespace Zscno.Trackora
 					break;
 
 				case CallerLogType.Crash:
-					break;
-
-				default:
 					break;
 			}
 		}

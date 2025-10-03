@@ -65,40 +65,40 @@ namespace Zscno.Trackora
 			{
 				case ReminderKind.TotalUsedTimeReminder:
 					logInfo = $"总使用时长已达设置中的值" +
-						$" [{(TimeSpan) LocalSettings["TotalUsedRemindTime"]:hh\\:mm\\:ss}] 。";
+							  $" [{(TimeSpan)LocalSettings["TotalUsedRemindTime"]:hh\\:mm\\:ss}] 。";
 					logError = "在发送 总使用时间提醒通知 时触发异常：";
 					title = Loader.GetString("UsedTimeReminderTitle");
 					content = Loader.GetString("TotalReminderText1") +
-						WindowTracker.GetLocalTime(TimeSpan.Zero, true) +
-						Loader.GetString("TotalReminderText2");
-					audio.Src = new(CommonSounds[(string) LocalSettings["TotalUsedTimeSound"]]);
+							  WindowTracker.GetLocalTime(TimeSpan.Zero, true) +
+							  Loader.GetString("TotalReminderText2");
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["TotalUsedTimeSound"]]);
 					break;
 
 				case ReminderKind.TotalUsedTimeSoundTest:
 					logInfo = string.Empty;
 					logError = "在发送 总使用时长提醒提示音的测试通知 时触发异常：";
 					title = Loader.GetString("Test/Content");
-					content = Loader.GetString("TestContent") + (string) LocalSettings["TotalUsedTimeSound"];
-					audio.Src = new(CommonSounds[(string) LocalSettings["TotalUsedTimeSound"]]);
+					content = Loader.GetString("TestContent") + (string)LocalSettings["TotalUsedTimeSound"];
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["TotalUsedTimeSound"]]);
 					break;
 
 				case ReminderKind.ContinuousUsedTimeReminder:
 					logInfo = $"连续使用时长已达设置中的值" +
-						$" [{(TimeSpan) LocalSettings["ContinuousUsedRemindTime"]:hh\\:mm\\:ss}] 。";
+							  $" [{(TimeSpan)LocalSettings["ContinuousUsedRemindTime"]:hh\\:mm\\:ss}] 。";
 					logError = "在发送 连续使用时间提醒通知 时触发异常：";
 					title = Loader.GetString("UsedTimeReminderTitle");
 					content = Loader.GetString("ContinuousReminderText1") +
-						WindowTracker.GetLocalTime((TimeSpan) LocalSettings["ContinuousUsedRemindTime"]) +
-						Loader.GetString("ContinuousReminderText2");
-					audio.Src = new Uri(CommonSounds[(string) LocalSettings["ContinuousUsedTimeSound"]]);
+							  WindowTracker.GetLocalTime((TimeSpan)LocalSettings["ContinuousUsedRemindTime"]) +
+							  Loader.GetString("ContinuousReminderText2");
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["ContinuousUsedTimeSound"]]);
 					break;
 
 				case ReminderKind.ContinuousUsedTimeSoundTest:
 					logInfo = string.Empty;
 					logError = "在发送 连续使用时长提醒提示音的测试通知 时触发异常：";
 					title = Loader.GetString("Test/Content");
-					content = Loader.GetString("TestContent") + (string) LocalSettings["ContinuousUsedTimeSound"];
-					audio.Src = new Uri(CommonSounds[(string) LocalSettings["ContinuousUsedTimeSound"]]);
+					content = Loader.GetString("TestContent") + (string)LocalSettings["ContinuousUsedTimeSound"];
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["ContinuousUsedTimeSound"]]);
 					break;
 
 				case ReminderKind.EndUsingTimeReminder:
@@ -106,17 +106,17 @@ namespace Zscno.Trackora
 					logError = "在发送 结束使用时间提醒通知 时触发异常：";
 					title = Loader.GetString("EndUsingReminderTitle");
 					content = Loader.GetString("EndUsingReminderText1") +
-						WindowTracker.GetLocalTime(WindowTracker.EndUsingTime) +
-						Loader.GetString("EndUsingReminderText2");
-					audio.Src = new Uri(AlarmSounds[(string) LocalSettings["EndUsingTimeSound"]]);
+							  WindowTracker.GetLocalTime(WindowTracker.EndUsingTime) +
+							  Loader.GetString("EndUsingReminderText2");
+					audio.Src = new Uri(AlarmSounds[(string)LocalSettings["EndUsingTimeSound"]]);
 					break;
 
 				case ReminderKind.EndUsingTimeSoundTest:
 					logInfo = string.Empty;
 					logError = "在发送 结束使用时间提醒提示音的测试通知 时触发异常：";
 					title = Loader.GetString("Test/Content");
-					content = Loader.GetString("TestContent") + (string) LocalSettings["EndUsingTimeSound"];
-					audio.Src = new Uri(AlarmSounds[(string) LocalSettings["EndUsingTimeSound"]]);
+					content = Loader.GetString("TestContent") + (string)LocalSettings["EndUsingTimeSound"];
+					audio.Src = new Uri(AlarmSounds[(string)LocalSettings["EndUsingTimeSound"]]);
 					break;
 
 				default:
@@ -139,7 +139,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				LogSystem.WriteLog(LogLevel.Error, logError + ex.ToString());
+				LogSystem.WriteLog(LogLevel.Error, logError + ex);
 				return false;
 			}
 		}
@@ -158,9 +158,9 @@ namespace Zscno.Trackora
 			try
 			{
 				new ToastContentBuilder().AddText(title).AddText(content).AddAudio(
-					new ToastAudio()
+					new ToastAudio
 					{
-						Src = new(audioUri)
+						Src = new Uri(audioUri),
 					}).Show();
 				return true;
 			}
@@ -199,7 +199,7 @@ namespace Zscno.Trackora
 					Content = content,
 					CloseButtonText = Loader.GetString("Cancel"),
 					PrimaryButtonText = Loader.GetString("OK/Content"),
-					DefaultButton = ContentDialogButton.Primary
+					DefaultButton = ContentDialogButton.Primary,
 				};
 				_ = await dialog.ShowAsync();
 				return true;

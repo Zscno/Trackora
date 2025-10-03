@@ -83,7 +83,7 @@ namespace Zscno.Trackora
 		{
 			{ Loader.GetString("LightTheme"), "LightTheme" },
 			{ Loader.GetString("DarkTheme"), "DarkTheme" },
-			{ Loader.GetString("SystemTheme"), "SystemTheme" }
+			{ Loader.GetString("SystemTheme"), "SystemTheme" },
 		};
 
 		/// <summary>
@@ -149,7 +149,7 @@ namespace Zscno.Trackora
 
 			try
 			{
-				SetTheme((string) LocalSettings["Theme"]);
+				SetTheme((string)LocalSettings["Theme"]);
 			}
 			catch (Exception ex)
 			{
@@ -191,45 +191,19 @@ namespace Zscno.Trackora
 		/// </summary>
 		private static void InitLocalSettingsIfNeed()
 		{
-			if (!LocalSettings.ContainsKey("TotalUsedRemindTime"))
-			{
-				LocalSettings["TotalUsedRemindTime"] = TimeSpan.FromHours(2);
-			}
-			if (!LocalSettings.ContainsKey("ContinuousUsedRemindTime"))
-			{
-				LocalSettings["ContinuousUsedRemindTime"] = TimeSpan.FromMinutes(30);
-			}
-			if (!LocalSettings.ContainsKey("TotalUsedTimeSound"))
-			{
-				LocalSettings["TotalUsedTimeSound"] = "Default";
-			}
-			if (!LocalSettings.ContainsKey("ContinuousUsedTimeSound"))
-			{
-				LocalSettings["ContinuousUsedTimeSound"] = "Default";
-			}
-			if (!LocalSettings.ContainsKey("EndUsingTimeSound"))
-			{
-				LocalSettings["EndUsingTimeSound"] = "Alarm";
-			}
-			if (!LocalSettings.ContainsKey("Theme"))
-			{
-				LocalSettings["Theme"] = "SystemTheme";
-			}
-			if (!LocalSettings.ContainsKey("NoInfoNames"))
-			{
-				// 开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图，只记录时间不记录信息。
-				LocalSettings["NoInfoNames"] = "StartMenuExperienceHost,SearchHost," +
-					"PickerHost,consent,OpenWith,Widgets,ShellExperienceHost";
-			}
-			if (!LocalSettings.ContainsKey("NoTimeNames"))
-			{
-				// 桌面管理器，锁屏，线程等待对话框，什么都不记录。
-				LocalSettings["NoTimeNames"] = "dwm,LockApp,ServiceHub.ThreadedWaitDialog";
-			}
-			if (!LocalSettings.ContainsKey("ContinuousUsedResetTime"))
-			{
-				LocalSettings["ContinuousUsedResetTime"] = TimeSpan.FromMinutes(10);
-			}
+			LocalSettings.TryAdd("TotalUsedRemindTime", TimeSpan.FromHours(2));
+			LocalSettings.TryAdd("ContinuousUsedRemindTime", TimeSpan.FromMinutes(30));
+			LocalSettings.TryAdd("TotalUsedTimeSound", "Default");
+			LocalSettings.TryAdd("ContinuousUsedTimeSound", "Default");
+			LocalSettings.TryAdd("EndUsingTimeSound", "Alarm");
+			LocalSettings.TryAdd("Theme", "SystemTheme");
+			LocalSettings.TryAdd("NoInfoNames",
+				"StartMenuExperienceHost,SearchHost,PickerHost," +
+				"consent,OpenWith,Widgets,ShellExperienceHost");
+			// 开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图，只记录时间不记录信息。
+			LocalSettings.TryAdd("NoTimeNames", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
+			// 桌面管理器，锁屏，线程等待对话框，什么都不记录。
+			LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));
 		}
 
 		/// <summary>
@@ -238,19 +212,12 @@ namespace Zscno.Trackora
 		/// <param name="themeName">指定的主题名称。</param>
 		private static void SetTheme(string themeName)
 		{
-			switch (themeName)
+			Current.RequestedTheme = themeName switch
 			{
-				case "LightTheme":
-					Current.RequestedTheme = ApplicationTheme.Light;
-					break;
-
-				case "DarkTheme":
-					Current.RequestedTheme = ApplicationTheme.Dark;
-					break;
-
-				default:
-					break;
-			}
+				"LightTheme" => ApplicationTheme.Light,
+				"DarkTheme" => ApplicationTheme.Dark,
+				_ => Current.RequestedTheme,
+			};
 		}
 
 		/// <summary>
@@ -258,10 +225,7 @@ namespace Zscno.Trackora
 		/// </summary>
 		private void AppInstance_Activated(object? sender, AppActivationArguments e)
 		{
-			_ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () =>
-			{
-				await AppMainWindow.ShowWindow();
-			});
+			_ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { await AppMainWindow.ShowWindow(); });
 		}
 	}
 }

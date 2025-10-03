@@ -57,7 +57,7 @@ namespace Zscno.Trackora
 		/// </summary>
 		public static TimeSpan EndUsingTime
 		{
-			get => (TimeSpan) LocalSettings["EndUsingTime"];
+			get => (TimeSpan)LocalSettings["EndUsingTime"];
 
 			set => LocalSettings["EndUsingTime"] = value;
 		}
@@ -72,7 +72,7 @@ namespace Zscno.Trackora
 		/// </summary>
 		public static TimeSpan TotalUsedTime
 		{
-			get => (TimeSpan) LocalSettings["TotalUsedTime"];
+			get => (TimeSpan)LocalSettings["TotalUsedTime"];
 
 			private set
 			{
@@ -135,6 +135,11 @@ namespace Zscno.Trackora
 		private readonly string _recordFilePath;
 
 		/// <summary>
+		/// 计时器。
+		/// </summary>
+		private readonly DispatcherTimer _timer = new();
+
+		/// <summary>
 		/// 连续使用时长。
 		/// </summary>
 		private TimeSpan _continuousUsedTime;
@@ -174,11 +179,6 @@ namespace Zscno.Trackora
 		/// </summary>
 		private TimeSpan _singleContinuousUsedTime;
 
-		/// <summary>
-		/// 计时器。
-		/// </summary>
-		private readonly DispatcherTimer _timer = new();
-
 		public WindowTracker()
 		{
 			_recordFilePath = Path.Join(LocalCachePath,
@@ -188,7 +188,7 @@ namespace Zscno.Trackora
 #endif
 
 			if (!LocalSettings.TryGetValue("Today", out object? today) ||
-				(DateTimeOffset) today != new DateTimeOffset(DateTime.Now.Date))
+				(DateTimeOffset)today != new DateTimeOffset(DateTime.Now.Date))
 			{
 				_ = new SafeCaller()
 					.SetReminderType(CallerReminderType.Reminder)
@@ -238,24 +238,28 @@ namespace Zscno.Trackora
 
 			// 根据本地化设置返回时间字符串。
 			string result;
-			if (realTime.Days == 0 && realTime.Hours == 0 && realTime.Minutes == 0)
+			switch (realTime)
 			{
-				result = "< 1" + Loader.GetString("Minute");
-			}
-			else if (realTime.Days == 0 && realTime.Hours == 0)
-			{
-				result = realTime.Minutes + Loader.GetString("Minute");
-			}
-			else if (realTime.Days == 0)
-			{
-				result = realTime.Hours + Loader.GetString("Hour")
-					+ realTime.Minutes + Loader.GetString("Minute");
-			}
-			else
-			{
-				result = realTime.Days + Loader.GetString("Day")
-					+ realTime.Hours + Loader.GetString("Hour")
-					+ realTime.Minutes + Loader.GetString("Minute");
+				case { Days: 0, Hours: 0, Minutes: 0 }:
+					result = "< 1" + Loader.GetString("Minute");
+					break;
+				case { Days: 0, Hours: 0 }:
+					result = realTime.Minutes + Loader.GetString("Minute");
+					break;
+				default:
+					if (realTime.Days == 0)
+					{
+						result = realTime.Hours + Loader.GetString("Hour")
+												+ realTime.Minutes + Loader.GetString("Minute");
+					}
+					else
+					{
+						result = realTime.Days + Loader.GetString("Day")
+											   + realTime.Hours + Loader.GetString("Hour")
+											   + realTime.Minutes + Loader.GetString("Minute");
+					}
+
+					break;
 			}
 			return result;
 		}
@@ -277,8 +281,7 @@ namespace Zscno.Trackora
 			string processesListText;
 			try
 			{
-				processesListText = File.Exists(InfoFilePath) ?
-					File.ReadAllText(InfoFilePath) : string.Empty;
+				processesListText = File.Exists(InfoFilePath) ? File.ReadAllText(InfoFilePath) : string.Empty;
 			}
 			catch (Exception ex)
 			{
@@ -293,8 +296,8 @@ namespace Zscno.Trackora
 			}
 
 			List<ProcessInfo> list = GetProcessesInfoFromJson();
-			Dictionary<string, ProcessInfo> processesDict = list.Count == 0 ?
-				[] : list.ToDictionary(value => value.ProcessName);
+			Dictionary<string, ProcessInfo> processesDict =
+				list.Count == 0 ? [] : list.ToDictionary(value => value.ProcessName);
 
 			foreach (string name in processNames)
 			{
@@ -304,7 +307,7 @@ namespace Zscno.Trackora
 				{
 					info = GetDefaultInfo(name);
 				}
-				else if (!processesDict.TryGetValue(name, out info) || info is null)
+				else if (!processesDict.TryGetValue(name, out info))
 				{
 					// 如果 json 文件中已有记录，则反序列化并查找当前进程。
 					WriteLog(LogLevel.Warning, $"在记录文件 [Path={InfoFilePath}] 中未找到进程 {name} 的信息。");
@@ -330,7 +333,7 @@ namespace Zscno.Trackora
 		{
 			InMemoryRandomAccessStream croppedStream = new();
 			BitmapEncoder encoder = await BitmapEncoder.CreateForTranscodingAsync(croppedStream, decoder);
-			encoder.BitmapTransform.Bounds = new()
+			encoder.BitmapTransform.Bounds = new BitmapBounds
 			{
 				X = x,
 				Y = y,
@@ -444,7 +447,7 @@ namespace Zscno.Trackora
 		private static ProcessInfo GetDefaultInfo(Process process)
 		{
 			string title = process.MainWindowTitle;
-			return new()
+			return new ProcessInfo
 			{
 				ProcessName = process.ProcessName,
 				DisplayName = GetDisplayName(process.ProcessName, title),
@@ -459,7 +462,7 @@ namespace Zscno.Trackora
 		/// <returns>默认的进程信息。</returns>
 		private static ProcessInfo GetDefaultInfo(string processName)
 		{
-			return new()
+			return new ProcessInfo
 			{
 				ProcessName = processName,
 				DisplayName = processName,
@@ -525,11 +528,9 @@ namespace Zscno.Trackora
 				if (realWidth < 32 && realHeight < 32)
 				{
 					realWidth = realHeight = 32;
-					realX = Round((width - realWidth) / 2);
-					realY = Round((width - realHeight) / 2);
+					realX = Round((double)(width - realWidth) / 2);
+					realY = Round((double)(width - realHeight) / 2);
 				}
-				realX = realX < 0 ? 0 : realX;
-				realY = realY < 0 ? 0 : realY;
 
 				InMemoryRandomAccessStream croppedStream = await CropIcon(decoder,
 					realX, realY, realWidth, realHeight);
@@ -537,7 +538,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法保存进程 {name} 的图标。", ex);
+				throw new Exception($"无法保存进程 {name} 的图标。", ex);
 			}
 		}
 
@@ -555,27 +556,20 @@ namespace Zscno.Trackora
 				Icon icon = new(preIcon, 32, 32);
 				preIcon.Dispose();
 
-				if (icon is not null)
-				{
-					// 加载图标并将图标保存到缓存文件夹中。
-					string iconPath = Path.Combine(LocalCachePath,
-						"Icons", $"{name}.png");
-					using FileStream iconStream = new(iconPath, FileMode.Create,
-						FileAccess.ReadWrite, FileShare.None);
-					icon.ToBitmap().Save(iconStream, ImageFormat.Png);
-					icon.Dispose();
+				// 加载图标并将图标保存到缓存文件夹中。
+				string iconPath = Path.Combine(LocalCachePath,
+					"Icons", $"{name}.png");
+				using FileStream iconStream = new(iconPath, FileMode.Create,
+					FileAccess.ReadWrite, FileShare.None);
+				icon.ToBitmap().Save(iconStream, ImageFormat.Png);
+				icon.Dispose();
 
-					// 返回图标的 Uri。
-					return new Uri(iconPath).ToString();
-				}
-				else
-				{
-					throw new InvalidOperationException($"出于未知原因，未获取到进程 {name} 的图标。");
-				}
+				// 返回图标的 Uri。
+				return new Uri(iconPath).ToString();
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法保存进程 {name} 的图标。", ex);
+				throw new Exception($"无法保存进程 {name} 的图标。", ex);
 			}
 		}
 
@@ -585,7 +579,7 @@ namespace Zscno.Trackora
 		/// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
 		private static HashSet<string> GetNoInfoArr()
 		{
-			string noInfoNamesStr = (string) LocalSettings["NoInfoNames"];
+			string noInfoNamesStr = (string)LocalSettings["NoInfoNames"];
 			if (_lastNoInfoNamesStr != noInfoNamesStr)
 			{
 				// 如果过滤字符串有更新，则更新缓存。
@@ -593,7 +587,7 @@ namespace Zscno.Trackora
 				_lastNoInfoNamesStr = noInfoNamesStr;
 			}
 
-			return new(_lastNotInfoNamesArr);
+			return new HashSet<string>(_lastNotInfoNamesArr);
 		}
 
 		/// <summary>
@@ -612,16 +606,11 @@ namespace Zscno.Trackora
 					.ToDictionary(pack => pack.Id.FullName);
 				_ = packages.TryGetValue(packageFullName, out Package? package);
 
-				if (package is null)
-				{
-					throw new($"出于未知原因，未找到进程 {name} 的包信息。");
-				}
-
-				return package;
+				return package ?? throw new Exception($"出于未知原因，未找到进程 {name} 的包信息。");
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法获取进程 {name} 的包信息。", ex);
+				throw new Exception($"无法获取进程 {name} 的包信息。", ex);
 			}
 		}
 
@@ -638,11 +627,12 @@ namespace Zscno.Trackora
 				// 如果文件中有内容则反序列化，如果结果为 null 或没有内容则创建新列表。
 				return textStream.Length > 0
 					? JsonSerializer.Deserialize(textStream,
-						JsonSerializeMetadata.Default.ListProcessInfo) ?? [] : [];
+						JsonSerializeMetadata.Default.ListProcessInfo) ?? []
+					: [];
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法从 Json 文件 [{InfoFilePath}] 获取进程信息列表。", ex);
+				throw new Exception($"无法从 Json 文件 [{InfoFilePath}] 获取进程信息列表。", ex);
 			}
 		}
 
@@ -656,24 +646,17 @@ namespace Zscno.Trackora
 		private static async Task<(string IconUri, string DisplayName)> GetProcessInfoForPackage
 			(Process process, string name, uint packageFullNameLength)
 		{
-			try
+			StringBuilder packageFullName = new((int)packageFullNameLength);
+			long result = NativeApi.GetPackageFullName(
+				process.Handle, ref packageFullNameLength, packageFullName);
+			if (result != NativeApi.ERROR_SUCCESS)
 			{
-				StringBuilder packageFullName = new((int) packageFullNameLength);
-				long result = NativeApi.GetPackageFullName(
-					process.Handle, ref packageFullNameLength, packageFullName);
-				if (result != NativeApi.ERROR_SUCCESS)
-				{
-					throw new Win32Exception(Marshal.GetLastWin32Error(), $"无法获取进程 {name} 的包全名。");
-				}
-
-				Package package = GetPackageInfo(packageFullName.ToString(), name);
-
-				return (await GetIconForPackage(package.Logo.LocalPath, name), package.DisplayName);
+				throw new Win32Exception(Marshal.GetLastWin32Error(), $"无法获取进程 {name} 的包全名。");
 			}
-			catch (Exception)
-			{
-				throw;
-			}
+
+			Package package = GetPackageInfo(packageFullName.ToString(), name);
+
+			return (await GetIconForPackage(package.Logo.LocalPath, name), package.DisplayName);
 		}
 
 		/// <summary>
@@ -682,24 +665,18 @@ namespace Zscno.Trackora
 		/// <param name="process">进程实例。</param>
 		/// <param name="name">进程名称。</param>
 		/// <returns>图标的 Uri 和显示名称。</returns>
-		private static (string, string?) GetProcessInfoForWin32(Process process, string name)
+		private static (string, string) GetProcessInfoForWin32(Process process, string name)
 		{
-			try
+			ProcessModule mainModule = process.MainModule!;
+			string path = GetProcessModulePath(mainModule, name);
+			if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
 			{
-				ProcessModule mainModule = process.MainModule!;
-				string path = GetProcessModulePath(mainModule, name);
-				if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
-				{
-					// 如果路径无效：
-					throw new FileNotFoundException($"进程 {name} 的主模块路径 {path} 无效。");
-				}
+				// 如果路径无效：
+				throw new FileNotFoundException($"进程 {name} 的主模块路径 {path} 无效。");
+			}
 
-				return (GetIconForWin32(name, path), mainModule.FileVersionInfo.FileDescription);
-			}
-			catch (Exception)
-			{
-				throw;
-			}
+			return (GetIconForWin32(name, path),
+				GetDisplayName(process.ProcessName, process.MainWindowTitle));
 		}
 
 		/// <summary>
@@ -716,7 +693,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法获取进程 {name} 的路径。", ex);
+				throw new Exception($"无法获取进程 {name} 的路径。", ex);
 			}
 		}
 
@@ -727,8 +704,8 @@ namespace Zscno.Trackora
 		/// <returns>舍入后的 <see langword="uint"/> 整数。</returns>
 		private static uint Round(double value)
 		{
-			uint intValue = (uint) value;
-			return (value - intValue) < 0.5 ? intValue : intValue - 1;
+			uint intValue = (uint)value;
+			return value - intValue < 0.5 ? intValue : intValue - 1;
 		}
 
 		/// <summary>
@@ -767,7 +744,7 @@ namespace Zscno.Trackora
 		/// </summary>
 		private static void SendTotalReminderIfNeed()
 		{
-			if (_totalUsedTime >= (TimeSpan) LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
+			if (_totalUsedTime >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] && !HasTotalReminded)
 			{
 				CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeReminder);
 				HasTotalReminded = true;
@@ -798,10 +775,9 @@ namespace Zscno.Trackora
 		private bool CheckExplorerProcess(nint handle)
 		{
 			if (!TryGetChildWindowHandle(handle, out nint childHandle,
-				$"无法获取 explorer 进程的子窗口句柄。") ||
-
+					"无法获取 explorer 进程的子窗口句柄。") ||
 				!TryGetWindowClassName(childHandle, out string className,
-				$"无法获取 explorer 子进程 [Handle={childHandle}] 的类名。"))
+					$"无法获取 explorer 子进程 [Handle={childHandle}] 的类名。"))
 			{
 				return false;
 			}
@@ -826,14 +802,14 @@ namespace Zscno.Trackora
 			if (process is null)
 			{
 				WriteLog(LogLevel.Warning, "要记录的进程为 null ，将跳过。");
-				copyProcess = new();
+				copyProcess = new Process();
 				return false;
 			}
 
 			if (process.ProcessName == _currentRecordProcessName)
 			{
 				WriteLog(LogLevel.Info, $"已开始记录进程 {process.ProcessName} ，将跳过。");
-				copyProcess = new();
+				copyProcess = new Process();
 				return false;
 			}
 
@@ -849,14 +825,14 @@ namespace Zscno.Trackora
 		/// <returns>用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。</returns>
 		private HashSet<string> GetNoTimeArr()
 		{
-			string noTimeNamesStr = (string) LocalSettings["NoTimeNames"];
+			string noTimeNamesStr = (string)LocalSettings["NoTimeNames"];
 			if (_lastNoTimeNamesStr != noTimeNamesStr)
 			{
 				// 如果过滤字符串有更新，则更新缓存。
 				_lastNoTimeNamesArr = noTimeNamesStr.Split(',');
 				_lastNoTimeNamesStr = noTimeNamesStr;
 			}
-			return new(_lastNoTimeNamesArr);
+			return new HashSet<string>(_lastNoTimeNamesArr);
 		}
 
 		/// <summary>
@@ -884,13 +860,11 @@ namespace Zscno.Trackora
 		private (bool Success, Process? Result) GetRealUwpProcess(nint handle)
 		{
 			if (TryGetChildWindowHandle(handle, out nint childHandle,
-				$"无法获取 UWP 进程子窗口的句柄。", "Windows.UI.Core.CoreWindow") &&
-
+					"无法获取 UWP 进程子窗口的句柄。", "Windows.UI.Core.CoreWindow") &&
 				TryGetWindowThreadProcessId(childHandle, out uint uwpId,
-				$"无法获取 UWP 进程 [Handle={childHandle}] 的 Id 。") &&
-
-				TryGetProcessById((int) uwpId, out Process process,
-				$"无法获取 UWP 进程 [ID={uwpId}] 的信息。"))
+					$"无法获取 UWP 进程 [Handle={childHandle}] 的 Id 。") &&
+				TryGetProcessById((int)uwpId, out Process process,
+					$"无法获取 UWP 进程 [ID={uwpId}] 的信息。"))
 			{
 				return (true, process);
 			}
@@ -911,10 +885,8 @@ namespace Zscno.Trackora
 				string text = breader.ReadString();
 				return text.Split("\r\n");
 			}
-			else
-			{
-				return [];
-			}
+
+			return [];
 		}
 
 		/// <summary>
@@ -945,12 +917,12 @@ namespace Zscno.Trackora
 						WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
 						continue;
 					}
-					_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(Convert.ToDouble(keyValuePair[1]));
+					_windowsUsedTime[keyValuePair[0]] = TimeSpan.FromSeconds(result);
 				}
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法从记录文件 [{_recordFilePath}] 获取今天的记录。", ex);
+				throw new Exception($"无法从记录文件 [{_recordFilePath}] 获取今天的记录。", ex);
 			}
 		}
 
@@ -962,7 +934,7 @@ namespace Zscno.Trackora
 			if (_lastProcess == null)
 			{
 				// 如果上次没有记录:
-				if (DateTime.Now - _lastRecordTime >= (TimeSpan) LocalSettings["ContinuousUsedResetTime"]
+				if (DateTime.Now - _lastRecordTime >= (TimeSpan)LocalSettings["ContinuousUsedResetTime"]
 					&& _continuousUsedTime != TimeSpan.Zero)
 				{
 					// 如果上次记录的时间超过指定时间，则刷新连续使用时长。
@@ -1002,7 +974,7 @@ namespace Zscno.Trackora
 				.SetContentResName("ECanNotWriteInfo")
 				.CallAction(() => File.WriteAllText(
 					InfoFilePath, SerializeJson(allProcessInfos,
-					JsonSerializeMetadata.Default.ListProcessInfo)));
+						JsonSerializeMetadata.Default.ListProcessInfo)));
 			_currentRecordProcessName = string.Empty;
 			if (result)
 			{
@@ -1034,12 +1006,11 @@ namespace Zscno.Trackora
 				return;
 			}
 
-			ProcessInfo info;
 			uint packageFullNameLength = 0;
 			(success, long result) = await new SafeCaller()
 				.SetLogMessage($"无法获取进程 {name} 的包全名。")
-				.CallActionWithReturn(
-				() => NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, null!));
+				.CallActionWithReturn(() =>
+					NativeApi.GetPackageFullName(process.Handle, ref packageFullNameLength, null!));
 			if (!success)
 			{
 				await RecordInfoIntoFile(GetDefaultInfo(process), list);
@@ -1062,7 +1033,7 @@ namespace Zscno.Trackora
 				case NativeApi.ERROR_INSUFFICIENT_BUFFER:
 					(success, Task<(string, string)>? infoTask) = await new SafeCaller()
 						.CallActionWithReturn(GetProcessInfoForPackage,
-						process, name, packageFullNameLength);
+							process, name, packageFullNameLength);
 					if (!success || infoTask is null)
 					{
 						await RecordInfoIntoFile(GetDefaultInfo(process), list);
@@ -1078,7 +1049,7 @@ namespace Zscno.Trackora
 					return;
 			}
 
-			info = new()
+			ProcessInfo info = new()
 			{
 				ProcessName = name,
 				DisplayName = GetDisplayName(name, process.MainWindowTitle, infoTuple.FriendlyName),
@@ -1143,8 +1114,9 @@ namespace Zscno.Trackora
 			try
 			{
 				TimeSpan usedTime = DateTime.Now - _lastActivationTime;
-				TimeSpan totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime) ?
-					pastUsedTime + usedTime : usedTime;
+				TimeSpan totalUsedTime = _windowsUsedTime.TryGetValue(name, out TimeSpan pastUsedTime)
+					? pastUsedTime + usedTime
+					: usedTime;
 				_windowsUsedTime[name] = totalUsedTime;
 				TotalUsedTime += usedTime;
 				return totalUsedTime;
@@ -1184,7 +1156,6 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 如果今天的记录不存在或不是今天，则重置记录。
 		/// </summary>
-		/// <param name="realToday">今天日期的 <see cref="DateTimeOffset"/> 对象。</param>
 		private void ResetRecord()
 		{
 			// 重置本地设置。
@@ -1199,7 +1170,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new($"无法重置/创建记录文件 [{_recordFilePath}] 。", ex);
+				throw new Exception($"无法重置/创建记录文件 [{_recordFilePath}] 。", ex);
 			}
 		}
 
@@ -1208,12 +1179,14 @@ namespace Zscno.Trackora
 		/// </summary>
 		private void SendContinuousReminderIfNeed()
 		{
-			if (_continuousUsedTime >= (TimeSpan) LocalSettings["ContinuousUsedRemindTime"] &&
-				_continuousUsedTime != TimeSpan.Zero)
+			if (_continuousUsedTime < (TimeSpan)LocalSettings["ContinuousUsedRemindTime"] ||
+				_continuousUsedTime == TimeSpan.Zero)
 			{
-				CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
-				_continuousUsedTime = TimeSpan.Zero;
+				return;
 			}
+
+			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeReminder);
+			_continuousUsedTime = TimeSpan.Zero;
 		}
 
 		private async void Timer_Tick(object? sender, object e)
@@ -1221,12 +1194,10 @@ namespace Zscno.Trackora
 			SendEndUsingReminderIfNeed();
 
 			if (!TryGetForegroundWindowHandle(out nint handle) ||
-
 				!TryGetWindowThreadProcessId(handle, out uint processId,
-				$"无法获取进程 [{handle}] 的 Id 。") ||
-
-				!TryGetProcessById((int) processId, out Process process,
-				$"无法获取进程 [ID={processId}] 的信息。"))
+					$"无法获取进程 [{handle}] 的 Id 。") ||
+				!TryGetProcessById((int)processId, out Process process,
+					$"无法获取进程 [ID={processId}] 的信息。"))
 			{
 				return;
 			}
@@ -1284,10 +1255,8 @@ namespace Zscno.Trackora
 				NoProcessNow();
 				return false;
 			}
-			else
-			{
-				return true;
-			}
+
+			return true;
 		}
 
 		/// <summary>
@@ -1321,7 +1290,7 @@ namespace Zscno.Trackora
 			(bool success, Process? p) = new SafeCaller()
 				.SetLogMessage(logSymbol)
 				.CallActionWithReturnSync(Process.GetProcessById, processId);
-			process = p ?? new();
+			process = p ?? new Process();
 			if (!success)
 			{
 				NoProcessNow();
@@ -1348,11 +1317,9 @@ namespace Zscno.Trackora
 				NoProcessNow();
 				return false;
 			}
-			else
-			{
-				className = classNameBuilder.ToString();
-				return true;
-			}
+
+			className = classNameBuilder.ToString();
+			return true;
 		}
 
 		/// <summary>
@@ -1384,8 +1351,9 @@ namespace Zscno.Trackora
 			if (_singleContinuousUsedTime > TimeSpan.FromSeconds(5))
 			{
 				// 如果时长到达 6 秒则把之前的 6 秒全部加上。 一般情况加 1 秒。
-				_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6) ?
-				TimeSpan.FromSeconds(6) : _oneSecond;
+				_continuousUsedTime += _singleContinuousUsedTime == TimeSpan.FromSeconds(6)
+					? TimeSpan.FromSeconds(6)
+					: _oneSecond;
 			}
 			_lastRecordTime = DateTime.Now;
 			//WriteLog(LogLevel.Debug, $"当前连续使用时长：{_continuousUsedTime:hh\\:mm\\:ss}");

@@ -32,7 +32,7 @@ namespace Zscno.Trackora
 				DirectoryInfo info;
 				try
 				{
-					info = new(folderPath);
+					info = new DirectoryInfo(folderPath);
 				}
 				catch (Exception ex)
 				{
@@ -77,7 +77,7 @@ namespace Zscno.Trackora
 			DirectoryInfo info;
 			try
 			{
-				info = new(path);
+				info = new DirectoryInfo(path);
 			}
 			catch (Exception ex)
 			{
@@ -135,12 +135,12 @@ namespace Zscno.Trackora
 			try
 			{
 				DeleteAllFiles(Path.Join(LocalCachePath, "Logs"), Path.Join(LocalCachePath, "Icons"));
-				File.WriteAllText(InfoFilePath, string.Empty);
+				await File.WriteAllTextAsync(InfoFilePath, string.Empty);
 			}
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法完全清理缓存", 
+				await ReminderHelper.ShowDialog("无法完全清理缓存",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotDeleteFiles"));
 			}
@@ -153,7 +153,7 @@ namespace Zscno.Trackora
 			{
 				CacheSize.Text = string.Empty;
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法获取缓存文件夹大小", 
+				await ReminderHelper.ShowDialog("无法获取缓存文件夹大小",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetSize"));
 			}
@@ -162,7 +162,7 @@ namespace Zscno.Trackora
 
 		private void ContinuousSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["ContinuousUsedTimeSound"] = (string) ContinuousSoundPicker.SelectedItem;
+			LocalSettings["ContinuousUsedTimeSound"] = (string)ContinuousSoundPicker.SelectedItem;
 		}
 
 		private void ContinuousTest_Click(object sender, RoutedEventArgs e)
@@ -175,7 +175,7 @@ namespace Zscno.Trackora
 
 		private void EndUsingSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["EndUsingTimeSound"] = (string) EndUsingSoundPicker.SelectedItem;
+			LocalSettings["EndUsingTimeSound"] = (string)EndUsingSoundPicker.SelectedItem;
 		}
 
 		private void EndUsingTest_Click(object sender, RoutedEventArgs e)
@@ -193,18 +193,15 @@ namespace Zscno.Trackora
 			try
 			{
 				string[] strings = NoInfoNames.Text.Split(',');
-				foreach (string item in strings)
+				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
-					if (string.IsNullOrWhiteSpace(item))
-					{
-						throw new ArgumentException("用户的输入中有空格、空或 null 。");
-					}
+					throw new ArgumentException("用户的输入中有空格、空或 null 。");
 				}
 			}
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoInfoNames.Text}] ：{ex}");
-				NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
+				NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
 				return;
 			}
 			LocalSettings["NoInfoNames"] = NoInfoNames.Text;
@@ -215,7 +212,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
+			NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
 			button.IsEnabled = true;
 		}
 
@@ -226,18 +223,15 @@ namespace Zscno.Trackora
 			try
 			{
 				string[] strings = NoTimeNames.Text.Split(',');
-				foreach (string item in strings)
+				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
-					if (string.IsNullOrWhiteSpace(item))
-					{
-						throw new ArgumentException("用户的输入中有空格、空或 null 。");
-					}
+					throw new ArgumentException("用户的输入中有空格、空或 null 。");
 				}
 			}
 			catch (Exception ex)
 			{
 				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoTimeNames.Text}] ：{ex}");
-				NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
+				NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
 				return;
 			}
 			LocalSettings["NoTimeNames"] = NoTimeNames.Text;
@@ -248,7 +242,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
+			NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
 			button.IsEnabled = true;
 		}
 
@@ -259,12 +253,12 @@ namespace Zscno.Trackora
 			ContinuousSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
 			EndUsingSoundPicker.ItemsSource = AlarmSounds.Keys.ToList();
 			ThemePicker.ItemsSource = Themes.Keys.ToList();
-			TotalSoundPicker.SelectedItem = (string) LocalSettings["TotalUsedTimeSound"];
-			ContinuousSoundPicker.SelectedItem = (string) LocalSettings["ContinuousUsedTimeSound"];
-			EndUsingSoundPicker.SelectedItem = (string) LocalSettings["EndUsingTimeSound"];
-			ThemePicker.SelectedItem = Loader.GetString((string) LocalSettings["Theme"]);
-			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
-			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
+			TotalSoundPicker.SelectedItem = (string)LocalSettings["TotalUsedTimeSound"];
+			ContinuousSoundPicker.SelectedItem = (string)LocalSettings["ContinuousUsedTimeSound"];
+			EndUsingSoundPicker.SelectedItem = (string)LocalSettings["EndUsingTimeSound"];
+			ThemePicker.SelectedItem = Loader.GetString((string)LocalSettings["Theme"]);
+			NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
+			NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
 			PackageVersion version = Package.Current.Id.Version;
 			Version.Text = $"{version.Major}.{version.Minor}.{version.Build}";
 			try
@@ -275,7 +269,7 @@ namespace Zscno.Trackora
 			{
 				CacheSize.Text = string.Empty;
 				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法获取缓存文件夹大小", 
+				await ReminderHelper.ShowDialog("无法获取缓存文件夹大小",
 					Loader.GetString("ErrorOrWarningTitle"),
 					Loader.GetString("ECanNotGetSize"));
 			}
@@ -283,12 +277,12 @@ namespace Zscno.Trackora
 
 		private void ThemePick_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["Theme"] = Themes[(string) ThemePicker.SelectedItem];
+			LocalSettings["Theme"] = Themes[(string)ThemePicker.SelectedItem];
 		}
 
 		private void TotalSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["TotalUsedTimeSound"] = (string) TotalSoundPicker.SelectedItem;
+			LocalSettings["TotalUsedTimeSound"] = (string)TotalSoundPicker.SelectedItem;
 		}
 
 		private void TotalTest_Click(object sender, RoutedEventArgs e)

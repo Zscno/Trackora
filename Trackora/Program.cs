@@ -21,7 +21,7 @@ namespace Zscno.Trackora
 
 			if (keyInstance.IsCurrent)
 			{
-				Application.Start((p) =>
+				Application.Start(p =>
 				{
 					DispatcherQueueSynchronizationContext context = new(DispatcherQueue.GetForCurrentThread());
 					SynchronizationContext.SetSynchronizationContext(context);
