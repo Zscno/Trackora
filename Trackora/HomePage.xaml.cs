@@ -41,20 +41,20 @@ namespace Zscno.Trackora
 				All.Content = Loader.GetString("All/Content");
 			}
 
-			try
+			bool isSuccessful = await new SafeCaller()
+			{
+				RemindingMsgResKey="ECanNotGetInfo",
+			}.CallMethodD(() =>
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
 				// 超过 6 项时显示按钮。
 				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
-			}
-			catch (Exception ex)
+			});
+			if (!isSuccessful)
 			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
 				All.Visibility = Visibility.Collapsed;
-				await ReminderHelper.ShowDialog("无法加载应用列表",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
 			}
+
 			LoadingRing.IsActive = false;
 		}
 
@@ -64,18 +64,11 @@ namespace Zscno.Trackora
 			All.IsEnabled = false;
 			bool isRetract = (string)All.Content == Loader.GetString("Retract");
 
-			try
+			_ = await new SafeCaller() { RemindingMsgResKey="ECanNotGetInfo", }.CallMethodD(() =>
 			{
 				int count = isRetract ? 6 : WindowTracker.WindowsUsedTime.Count;
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法加载应用列表",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
-			}
+			});
 			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
 
 			All.IsEnabled = true;

@@ -132,31 +132,23 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			try
+
+			_ = await new SafeCaller() { RemindingMsgResKey = "ECanNotDeleteFiles" }.CallMethodD(() =>
 			{
 				DeleteAllFiles(Path.Join(LocalCachePath, "Logs"), Path.Join(LocalCachePath, "Icons"));
-				await File.WriteAllTextAsync(InfoFilePath, string.Empty);
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法完全清理缓存",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotDeleteFiles"));
-			}
+				File.WriteAllText(InfoFilePath, string.Empty);
+			});
 
-			try
+			bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
+			.CallMethodD(() =>
 			{
 				CacheSize.Text = Loader.GetString("CacheFolderSize") + GetFolderSize(LocalCachePath);
-			}
-			catch (Exception ex)
+			});
+			if (!isSuccessful)
 			{
 				CacheSize.Text = string.Empty;
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法获取缓存文件夹大小",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetSize"));
 			}
+
 			button.IsEnabled = true;
 		}
 
@@ -190,21 +182,29 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			try
+
+			bool isSuccessful = new SafeCaller()
+			{
+				LogMessage = $"用户输入不符合要求 [Text={NoInfoNames.Text}] 。",
+				LogLevel = LogLevel.Warning,
+				NeedRemind = false,
+			}.CallMethodR(() =>
 			{
 				string[] strings = NoInfoNames.Text.Split(',');
 				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
 					throw new ArgumentException("用户的输入中有空格、空或 null 。");
 				}
-			}
-			catch (Exception ex)
+			});
+			if (isSuccessful)
 			{
-				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoInfoNames.Text}] ：{ex}");
-				NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
-				return;
+				LocalSettings["NoInfoNames"] = NoInfoNames.Text;
 			}
-			LocalSettings["NoInfoNames"] = NoInfoNames.Text;
+			else
+			{
+				NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
+			}
+
 			button.IsEnabled = true;
 		}
 
@@ -220,21 +220,29 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			try
+
+			bool isSuccessful = new SafeCaller()
+			{
+				LogMessage = $"用户输入不符合要求 [Text={NoTimeNames.Text}] 。",
+				LogLevel = LogLevel.Warning,
+				NeedRemind = false,
+			}.CallMethodR(() =>
 			{
 				string[] strings = NoTimeNames.Text.Split(',');
 				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
 					throw new ArgumentException("用户的输入中有空格、空或 null 。");
 				}
-			}
-			catch (Exception ex)
+			});
+			if (isSuccessful)
 			{
-				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoTimeNames.Text}] ：{ex}");
-				NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
-				return;
+				LocalSettings["NoTimeNames"] = NoTimeNames.Text;
 			}
-			LocalSettings["NoTimeNames"] = NoTimeNames.Text;
+			else
+			{
+				NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
+			}
+
 			button.IsEnabled = true;
 		}
 
@@ -261,17 +269,14 @@ namespace Zscno.Trackora
 			NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
 			PackageVersion version = Package.Current.Id.Version;
 			Version.Text = $"{version.Major}.{version.Minor}.{version.Build}";
-			try
+			bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
+			.CallMethodD(() =>
 			{
 				CacheSize.Text = Loader.GetString("CacheFolderSize") + GetFolderSize(LocalCachePath);
-			}
-			catch (Exception ex)
+			});
+			if (!isSuccessful)
 			{
 				CacheSize.Text = string.Empty;
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog("无法获取缓存文件夹大小",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetSize"));
 			}
 		}
 

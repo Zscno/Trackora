@@ -8,7 +8,8 @@ using Windows.Foundation.Collections;
 using Windows.Storage;
 using static Zscno.Trackora.LogSystem;
 
-// To learn more about WinUI, the WinUI project structure, and more about our project templates, see: http://aka.ms/winui-project-info.
+// To learn more about WinUI, the WinUI project structure, and more about our project templates,
+// see: http://aka.ms/winui-project-info.
 
 namespace Zscno.Trackora
 {
@@ -87,103 +88,59 @@ namespace Zscno.Trackora
 		};
 
 		/// <summary>
-		/// Initializes the singleton application object. This is the first line of authored code executed, and as such is the logical equivalent of main() or WinMain().
+		/// Initializes the singleton application object. This is the first line of authored code
+		/// executed, and as such is the logical equivalent of main() or WinMain().
 		/// </summary>
 		public App()
 		{
 			InitializeComponent();
 
-			try
+			_ = new SafeCaller()
+			{
+				LogType = CallerLogType.Crash,
+				LogMessage = "无法获取本地缓存文件夹路径或无法初始化日志文件。",
+				NeedExit = true,
+				RemindingMsgResKey = "CanNotLaunchApp",
+			}.CallMethodR(() =>
 			{
 				LocalCachePath = ApplicationData.Current.LocalCacheFolder.Path;
 				InitLogFile();
-			}
-			catch (Exception ex)
-			{
-				// 如果无法获取本地缓存文件夹路径或日志文件初始化失败， 就把异常信息写到崩溃日志里，尝试发送通知提醒用户并退出。
-				File.WriteAllText($"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash",
-					$"无法获取本地缓存文件夹路径或日志文件初始化失败：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.");
-				Current.Exit();
-			}
+			});
 
-			try
+			_ = new SafeCaller()
+			{
+				LogMessage = "无法注册应用实例激活事件。",
+				NeedExit = true,
+				RemindingMsgResKey = "CanNotLaunchApp",
+			}.CallMethodR(() =>
 			{
 				AppInstance appInstance = AppInstance.GetCurrent();
 				appInstance.Activated += AppInstance_Activated;
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在注册应用实例激活事件时触发异常：{ex}");
-			}
+			});
 
-			// 初始化信息文件路径。
-			try
+			_ = new SafeCaller()
 			{
-				InfoFilePath = Path.Combine(LocalCachePath, "Info.json");
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在初始化信息文件路径时触发异常，将在提醒用户退出：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法加载进程信息",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotInitInfoFilePath"));
-				Current.Exit();
-			}
+				LogMessage = "无法初始化信息文件路径。",
+				NeedExit = true,
+				RemindingMsgResKey = "ECanNotInitInfoFilePath",
+			}.CallMethodR(() => InfoFilePath = Path.Combine(LocalCachePath, "Info.json"));
 
-			// 初始化本地设置。
-			try
+			_ = new SafeCaller()
+			{
+				LogMessage = "无法初始化本地设置，将使用内存临时存储。",
+				RemindingMsgResKey = "ECanNotInitSettings",
+			}.CallMethodR(() =>
 			{
 				LocalSettings = ApplicationData.Current.LocalSettings.Values;
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在初始化本地设置时触发异常，将使用内存临时存储：{ex}");
-				CanSend = ReminderHelper.SendReminder("提醒用户无法加载设置",
-					Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotInitSettings"));
-			}
+			});
 
 			InitLocalSettingsIfNeed();
 
-			try
+			_ = new SafeCaller()
 			{
-				SetTheme((string)LocalSettings["Theme"]);
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在设置应用主题时触发异常：{ex}");
-			}
-		}
-
-		/// <summary>
-		/// Invoked when the application is launched.
-		/// </summary>
-		/// <param name="args">Details about the launch request and process.</param>
-		protected override void OnLaunched(LaunchActivatedEventArgs args)
-		{
-			try
-			{
-				if (!Directory.Exists(Path.Combine(LocalCachePath, "Icons")))
-				{
-					_ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
-				}
-			}
-			catch (Exception ex)
-			{
-				WriteLog(LogLevel.Error, $"在准备 Icons 文件夹时触发异常：{ex}");
-				CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.");
-				Current.Exit();
-			}
-
-			_ = new WindowTracker();
-
-			AppMainWindow = new MainWindow();
-			AppMainWindow.Activate();
-
-			NativeApi.HideWindow(AppMainWindow);
+				LogMessage = "无法设置应用主题。",
+				RemindingMsgResKey = "ECanNotSetTheme",
+			}.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
 		}
 
 		/// <summary>
@@ -191,19 +148,21 @@ namespace Zscno.Trackora
 		/// </summary>
 		private static void InitLocalSettingsIfNeed()
 		{
-			LocalSettings.TryAdd("TotalUsedRemindTime", TimeSpan.FromHours(2));
-			LocalSettings.TryAdd("ContinuousUsedRemindTime", TimeSpan.FromMinutes(30));
-			LocalSettings.TryAdd("TotalUsedTimeSound", "Default");
-			LocalSettings.TryAdd("ContinuousUsedTimeSound", "Default");
-			LocalSettings.TryAdd("EndUsingTimeSound", "Alarm");
-			LocalSettings.TryAdd("Theme", "SystemTheme");
-			LocalSettings.TryAdd("NoInfoNames",
+			_ = LocalSettings.TryAdd("TotalUsedRemindTime", TimeSpan.FromHours(2));
+			_ = LocalSettings.TryAdd("ContinuousUsedRemindTime", TimeSpan.FromMinutes(30));
+			_ = LocalSettings.TryAdd("TotalUsedTimeSound", "Default");
+			_ = LocalSettings.TryAdd("ContinuousUsedTimeSound", "Default");
+			_ = LocalSettings.TryAdd("EndUsingTimeSound", "Alarm");
+			_ = LocalSettings.TryAdd("Theme", "SystemTheme");
+			_ = LocalSettings.TryAdd("NoInfoNames",
 				"StartMenuExperienceHost,SearchHost,PickerHost," +
 				"consent,OpenWith,Widgets,ShellExperienceHost");
+
 			// 开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图，只记录时间不记录信息。
-			LocalSettings.TryAdd("NoTimeNames", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
+			_ = LocalSettings.TryAdd("NoTimeNames", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
+
 			// 桌面管理器，锁屏，线程等待对话框，什么都不记录。
-			LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));
+			_ = LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));
 		}
 
 		/// <summary>
@@ -226,6 +185,33 @@ namespace Zscno.Trackora
 		private void AppInstance_Activated(object? sender, AppActivationArguments e)
 		{
 			_ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { await AppMainWindow.ShowWindow(); });
+		}
+
+		/// <summary>
+		/// Invoked when the application is launched.
+		/// </summary>
+		/// <param name="args">Details about the launch request and process.</param>
+		protected override void OnLaunched(LaunchActivatedEventArgs args)
+		{
+			_ = new SafeCaller()
+			{
+				LogMessage = "无法准备 Icons 文件夹。",
+				NeedExit = true,
+				RemindingMsgResKey = "CanNotLaunchApp",
+			}.CallMethodR(() =>
+			{
+				if (!Directory.Exists(Path.Combine(LocalCachePath, "Icons")))
+				{
+					_ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
+				}
+			});
+
+			_ = new WindowTracker();
+
+			AppMainWindow = new MainWindow();
+			AppMainWindow.Activate();
+
+			NativeApi.HideWindow(AppMainWindow);
 		}
 	}
 }

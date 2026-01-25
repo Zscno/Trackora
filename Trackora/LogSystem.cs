@@ -54,7 +54,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new Exception("在准备日志文件目录时触发了异常。", ex);
+				throw new Exception("无法初始化日志文件路径。", ex);
 			}
 
 			LogFilePath = Path.Join(path, $"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.log");
@@ -81,24 +81,19 @@ namespace Zscno.Trackora
 				_ => string.Empty,
 			};
 
-			try
+			_ = new SafeCaller()
+			{
+				LogType = CallerLogType.Crash,
+				NeedExit = true,
+				RemindingMsgResKey = "ECannotLaunchApp",
+			}.CallMethodR(() =>
 			{
 				lock (new object())
 				{
 					File.AppendAllText(LogFilePath,
 						DateTime.Now.ToString("[HH:mm:ss.fff]") + levelString + message + "\n", Encoding.UTF8);
 				}
-			}
-			catch (Exception ex)
-			{
-				// 如果日志写入失败，就把异常信息写到文档目录下的崩溃日志里，尝试发送通知提醒用户并退出。
-				File.WriteAllText(
-					Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-						$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash"), $"{ex}");
-				App.CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.");
-				Application.Current.Exit();
-			}
+			});
 		}
 	}
 }

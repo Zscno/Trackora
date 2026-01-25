@@ -1,5 +1,4 @@
 ﻿using Microsoft.Toolkit.Uwp.Notifications;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Threading.Tasks;
@@ -132,60 +131,54 @@ namespace Zscno.Trackora
 				LogSystem.WriteLog(LogLevel.Info, logInfo);
 			}
 
-			try
+			return new SafeCaller()
+			{
+				LogMessage = logError,
+				NeedRemind = false,
+			}.CallMethodR(() =>
 			{
 				new ToastContentBuilder().AddText(title).AddText(content).AddAudio(audio).Show();
-				return true;
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, logError + ex);
-				return false;
-			}
+			});
 		}
 
 		/// <summary>
 		/// 发送一个指定类型之外的通知。
 		/// </summary>
-		/// <param name="exMessage">如果触发了异常，则以本信息为异常的标识。</param>
 		/// <param name="title">通知标题。</param>
 		/// <param name="content">通知内容。</param>
 		/// <param name="isExit">指示如果触发了异常，是否退出应用。</param>
 		/// <param name="audioUri">通知提示音（默认是 <see cref="CommonSounds"/> 中的 <c>Default</c> ）。</param>
-		public static bool SendReminder(string exMessage, string title, string content, bool isExit = true,
+		public static bool SendReminder(string title, string content, bool isExit = true,
 			string audioUri = "ms-winsoundevent:Notification.Default")
 		{
-			try
+			return new SafeCaller()
+			{
+				LogMessage = $"通知[标题：{title}，内容：{content}]发送失败。",
+				NeedRemind = false,
+				NeedExit = isExit,
+			}.CallMethodR(() =>
 			{
 				new ToastContentBuilder().AddText(title).AddText(content).AddAudio(
 					new ToastAudio
 					{
 						Src = new Uri(audioUri),
 					}).Show();
-				return true;
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, $"在发送 {exMessage} 时触发异常：{ex}");
-				if (isExit)
-				{
-					LogSystem.WriteLog(LogLevel.Info, "程序由于上一个异常退出。");
-					Application.Current.Exit();
-				}
-				return false;
-			}
+			});
 		}
 
 		/// <summary>
 		/// 显示一个对话框。
 		/// </summary>
-		/// <param name="exMessage">如果触发了异常，则以本信息为异常的标识。</param>
 		/// <param name="title">对话框标题。</param>
 		/// <param name="content">对话框内容。</param>
 		/// <returns>指示对话框是否能正常显示。</returns>
-		public static async Task<bool> ShowDialog(string exMessage, string title, string content)
+		public static async Task<bool> ShowDialog(string title, string content)
 		{
-			try
+			return new SafeCaller()
+			{
+				LogMessage = $"对话框[标题：{title}，内容：{content}]显示失败。",
+				NeedRemind = false,
+			}.CallMethodR(async () =>
 			{
 				if (AppMainWindow is null)
 				{
@@ -202,13 +195,7 @@ namespace Zscno.Trackora
 					DefaultButton = ContentDialogButton.Primary,
 				};
 				_ = await dialog.ShowAsync();
-				return true;
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, $"无法显示对话框以提示用户{exMessage}：{ex}");
-				return false;
-			}
+			});
 		}
 	}
 }
