@@ -36,8 +36,7 @@ namespace Zscno.Trackora
 				}
 				catch (Exception ex)
 				{
-					//LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{folderPath}] 信息时触发异常：{ex}");
-					throw new Exception($"在获取文件夹 [{folderPath}] 信息时触发了异常。", ex);
+					throw new Exception($"无法获取文件夹[{folderPath}]的信息。", ex);
 				}
 
 				foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
@@ -54,12 +53,12 @@ namespace Zscno.Trackora
 						try
 						{
 							string filePath = file.FullName;
-							LogSystem.WriteLog(LogLevel.Error, $"在删除文件夹中的文件 [{filePath}] 时触发异常：{ex}");
+							LogSystem.WriteLog(LogLevel.Error, $"无法删除文件夹中的文件[{filePath}]。\n{ex}");
 						}
 						catch (Exception)
 						{
 							// 如果无法获取文件路径就使用文件夹路径。
-							LogSystem.WriteLog(LogLevel.Error, $"在删除文件夹 [{folderPath}] 中的文件时触发异常：{ex}");
+							LogSystem.WriteLog(LogLevel.Error, $"无法删除文件夹 [{folderPath}] 中的文件。\n{ex}");
 						}
 					}
 				}
@@ -82,7 +81,7 @@ namespace Zscno.Trackora
 			catch (Exception ex)
 			{
 				//LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{path}] 信息时触发异常：{ex}");
-				throw new Exception($"在获取文件夹 [{path}] 信息时触发了异常。", ex);
+				throw new Exception($"无法获取文件夹[{path}]信息。", ex);
 			}
 
 			foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
@@ -96,12 +95,12 @@ namespace Zscno.Trackora
 					try
 					{
 						string filePath = file.FullName;
-						LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹中的文件 [{filePath}] 大小时触发异常：{ex}");
+						LogSystem.WriteLog(LogLevel.Error, $"无法获取文件夹中的文件[{filePath}]大小。\n{ex}");
 					}
 					catch (Exception)
 					{
 						// 如果无法获取文件路径就使用文件夹路径。
-						LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{path}] 中的文件大小时触发异常：{ex}");
+						LogSystem.WriteLog(LogLevel.Error, $"无法获取文件夹 [{path}] 中的文件大小。\n{ex}");
 					}
 				}
 			}
@@ -154,14 +153,14 @@ namespace Zscno.Trackora
 
 		private void ContinuousSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["ContinuousUsedTimeSound"] = (string)ContinuousSoundPicker.SelectedItem;
+			LocalSettings["ContinuousUsageTimeSound"] = (string)ContinuousSoundPicker.SelectedItem;
 		}
 
 		private void ContinuousTest_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsedTimeSoundTest);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
@@ -185,12 +184,12 @@ namespace Zscno.Trackora
 
 			bool isSuccessful = new SafeCaller()
 			{
-				LogMessage = $"用户输入不符合要求 [Text={NoInfoNames.Text}] 。",
+				LogMessage = $"用户输入不符合要求[{OnlyTimeProcesses.Text}]。",
 				LogLevel = LogLevel.Warning,
 				NeedRemind = false,
 			}.CallMethodR(() =>
 			{
-				string[] strings = NoInfoNames.Text.Split(',');
+				string[] strings = OnlyTimeProcesses.Text.Split(',');
 				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
 					throw new ArgumentException("用户的输入中有空格、空或 null 。");
@@ -198,11 +197,11 @@ namespace Zscno.Trackora
 			});
 			if (isSuccessful)
 			{
-				LocalSettings["NoInfoNames"] = NoInfoNames.Text;
+				LocalSettings["OnlyTimeProcesses"] = OnlyTimeProcesses.Text;
 			}
 			else
 			{
-				NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
+				OnlyTimeProcesses.Text = (string)LocalSettings["OnlyTimeProcesses"];
 			}
 
 			button.IsEnabled = true;
@@ -212,7 +211,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
+			OnlyTimeProcesses.Text = (string)LocalSettings["OnlyTimeProcesses"];
 			button.IsEnabled = true;
 		}
 
@@ -223,12 +222,12 @@ namespace Zscno.Trackora
 
 			bool isSuccessful = new SafeCaller()
 			{
-				LogMessage = $"用户输入不符合要求 [Text={NoTimeNames.Text}] 。",
+				LogMessage = $"用户输入不符合要求[{IgnoredProcesses.Text}]。",
 				LogLevel = LogLevel.Warning,
 				NeedRemind = false,
 			}.CallMethodR(() =>
 			{
-				string[] strings = NoTimeNames.Text.Split(',');
+				string[] strings = IgnoredProcesses.Text.Split(',');
 				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
 					throw new ArgumentException("用户的输入中有空格、空或 null 。");
@@ -236,11 +235,11 @@ namespace Zscno.Trackora
 			});
 			if (isSuccessful)
 			{
-				LocalSettings["NoTimeNames"] = NoTimeNames.Text;
+				LocalSettings["IgnoredProcesses"] = IgnoredProcesses.Text;
 			}
 			else
 			{
-				NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
+				IgnoredProcesses.Text = (string)LocalSettings["IgnoredProcesses"];
 			}
 
 			button.IsEnabled = true;
@@ -250,7 +249,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
+			IgnoredProcesses.Text = (string)LocalSettings["IgnoredProcesses"];
 			button.IsEnabled = true;
 		}
 
@@ -261,12 +260,12 @@ namespace Zscno.Trackora
 			ContinuousSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
 			EndUsingSoundPicker.ItemsSource = AlarmSounds.Keys.ToList();
 			ThemePicker.ItemsSource = Themes.Keys.ToList();
-			TotalSoundPicker.SelectedItem = (string)LocalSettings["TotalUsedTimeSound"];
-			ContinuousSoundPicker.SelectedItem = (string)LocalSettings["ContinuousUsedTimeSound"];
+			TotalSoundPicker.SelectedItem = (string)LocalSettings["TotalUsageTimeSound"];
+			ContinuousSoundPicker.SelectedItem = (string)LocalSettings["ContinuousUsageTimeSound"];
 			EndUsingSoundPicker.SelectedItem = (string)LocalSettings["EndUsingTimeSound"];
 			ThemePicker.SelectedItem = Loader.GetString((string)LocalSettings["Theme"]);
-			NoInfoNames.Text = (string)LocalSettings["NoInfoNames"];
-			NoTimeNames.Text = (string)LocalSettings["NoTimeNames"];
+			OnlyTimeProcesses.Text = (string)LocalSettings["OnlyTimeProcesses"];
+			IgnoredProcesses.Text = (string)LocalSettings["IgnoredProcesses"];
 			PackageVersion version = Package.Current.Id.Version;
 			Version.Text = $"{version.Major}.{version.Minor}.{version.Build}";
 			bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
@@ -287,14 +286,14 @@ namespace Zscno.Trackora
 
 		private void TotalSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["TotalUsedTimeSound"] = (string)TotalSoundPicker.SelectedItem;
+			LocalSettings["TotalUsageTimeSound"] = (string)TotalSoundPicker.SelectedItem;
 		}
 
 		private void TotalTest_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsedTimeSoundTest);
+			CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeSoundTest);
 			button.IsEnabled = true;
 		}
 	}

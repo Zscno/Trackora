@@ -134,7 +134,7 @@ namespace Zscno.Trackora
 				LocalSettings = ApplicationData.Current.LocalSettings.Values;
 			});
 
-			InitLocalSettingsIfNeed();
+			InitLocalSettingsIfNeeded();
 
 			_ = new SafeCaller()
 			{
@@ -146,20 +146,20 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 在需要时初始化本地设置的默认值。
 		/// </summary>
-		private static void InitLocalSettingsIfNeed()
+		private static void InitLocalSettingsIfNeeded()
 		{
 			_ = LocalSettings.TryAdd("TotalUsedRemindTime", TimeSpan.FromHours(2));
 			_ = LocalSettings.TryAdd("ContinuousUsedRemindTime", TimeSpan.FromMinutes(30));
-			_ = LocalSettings.TryAdd("TotalUsedTimeSound", "Default");
-			_ = LocalSettings.TryAdd("ContinuousUsedTimeSound", "Default");
+			_ = LocalSettings.TryAdd("TotalUsageTimeSound", "Default");
+			_ = LocalSettings.TryAdd("ContinuousUsageTimeSound", "Default");
 			_ = LocalSettings.TryAdd("EndUsingTimeSound", "Alarm");
 			_ = LocalSettings.TryAdd("Theme", "SystemTheme");
-			_ = LocalSettings.TryAdd("NoInfoNames",
+			_ = LocalSettings.TryAdd("OnlyTimeProcesses",
 				"StartMenuExperienceHost,SearchHost,PickerHost," +
 				"consent,OpenWith,Widgets,ShellExperienceHost");
 
 			// 开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图，只记录时间不记录信息。
-			_ = LocalSettings.TryAdd("NoTimeNames", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
+			_ = LocalSettings.TryAdd("IgnoredProcesses", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
 
 			// 桌面管理器，锁屏，线程等待对话框，什么都不记录。
 			_ = LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));

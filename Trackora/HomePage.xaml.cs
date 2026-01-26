@@ -34,7 +34,7 @@ namespace Zscno.Trackora
 				? null
 				: WindowTracker.EndUsingTime;
 			TimePickReminder.Text = string.Empty;
-			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
+			TotalUsageTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsageTime);
 			if (!_firstLoad)
 			{
 				// 如果不是首次加载，则重置按钮内容。
@@ -48,7 +48,7 @@ namespace Zscno.Trackora
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
 				// 超过 6 项时显示按钮。
-				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+				All.Visibility = WindowTracker.ProcessesUsageTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
 			});
 			if (!isSuccessful)
 			{
@@ -66,7 +66,7 @@ namespace Zscno.Trackora
 
 			_ = await new SafeCaller() { RemindingMsgResKey="ECanNotGetInfo", }.CallMethodD(() =>
 			{
-				int count = isRetract ? 6 : WindowTracker.WindowsUsedTime.Count;
+				int count = isRetract ? 6 : WindowTracker.ProcessesUsageTime.Count;
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
 			});
 			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");

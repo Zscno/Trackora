@@ -14,22 +14,22 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 总使用时长提醒。
 		/// </summary>
-		TotalUsedTimeReminder,
+		TotalUsageTimeReminder,
 
 		/// <summary>
 		/// 总使用时长提醒提示音的测试通知。
 		/// </summary>
-		TotalUsedTimeSoundTest,
+		TotalUsageTimeSoundTest,
 
 		/// <summary>
 		/// 连续使用时长提醒。
 		/// </summary>
-		ContinuousUsedTimeReminder,
+		ContinuousUsageTimeReminder,
 
 		/// <summary>
 		/// 连续使用时长提醒提示音的测试通知。
 		/// </summary>
-		ContinuousUsedTimeSoundTest,
+		ContinuousUsageTimeSoundTest,
 
 		/// <summary>
 		/// 结束使用时间提醒。
@@ -62,42 +62,42 @@ namespace Zscno.Trackora
 
 			switch (reminderKind)
 			{
-				case ReminderKind.TotalUsedTimeReminder:
+				case ReminderKind.TotalUsageTimeReminder:
 					logInfo = $"总使用时长已达设置中的值" +
 							  $" [{(TimeSpan)LocalSettings["TotalUsedRemindTime"]:hh\\:mm\\:ss}] 。";
 					logError = "在发送 总使用时间提醒通知 时触发异常：";
-					title = Loader.GetString("UsedTimeReminderTitle");
+					title = Loader.GetString("UsageTimeReminderTitle");
 					content = Loader.GetString("TotalReminderText1") +
 							  WindowTracker.GetLocalTime(TimeSpan.Zero, true) +
 							  Loader.GetString("TotalReminderText2");
-					audio.Src = new Uri(CommonSounds[(string)LocalSettings["TotalUsedTimeSound"]]);
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["TotalUsageTimeSound"]]);
 					break;
 
-				case ReminderKind.TotalUsedTimeSoundTest:
+				case ReminderKind.TotalUsageTimeSoundTest:
 					logInfo = string.Empty;
 					logError = "在发送 总使用时长提醒提示音的测试通知 时触发异常：";
 					title = Loader.GetString("Test/Content");
-					content = Loader.GetString("TestContent") + (string)LocalSettings["TotalUsedTimeSound"];
-					audio.Src = new Uri(CommonSounds[(string)LocalSettings["TotalUsedTimeSound"]]);
+					content = Loader.GetString("TestContent") + (string)LocalSettings["TotalUsageTimeSound"];
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["TotalUsageTimeSound"]]);
 					break;
 
-				case ReminderKind.ContinuousUsedTimeReminder:
+				case ReminderKind.ContinuousUsageTimeReminder:
 					logInfo = $"连续使用时长已达设置中的值" +
 							  $" [{(TimeSpan)LocalSettings["ContinuousUsedRemindTime"]:hh\\:mm\\:ss}] 。";
 					logError = "在发送 连续使用时间提醒通知 时触发异常：";
-					title = Loader.GetString("UsedTimeReminderTitle");
+					title = Loader.GetString("UsageTimeReminderTitle");
 					content = Loader.GetString("ContinuousReminderText1") +
 							  WindowTracker.GetLocalTime((TimeSpan)LocalSettings["ContinuousUsedRemindTime"]) +
 							  Loader.GetString("ContinuousReminderText2");
-					audio.Src = new Uri(CommonSounds[(string)LocalSettings["ContinuousUsedTimeSound"]]);
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["ContinuousUsageTimeSound"]]);
 					break;
 
-				case ReminderKind.ContinuousUsedTimeSoundTest:
+				case ReminderKind.ContinuousUsageTimeSoundTest:
 					logInfo = string.Empty;
 					logError = "在发送 连续使用时长提醒提示音的测试通知 时触发异常：";
 					title = Loader.GetString("Test/Content");
-					content = Loader.GetString("TestContent") + (string)LocalSettings["ContinuousUsedTimeSound"];
-					audio.Src = new Uri(CommonSounds[(string)LocalSettings["ContinuousUsedTimeSound"]]);
+					content = Loader.GetString("TestContent") + (string)LocalSettings["ContinuousUsageTimeSound"];
+					audio.Src = new Uri(CommonSounds[(string)LocalSettings["ContinuousUsageTimeSound"]]);
 					break;
 
 				case ReminderKind.EndUsingTimeReminder:
@@ -146,14 +146,14 @@ namespace Zscno.Trackora
 		/// </summary>
 		/// <param name="title">通知标题。</param>
 		/// <param name="content">通知内容。</param>
-		/// <param name="isExit">指示如果触发了异常，是否退出应用。</param>
+		/// <param name="isExit">指示如果触发异常，是否退出应用。</param>
 		/// <param name="audioUri">通知提示音（默认是 <see cref="CommonSounds"/> 中的 <c>Default</c> ）。</param>
 		public static bool SendReminder(string title, string content, bool isExit = true,
 			string audioUri = "ms-winsoundevent:Notification.Default")
 		{
 			return new SafeCaller()
 			{
-				LogMessage = $"通知[标题：{title}，内容：{content}]发送失败。",
+				LogMessage = $"无法发送通知[标题：{title}，内容：{content}]。",
 				NeedRemind = false,
 				NeedExit = isExit,
 			}.CallMethodR(() =>
@@ -176,7 +176,7 @@ namespace Zscno.Trackora
 		{
 			return new SafeCaller()
 			{
-				LogMessage = $"对话框[标题：{title}，内容：{content}]显示失败。",
+				LogMessage = $"无法显示对话框[标题：{title}，内容：{content}]。",
 				NeedRemind = false,
 			}.CallMethodR(async () =>
 			{
