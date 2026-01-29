@@ -57,7 +57,6 @@ namespace Zscno.Trackora
 						}
 						catch (Exception)
 						{
-							// 如果无法获取文件路径就使用文件夹路径。
 							LogSystem.WriteLog(LogLevel.Error, $"无法删除文件夹 [{folderPath}] 中的文件。\n{ex}");
 						}
 					}
@@ -80,7 +79,6 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				//LogSystem.WriteLog(LogLevel.Error, $"在获取文件夹 [{path}] 信息时触发异常：{ex}");
 				throw new Exception($"无法获取文件夹[{path}]信息。", ex);
 			}
 
@@ -99,7 +97,6 @@ namespace Zscno.Trackora
 					}
 					catch (Exception)
 					{
-						// 如果无法获取文件路径就使用文件夹路径。
 						LogSystem.WriteLog(LogLevel.Error, $"无法获取文件夹 [{path}] 中的文件大小。\n{ex}");
 					}
 				}

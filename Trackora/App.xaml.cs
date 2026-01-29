@@ -154,14 +154,12 @@ namespace Zscno.Trackora
 			_ = LocalSettings.TryAdd("ContinuousUsageTimeSound", "Default");
 			_ = LocalSettings.TryAdd("EndUsingTimeSound", "Alarm");
 			_ = LocalSettings.TryAdd("Theme", "SystemTheme");
+			// 仅记录使用时间的进程：开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图。
 			_ = LocalSettings.TryAdd("OnlyTimeProcesses",
 				"StartMenuExperienceHost,SearchHost,PickerHost," +
 				"consent,OpenWith,Widgets,ShellExperienceHost");
-
-			// 开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图，只记录时间不记录信息。
+			// 忽略的进程：桌面管理器，锁屏，线程等待对话框。
 			_ = LocalSettings.TryAdd("IgnoredProcesses", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
-
-			// 桌面管理器，锁屏，线程等待对话框，什么都不记录。
 			_ = LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));
 		}
 

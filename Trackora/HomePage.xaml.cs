@@ -28,8 +28,7 @@ namespace Zscno.Trackora
 		public async Task LoadControlsThatNeed()
 		{
 			LoadingRing.IsActive = true;
-			// 如果结束使用时间未设置或已过，则不显示。
-			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
+			EndUsing.SelectedTime = WindowTracker.EndUsingTime == default ||
 									WindowTracker.EndUsingTime <= _timeNow
 				? null
 				: WindowTracker.EndUsingTime;
@@ -37,7 +36,6 @@ namespace Zscno.Trackora
 			TotalUsageTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsageTime);
 			if (!_isFirstLoading)
 			{
-				// 如果不是首次加载，则重置按钮内容。
 				All.Content = Loader.GetString("All/Content");
 			}
 
@@ -47,7 +45,6 @@ namespace Zscno.Trackora
 			}.CallMethodD(() =>
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				// 超过 6 项时显示按钮。
 				All.Visibility = WindowTracker.ProcessesUsageTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
 			});
 			if (!isSuccessful)
