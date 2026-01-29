@@ -43,7 +43,7 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 指示是否能发出各种通知和提醒。
 		/// </summary>
-		public static bool CanSend { get; set; } = true;
+		public static bool CanShowReminder { get; set; } = true;
 
 		/// <summary>
 		/// 一般的通知所有可以选择的提示音。
@@ -99,7 +99,7 @@ namespace Zscno.Trackora
 			{
 				LogType = CallerLogType.Crash,
 				LogMessage = "无法获取本地缓存文件夹路径或无法初始化日志文件。",
-				NeedExit = true,
+				ShouldExit = true,
 				RemindingMsgResKey = "CanNotLaunchApp",
 			}.CallMethodR(() =>
 			{
@@ -110,7 +110,7 @@ namespace Zscno.Trackora
 			_ = new SafeCaller()
 			{
 				LogMessage = "无法注册应用实例激活事件。",
-				NeedExit = true,
+				ShouldExit = true,
 				RemindingMsgResKey = "CanNotLaunchApp",
 			}.CallMethodR(() =>
 			{
@@ -121,7 +121,7 @@ namespace Zscno.Trackora
 			_ = new SafeCaller()
 			{
 				LogMessage = "无法初始化信息文件路径。",
-				NeedExit = true,
+				ShouldExit = true,
 				RemindingMsgResKey = "ECanNotInitInfoFilePath",
 			}.CallMethodR(() => InfoFilePath = Path.Combine(LocalCachePath, "Info.json"));
 
@@ -196,7 +196,7 @@ namespace Zscno.Trackora
 			_ = new SafeCaller()
 			{
 				LogMessage = "无法准备 Icons 文件夹。",
-				NeedExit = true,
+				ShouldExit = true,
 				RemindingMsgResKey = "CanNotLaunchApp",
 			}.CallMethodR(() =>
 			{

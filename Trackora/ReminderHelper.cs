@@ -134,7 +134,7 @@ namespace Zscno.Trackora
 			return new SafeCaller()
 			{
 				LogMessage = logError,
-				NeedRemind = false,
+				ShouldRemind = false,
 			}.CallMethodR(() =>
 			{
 				new ToastContentBuilder().AddText(title).AddText(content).AddAudio(audio).Show();
@@ -146,16 +146,16 @@ namespace Zscno.Trackora
 		/// </summary>
 		/// <param name="title">通知标题。</param>
 		/// <param name="content">通知内容。</param>
-		/// <param name="isExit">指示如果触发异常，是否退出应用。</param>
+		/// <param name="shouldExit">指示如果触发异常，是否退出应用。</param>
 		/// <param name="audioUri">通知提示音（默认是 <see cref="CommonSounds"/> 中的 <c>Default</c> ）。</param>
-		public static bool SendReminder(string title, string content, bool isExit = true,
+		public static bool SendReminder(string title, string content, bool shouldExit = true,
 			string audioUri = "ms-winsoundevent:Notification.Default")
 		{
 			return new SafeCaller()
 			{
 				LogMessage = $"无法发送通知[标题：{title}，内容：{content}]。",
-				NeedRemind = false,
-				NeedExit = isExit,
+				ShouldRemind = false,
+				ShouldExit = shouldExit,
 			}.CallMethodR(() =>
 			{
 				new ToastContentBuilder().AddText(title).AddText(content).AddAudio(
@@ -177,7 +177,7 @@ namespace Zscno.Trackora
 			return new SafeCaller()
 			{
 				LogMessage = $"无法显示对话框[标题：{title}，内容：{content}]。",
-				NeedRemind = false,
+				ShouldRemind = false,
 			}.CallMethodR(async () =>
 			{
 				if (AppMainWindow is null)

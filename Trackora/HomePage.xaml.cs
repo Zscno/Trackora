@@ -13,7 +13,7 @@ namespace Zscno.Trackora
 	/// </summary>
 	public sealed partial class HomePage : Page
 	{
-		private static bool _firstLoad;
+		private static bool _isFirstLoading;
 
 		private static readonly TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 
@@ -35,7 +35,7 @@ namespace Zscno.Trackora
 				: WindowTracker.EndUsingTime;
 			TimePickReminder.Text = string.Empty;
 			TotalUsageTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsageTime);
-			if (!_firstLoad)
+			if (!_isFirstLoading)
 			{
 				// 如果不是首次加载，则重置按钮内容。
 				All.Content = Loader.GetString("All/Content");
@@ -77,7 +77,7 @@ namespace Zscno.Trackora
 
 		private void Continuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_firstLoad)
+			if (!_isFirstLoading)
 			{
 				LocalSettings["ContinuousUsedRemindTime"] = e.NewTime;
 			}
@@ -99,13 +99,13 @@ namespace Zscno.Trackora
 
 		private async void Page_Loaded(object sender, RoutedEventArgs e)
 		{
-			_firstLoad = true;
+			_isFirstLoading = true;
 			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
 			Total.Time = (TimeSpan)LocalSettings["TotalUsedRemindTime"];
 			Continuous.Time = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
 			ResetContinuous.Time = (TimeSpan)LocalSettings["ContinuousUsedResetTime"];
 			await LoadControlsThatNeed();
-			_firstLoad = false;
+			_isFirstLoading = false;
 		}
 
 		private async void Refresh_Click(object sender, RoutedEventArgs e)
@@ -128,7 +128,7 @@ namespace Zscno.Trackora
 
 		private void ResetContinuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_firstLoad)
+			if (!_isFirstLoading)
 			{
 				LocalSettings["ContinuousUsedResetTime"] = e.NewTime;
 			}
@@ -136,12 +136,12 @@ namespace Zscno.Trackora
 
 		private void Total_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_firstLoad)
+			if (!_isFirstLoading)
 			{
 				LocalSettings["TotalUsedRemindTime"] = e.NewTime;
 				if (e.NewTime > e.OldTime)
 				{
-					WindowTracker.HasTotalReminded = false;
+					WindowTracker.IsTotalUsageReminderShown = false;
 				}
 			}
 		}

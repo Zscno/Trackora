@@ -160,7 +160,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeSoundTest);
+			CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
@@ -173,7 +173,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeSoundTest);
+			CanShowReminder = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
@@ -186,7 +186,7 @@ namespace Zscno.Trackora
 			{
 				LogMessage = $"用户输入不符合要求[{OnlyTimeProcesses.Text}]。",
 				LogLevel = LogLevel.Warning,
-				NeedRemind = false,
+				ShouldRemind = false,
 			}.CallMethodR(() =>
 			{
 				string[] strings = OnlyTimeProcesses.Text.Split(',');
@@ -224,7 +224,7 @@ namespace Zscno.Trackora
 			{
 				LogMessage = $"用户输入不符合要求[{IgnoredProcesses.Text}]。",
 				LogLevel = LogLevel.Warning,
-				NeedRemind = false,
+				ShouldRemind = false,
 			}.CallMethodR(() =>
 			{
 				string[] strings = IgnoredProcesses.Text.Split(',');
@@ -255,7 +255,7 @@ namespace Zscno.Trackora
 
 		private async void Page_Loaded(object sender, RoutedEventArgs e)
 		{
-			CanNotSend.IsOpen = !CanSend;
+			CanNotSend.IsOpen = !CanShowReminder;
 			TotalSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
 			ContinuousSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
 			EndUsingSoundPicker.ItemsSource = AlarmSounds.Keys.ToList();
@@ -293,7 +293,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeSoundTest);
+			CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeSoundTest);
 			button.IsEnabled = true;
 		}
 	}

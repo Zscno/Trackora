@@ -51,12 +51,12 @@ namespace Zscno.Trackora
 		/// <summary>
 		/// 指示触发异常执行完所有操作后是否退出（默认为 <see langword="false"/>）。
 		/// </summary>
-		public bool NeedExit { get; set; }
+		public bool ShouldExit { get; set; }
 
 		/// <summary>
 		/// 指示当触发异常时是否需要使用对话框或通知提醒用户（默认为 <see langword="true"/>）。
 		/// </summary>
-		public bool NeedRemind { get; set; } = true;
+		public bool ShouldRemind { get; set; } = true;
 
 		/// <summary>
 		/// 用于提醒用户的内容的资源名称（默认为 <see cref="string.Empty"/>）。
@@ -68,7 +68,7 @@ namespace Zscno.Trackora
 		/// </summary>
 		private void ExitIfNeeded()
 		{
-			if (NeedExit)
+			if (ShouldExit)
 			{
 				Environment.Exit(1);
 			}
@@ -79,8 +79,8 @@ namespace Zscno.Trackora
 		/// </summary>
 		private async Task RemindUserByDialog()
 		{
-			if (!NeedRemind) { return; }
-			App.CanSend = await ReminderHelper.ShowDialog(
+			if (!ShouldRemind) { return; }
+			App.CanShowReminder = await ReminderHelper.ShowDialog(
 				App.Loader.GetString("ErrorOrWarningTitle"),
 				string.IsNullOrWhiteSpace(RemindingMsgResKey) ? "未指定的内容。" :
 				App.Loader.GetString(RemindingMsgResKey));
@@ -91,8 +91,8 @@ namespace Zscno.Trackora
 		/// </summary>
 		private void RemindUserByReminder()
 		{
-			if (!NeedRemind) { return; }
-			App.CanSend = ReminderHelper.SendReminder(
+			if (!ShouldRemind) { return; }
+			App.CanShowReminder = ReminderHelper.SendReminder(
 				App.Loader.GetString("ErrorOrWarningTitle"),
 				string.IsNullOrWhiteSpace(RemindingMsgResKey) ? "未指定的内容。" :
 				App.Loader.GetString(RemindingMsgResKey));

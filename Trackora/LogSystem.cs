@@ -84,7 +84,7 @@ namespace Zscno.Trackora
 			_ = new SafeCaller()
 			{
 				LogType = CallerLogType.Crash,
-				NeedExit = true,
+				ShouldExit = true,
 				RemindingMsgResKey = "ECannotLaunchApp",
 			}.CallMethodR(() =>
 			{
