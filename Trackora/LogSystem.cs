@@ -54,7 +54,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new Exception("无法初始化日志文件路径。", ex);
+				throw new Exception("初始化日志文件路径失败。", ex);
 			}
 
 			LogFilePath = Path.Join(path, $"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.log");
@@ -85,7 +85,7 @@ namespace Zscno.Trackora
 			{
 				LogType = CallerLogType.Crash,
 				ShouldExit = true,
-				RemindingMsgResKey = "ECannotLaunchApp",
+				RemindingMsgResKey = "CannotLaunchApp",
 			}.CallMethodR(() =>
 			{
 				lock (new object())

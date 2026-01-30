@@ -204,7 +204,7 @@ namespace Zscno.Trackora
 
             _ = new SafeCaller()
             {
-                LogMessage = "无法启动计时器。",
+                LogMessage = "启动计时器失败。",
                 ShouldExit = true,
                 RemindingMsgResKey = "ECanNotStartTimer",
             }.CallMethodR(() =>
@@ -433,7 +433,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法保存进程 {name} 的图标。", ex);
+                throw new Exception($"保存进程 {name} 的图标失败。", ex);
             }
         }
 
@@ -462,7 +462,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法保存进程 {name} 的图标。", ex);
+                throw new Exception($"保存进程 {name} 的图标失败。", ex);
             }
         }
 
@@ -502,7 +502,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法获取进程 {name} 的包信息。", ex);
+                throw new Exception($"获取进程 {name} 的包信息失败。", ex);
             }
         }
 
@@ -523,7 +523,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法从 Json 文件[{InfoFilePath}]获取进程信息列表。", ex);
+                throw new Exception($"从 Json 文件[{InfoFilePath}]获取进程信息列表失败。", ex);
             }
         }
 
@@ -542,7 +542,7 @@ namespace Zscno.Trackora
                 process.Handle, ref packageFullNameLength, packageFullName);
             if (result != NativeApi.ERROR_SUCCESS)
             {
-                throw new Win32Exception(Marshal.GetLastWin32Error(), $"无法获取进程 {name} 的包全名。");
+                throw new Win32Exception(Marshal.GetLastWin32Error(), $"获取进程 {name} 的包全名失败。");
             }
 
             Package package = GetPackageInfo(packageFullName.ToString(), name);
@@ -583,7 +583,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法获取进程 {name} 的路径。", ex);
+                throw new Exception($"获取进程 {name} 的路径失败。", ex);
             }
         }
 
@@ -666,9 +666,9 @@ namespace Zscno.Trackora
         private bool CheckExplorerProcess(nint handle)
         {
             if (!TryGetChildWindowHandle(handle, out nint childHandle,
-                    "无法获取 explorer 进程的子窗口句柄。") ||
+                    "获取 explorer 进程的子窗口句柄失败。") ||
                 !TryGetWindowClassName(childHandle, out string className,
-                    $"无法获取 explorer 子进程 [Handle={childHandle}] 的类名。"))
+                    $"获取 explorer 子进程 [Handle={childHandle}] 的类名失败。"))
             {
                 return false;
             }
@@ -755,11 +755,11 @@ namespace Zscno.Trackora
         private (bool shouldKeepRecording, Process? Result) GetRealUwpProcess(nint handle)
         {
             if (TryGetChildWindowHandle(handle, out nint childHandle,
-                    "无法获取 UWP 进程子窗口的句柄。", "Windows.UI.Core.CoreWindow") &&
+                    "获取 UWP 进程子窗口的句柄失败。", "Windows.UI.Core.CoreWindow") &&
                 TryGetWindowThreadProcessId(childHandle, out uint uwpId,
-                    $"无法获取 UWP 进程 [Handle={childHandle}] 的 Id 。") &&
+                    $"获取 UWP 进程 [Handle={childHandle}] 的 Id 失败。") &&
                 TryGetProcessById((int)uwpId, out Process process,
-                    $"无法获取 UWP 进程 [ID={uwpId}] 的信息。"))
+                    $"获取 UWP 进程 [ID={uwpId}] 的信息失败。"))
             {
                 return (true, process);
             }
@@ -815,7 +815,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法从记录文件[{_recordFilePath}]获取今天的记录。", ex);
+                throw new Exception($"从记录文件[{_recordFilePath}]获取今天的记录失败。", ex);
             }
         }
 
@@ -852,7 +852,7 @@ namespace Zscno.Trackora
             allProcessInfos.Add(info);
             bool isSuccessful = new SafeCaller()
             {
-                LogMessage = $"无法写入记录文件[{InfoFilePath}]。",
+                LogMessage = $"写入记录文件[{InfoFilePath}]失败。",
                 RemindingMsgResKey = "ECanNotWriteInfo",
             }.CallMethodR(() => File.WriteAllText(InfoFilePath, SerializeJson(
                 allProcessInfos,
@@ -889,7 +889,7 @@ namespace Zscno.Trackora
             uint packageFullNameLength = 0;
             (isSuccessful, long result) = new SafeCaller()
             {
-                LogMessage = $"无法获取进程 {name} 的包全名长度。",
+                LogMessage = $"获取进程 {name} 的包全名长度失败。",
                 ShouldRemind = false,
             }
             .CallMethodWithReturnR(() => NativeApi.GetPackageFullName
@@ -928,7 +928,7 @@ namespace Zscno.Trackora
 
                 default:
                     WriteLog(LogLevel.Error,
-                        $"无法获取进程 {name} 的包全名，错误代码：{Marshal.GetLastWin32Error()}。");
+                        $"获取进程 {name} 的包全名失败，错误代码：{Marshal.GetLastWin32Error()}。");
                     await RecordInfoIntoFile(GetDefaultInfo(process), list);
                     return;
             }
@@ -981,7 +981,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法在文件[{_recordFilePath}]中记录进程 {name} 的总使用时长。", ex);
+                throw new Exception($"在文件[{_recordFilePath}]中记录进程 {name} 的总使用时长失败。", ex);
             }
         }
 
@@ -1004,7 +1004,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法在内存中记录进程 {name} 的使用时长。", ex);
+                throw new Exception($"在内存中记录进程 {name} 的使用时长失败。", ex);
             }
         }
 
@@ -1049,7 +1049,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法重置/创建记录文件[{_recordFilePath}]。", ex);
+                throw new Exception($"重置/创建记录文件[{_recordFilePath}]失败。", ex);
             }
         }
 
@@ -1074,9 +1074,9 @@ namespace Zscno.Trackora
 
             if (!TryGetForegroundWindowHandle(out nint handle) ||
                 !TryGetWindowThreadProcessId(handle, out uint processId,
-                    $"无法获取进程 [{handle}] 的 Id 。") ||
+                    $"获取进程 [{handle}] 的 Id 失败。") ||
                 !TryGetProcessById((int)processId, out Process process,
-                    $"无法获取进程 [ID={processId}] 的信息。"))
+                    $"获取进程 [ID={processId}] 的信息失败。"))
             {
                 return;
             }
@@ -1296,7 +1296,7 @@ namespace Zscno.Trackora
             }
             catch (Exception ex)
             {
-                throw new Exception($"无法获取记录文件[{InfoFilePath}]的文本。", ex);
+                throw new Exception($"获取记录文件[{InfoFilePath}]的文本失败。", ex);
             }
 
             List<ProcessInfo> processesInfo = [];

@@ -153,7 +153,7 @@ namespace Zscno.Trackora
 		{
 			return new SafeCaller()
 			{
-				LogMessage = $"无法发送通知[标题：{title}，内容：{content}]。",
+				LogMessage = $"发送通知[标题：{title}，内容：{content}]失败。",
 				ShouldRemind = false,
 				ShouldExit = shouldExit,
 			}.CallMethodR(() =>
@@ -176,7 +176,7 @@ namespace Zscno.Trackora
 		{
 			return new SafeCaller()
 			{
-				LogMessage = $"无法显示对话框[标题：{title}，内容：{content}]。",
+				LogMessage = $"显示对话框[标题：{title}，内容：{content}]失败。",
 				ShouldRemind = false,
 			}.CallMethodR(async () =>
 			{

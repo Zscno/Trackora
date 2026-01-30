@@ -36,7 +36,7 @@ namespace Zscno.Trackora
 				}
 				catch (Exception ex)
 				{
-					throw new Exception($"无法获取文件夹[{folderPath}]的信息。", ex);
+					throw new Exception($"获取文件夹[{folderPath}]的信息失败。", ex);
 				}
 
 				foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
@@ -53,11 +53,11 @@ namespace Zscno.Trackora
 						try
 						{
 							string filePath = file.FullName;
-							LogSystem.WriteLog(LogLevel.Error, $"无法删除文件夹中的文件[{filePath}]。\n{ex}");
+							LogSystem.WriteLog(LogLevel.Error, $"删除文件夹中的文件[{filePath}]失败。\n{ex}");
 						}
 						catch (Exception)
 						{
-							LogSystem.WriteLog(LogLevel.Error, $"无法删除文件夹 [{folderPath}] 中的文件。\n{ex}");
+							LogSystem.WriteLog(LogLevel.Error, $"删除文件夹 [{folderPath}] 中的文件失败。\n{ex}");
 						}
 					}
 				}
@@ -79,7 +79,7 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new Exception($"无法获取文件夹[{path}]信息。", ex);
+				throw new Exception($"获取文件夹[{path}]信息失败。", ex);
 			}
 
 			foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
@@ -93,11 +93,11 @@ namespace Zscno.Trackora
 					try
 					{
 						string filePath = file.FullName;
-						LogSystem.WriteLog(LogLevel.Error, $"无法获取文件夹中的文件[{filePath}]大小。\n{ex}");
+						LogSystem.WriteLog(LogLevel.Error, $"获取文件夹中的文件[{filePath}]大小失败。\n{ex}");
 					}
 					catch (Exception)
 					{
-						LogSystem.WriteLog(LogLevel.Error, $"无法获取文件夹 [{path}] 中的文件大小。\n{ex}");
+						LogSystem.WriteLog(LogLevel.Error, $"获取文件夹 [{path}] 中的文件大小失败。\n{ex}");
 					}
 				}
 			}

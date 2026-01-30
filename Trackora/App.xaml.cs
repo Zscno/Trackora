@@ -98,18 +98,28 @@ namespace Zscno.Trackora
 			_ = new SafeCaller()
 			{
 				LogType = CallerLogType.Crash,
-				LogMessage = "无法获取本地缓存文件夹路径或无法初始化日志文件。",
+				LogMessage = "获取本地缓存文件夹路径失败。",
 				ShouldExit = true,
 				RemindingMsgResKey = "CanNotLaunchApp",
 			}.CallMethodR(() =>
 			{
 				LocalCachePath = ApplicationData.Current.LocalCacheFolder.Path;
+			});
+
+			_ = new SafeCaller()
+			{
+				LogType = CallerLogType.Crash,
+				LogMessage = "初始化日志文件失败。",
+				ShouldExit = true,
+				RemindingMsgResKey = "CannotLaunchApp",
+			}.CallMethodR(() =>
+			{
 				InitLogFile();
 			});
 
 			_ = new SafeCaller()
 			{
-				LogMessage = "无法注册应用实例激活事件。",
+				LogMessage = "注册应用实例激活事件失败，将不能保证单实例。",
 				ShouldExit = true,
 				RemindingMsgResKey = "CanNotLaunchApp",
 			}.CallMethodR(() =>
@@ -120,14 +130,14 @@ namespace Zscno.Trackora
 
 			_ = new SafeCaller()
 			{
-				LogMessage = "无法初始化信息文件路径。",
+				LogMessage = "初始化信息文件路径失败。",
 				ShouldExit = true,
 				RemindingMsgResKey = "ECanNotInitInfoFilePath",
 			}.CallMethodR(() => InfoFilePath = Path.Combine(LocalCachePath, "Info.json"));
 
 			_ = new SafeCaller()
 			{
-				LogMessage = "无法初始化本地设置，将使用内存临时存储。",
+				LogMessage = "初始化本地设置失败，将使用内存临时存储。",
 				RemindingMsgResKey = "ECanNotInitSettings",
 			}.CallMethodR(() =>
 			{
@@ -138,7 +148,7 @@ namespace Zscno.Trackora
 
 			_ = new SafeCaller()
 			{
-				LogMessage = "无法设置应用主题。",
+				LogMessage = "设置应用主题失败。",
 				RemindingMsgResKey = "ECanNotSetTheme",
 			}.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
 		}
@@ -193,7 +203,7 @@ namespace Zscno.Trackora
 		{
 			_ = new SafeCaller()
 			{
-				LogMessage = "无法准备 Icons 文件夹。",
+				LogMessage = "准备 Icons 文件夹失败。",
 				ShouldExit = true,
 				RemindingMsgResKey = "CanNotLaunchApp",
 			}.CallMethodR(() =>
