@@ -741,7 +741,7 @@ namespace Zscno.Trackora
             {
                 "explorer" => (CheckExplorerProcess(handle), null),
                 "ApplicationFrameHost" => GetRealUwpProcess(handle),
-                _ => (false, null),
+                _ => (true, null),
             };
         }
 
