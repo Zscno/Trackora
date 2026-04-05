@@ -1078,6 +1078,7 @@ namespace Zscno.Trackora
                 !TryGetProcessById((int)processId, out Process process,
                     $"获取进程 [ID={processId}] 的信息失败。"))
             {
+                NoProcessNow();
                 return;
             }
 
@@ -1092,9 +1093,16 @@ namespace Zscno.Trackora
             (bool shouldKeepRecording, Process? p) = GetRealProcess(name, handle);
             if (!shouldKeepRecording)
             {
+                NoProcessNow();
                 return;
             }
             process = p ?? process;
+
+            if (name == _lastProcess?.ProcessName)
+            {
+                return;
+            }
+
             UpdateUsageTime();
             _ = new SafeCaller() { RemindingMsgResKey = "ECanNotRecordTime" }
             .CallMethodR(() => RecordUsageTime(name));
