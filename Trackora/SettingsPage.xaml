@@ -173,8 +173,8 @@
 						</Grid.RowDefinitions>
 
 						<TextBox
-							Name="NoInfoNames"
-							x:Uid="NoInfoNames"
+							Name="OnlyTimeProcesses"
+							x:Uid="OnlyTimeProcesses"
 							Grid.RowSpan="2"
 							Grid.Column="0"
 							HorizontalAlignment="Stretch"
@@ -190,8 +190,8 @@
 							Grid.Column="1"
 							Click="NoInfoOK_Click"/>
 						<TextBox
-							Name="NoTimeNames"
-							x:Uid="NoTimeNames"
+							Name="IgnoredProcesses"
+							x:Uid="IgnoredProcesses"
 							Grid.Row="2"
 							Grid.RowSpan="2"
 							Grid.Column="0"

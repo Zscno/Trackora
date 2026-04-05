@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using Windows.ApplicationModel;
-using Windows.Storage;
 using static Zscno.Trackora.App;
 
 // To learn more about WinUI, the WinUI project structure, and more about our project templates, see: http://aka.ms/winui-project-info.
@@ -20,6 +19,98 @@ namespace Zscno.Trackora
 		public SettingsPage()
 		{
 			InitializeComponent();
+		}
+
+		/// <summary>
+		/// 删除指定文件夹中的所有文件。
+		/// </summary>
+		/// <param name="foldersPath">指定文件夹的路径。</param>
+		private static void DeleteAllFiles(params string[] foldersPath)
+		{
+			foreach (string folderPath in foldersPath)
+			{
+				DirectoryInfo info;
+				try
+				{
+					info = new DirectoryInfo(folderPath);
+				}
+				catch (Exception ex)
+				{
+					throw new Exception($"获取文件夹[{folderPath}]的信息失败。", ex);
+				}
+
+				foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
+				{
+					try
+					{
+						if (file.FullName != LogSystem.LogFilePath)
+						{
+							file.Delete();
+						}
+					}
+					catch (Exception ex)
+					{
+						try
+						{
+							string filePath = file.FullName;
+							LogSystem.WriteLog(LogLevel.Error, $"删除文件夹中的文件[{filePath}]失败。\n{ex}");
+						}
+						catch (Exception)
+						{
+							LogSystem.WriteLog(LogLevel.Error, $"删除文件夹 [{folderPath}] 中的文件失败。\n{ex}");
+						}
+					}
+				}
+			}
+		}
+
+		/// <summary>
+		/// 获取指定文件夹大小的格式化字符串。
+		/// </summary>
+		/// <param name="path">指定文件夹的路径。</param>
+		/// <returns>格式化字符串。</returns>
+		private static string GetFolderSize(string path)
+		{
+			double size = 0;
+			DirectoryInfo info;
+			try
+			{
+				info = new DirectoryInfo(path);
+			}
+			catch (Exception ex)
+			{
+				throw new Exception($"获取文件夹[{path}]信息失败。", ex);
+			}
+
+			foreach (FileInfo file in info.GetFiles("*", SearchOption.AllDirectories))
+			{
+				try
+				{
+					size += file.Length;
+				}
+				catch (Exception ex)
+				{
+					try
+					{
+						string filePath = file.FullName;
+						LogSystem.WriteLog(LogLevel.Error, $"获取文件夹中的文件[{filePath}]大小失败。\n{ex}");
+					}
+					catch (Exception)
+					{
+						LogSystem.WriteLog(LogLevel.Error, $"获取文件夹 [{path}] 中的文件大小失败。\n{ex}");
+					}
+				}
+			}
+
+			string[] sizes = ["B", "KB", "MB", "GB"];
+			int count = 0;
+			while (size >= 1024 && count < sizes.Length - 1)
+			{
+				count++;
+				size /= 1024;
+			}
+
+			return $"{size:F2} {sizes[count]}";
 		}
 
 		private void CheckLog_Click(object sender, RoutedEventArgs e)
@@ -37,57 +128,49 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			string basePath = ApplicationData.Current.LocalCacheFolder.Path;
-			try
-			{
-				SystemHelper.DeleteAllFiles(Path.Combine(basePath, "Logs"), Path.Combine(basePath, "Icons"));
-				File.WriteAllText(InfoFilePath, string.Empty);
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotDeleteFiles"));
-			}
 
-			try
+			_ = await new SafeCaller() { RemindingMsgResKey = "ECanNotDeleteFiles" }.CallMethodD(() =>
 			{
-				CacheSize.Text = Loader.GetString("CacheFolderSize") +
-					SystemHelper.GetFolderSize(ApplicationData.Current.LocalCacheFolder.Path);
-			}
-			catch (Exception ex)
+				DeleteAllFiles(Path.Join(LocalCachePath, "Logs"), Path.Join(LocalCachePath, "Icons"));
+				File.WriteAllText(InfoFilePath, string.Empty);
+			});
+
+			bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
+			.CallMethodD(() =>
+			{
+				CacheSize.Text = Loader.GetString("CacheFolderSize") + GetFolderSize(LocalCachePath);
+			});
+			if (!isSuccessful)
 			{
 				CacheSize.Text = string.Empty;
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetSize"));
 			}
+
 			button.IsEnabled = true;
 		}
 
 		private void ContinuousSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["ContinuousUsedTimeSound"] = (string) ContinuousSoundPicker.SelectedItem;
+			LocalSettings["ContinuousUsageTimeSound"] = (string)ContinuousSoundPicker.SelectedItem;
 		}
 
 		private void ContinuousTest_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.ContinuousUsedTimeSoundTest);
+			CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
 		private void EndUsingSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
 		{
-			LocalSettings["EndUsingTimeSound"] = (string) EndUsingSoundPicker.SelectedItem;
+			LocalSettings["EndUsingTimeSound"] = (string)EndUsingSoundPicker.SelectedItem;
 		}
 
 		private void EndUsingTest_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.EndUsingTimeSoundTest);
+			CanShowReminder = ReminderHelper.SendReminder(ReminderKind.EndUsingTimeSoundTest);
 			button.IsEnabled = true;
 		}
 
@@ -95,79 +178,37 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			try
-			{
-				string[] strings = NoInfoNames.Text.Split(',');
-				foreach (string item in strings)
-				{
-					if (string.IsNullOrWhiteSpace(item))
-					{
-						throw new ArgumentException("用户的输入中有空格、空或 null 。");
-					}
-				}
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoInfoNames.Text}] ：{ex}");
-				NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
-				return;
-			}
-			LocalSettings["NoInfoNames"] = NoInfoNames.Text;
-			button.IsEnabled = true;
-		}
 
-		private async void Page_Loaded(object sender, RoutedEventArgs e)
-		{
-			CanNotSend.IsOpen = !CanSend;
-			TotalSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
-			ContinuousSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
-			EndUsingSoundPicker.ItemsSource = AlarmSounds.Keys.ToList();
-			ThemePicker.ItemsSource = Themes.Keys.ToList();
-			TotalSoundPicker.SelectedItem = (string) LocalSettings["TotalUsedTimeSound"];
-			ContinuousSoundPicker.SelectedItem = (string) LocalSettings["ContinuousUsedTimeSound"];
-			EndUsingSoundPicker.SelectedItem = (string) LocalSettings["EndUsingTimeSound"];
-			ThemePicker.SelectedItem = Loader.GetString((string) LocalSettings["Theme"]);
-			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
-			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
-			PackageVersion version = Package.Current.Id.Version;
-			Version.Text = $"{version.Major}.{version.Minor}.{version.Build}";
-			try
+			bool isSuccessful = new SafeCaller()
 			{
-				CacheSize.Text = Loader.GetString("CacheFolderSize") +
-					SystemHelper.GetFolderSize(ApplicationData.Current.LocalCacheFolder.Path);
-			}
-			catch (Exception ex)
+				LogMessage = $"用户输入不符合要求[{OnlyTimeProcesses.Text}]。",
+				LogLevel = LogLevel.Warning,
+				ShouldRemind = false,
+			}.CallMethodR(() =>
 			{
-				CacheSize.Text = string.Empty;
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetSize"));
+				string[] strings = OnlyTimeProcesses.Text.Split(',');
+				if (strings.Any(string.IsNullOrWhiteSpace))
+				{
+					throw new ArgumentException("用户的输入中有空格、空或 null 。");
+				}
+			});
+			if (isSuccessful)
+			{
+				LocalSettings["OnlyTimeProcesses"] = OnlyTimeProcesses.Text;
 			}
+			else
+			{
+				OnlyTimeProcesses.Text = (string)LocalSettings["OnlyTimeProcesses"];
+			}
+
+			button.IsEnabled = true;
 		}
 
 		private void NoInfoReset_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			NoInfoNames.Text = (string) LocalSettings["NoInfoNames"];
-			button.IsEnabled = true;
-		}
-
-		private void ThemePick_SelectionChanged(object sender, SelectionChangedEventArgs e)
-		{
-			LocalSettings["Theme"] = Themes[(string) ThemePicker.SelectedItem];
-		}
-
-		private void TotalSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
-		{
-			LocalSettings["TotalUsedTimeSound"] = (string) TotalSoundPicker.SelectedItem;
-		}
-
-		private void TotalTest_Click(object sender, RoutedEventArgs e)
-		{
-			Button? button = sender as Button;
-			button!.IsEnabled = false;
-			CanSend = ReminderHelper.SendReminder(ReminderKinds.TotalUsedTimeSoundTest);
+			OnlyTimeProcesses.Text = (string)LocalSettings["OnlyTimeProcesses"];
 			button.IsEnabled = true;
 		}
 
@@ -175,24 +216,29 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			try
+
+			bool isSuccessful = new SafeCaller()
 			{
-				string[] strings = NoTimeNames.Text.Split(',');
-				foreach (string item in strings)
+				LogMessage = $"用户输入不符合要求[{IgnoredProcesses.Text}]。",
+				LogLevel = LogLevel.Warning,
+				ShouldRemind = false,
+			}.CallMethodR(() =>
+			{
+				string[] strings = IgnoredProcesses.Text.Split(',');
+				if (strings.Any(string.IsNullOrWhiteSpace))
 				{
-					if (string.IsNullOrWhiteSpace(item))
-					{
-						throw new ArgumentException("用户的输入中有空格、空或 null 。");
-					}
+					throw new ArgumentException("用户的输入中有空格、空或 null 。");
 				}
-			}
-			catch (Exception ex)
+			});
+			if (isSuccessful)
 			{
-				LogSystem.WriteLog(LogLevel.Warning, $"用户输入不符合要求 [Text={NoTimeNames.Text}] ：{ex}");
-				NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
-				return;
+				LocalSettings["IgnoredProcesses"] = IgnoredProcesses.Text;
 			}
-			LocalSettings["NoTimeNames"] = NoTimeNames.Text;
+			else
+			{
+				IgnoredProcesses.Text = (string)LocalSettings["IgnoredProcesses"];
+			}
+
 			button.IsEnabled = true;
 		}
 
@@ -200,7 +246,51 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			NoTimeNames.Text = (string) LocalSettings["NoTimeNames"];
+			IgnoredProcesses.Text = (string)LocalSettings["IgnoredProcesses"];
+			button.IsEnabled = true;
+		}
+
+		private async void Page_Loaded(object sender, RoutedEventArgs e)
+		{
+			CanNotSend.IsOpen = !CanShowReminder;
+			TotalSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
+			ContinuousSoundPicker.ItemsSource = CommonSounds.Keys.ToList();
+			EndUsingSoundPicker.ItemsSource = AlarmSounds.Keys.ToList();
+			ThemePicker.ItemsSource = Themes.Keys.ToList();
+			TotalSoundPicker.SelectedItem = (string)LocalSettings["TotalUsageTimeSound"];
+			ContinuousSoundPicker.SelectedItem = (string)LocalSettings["ContinuousUsageTimeSound"];
+			EndUsingSoundPicker.SelectedItem = (string)LocalSettings["EndUsingTimeSound"];
+			ThemePicker.SelectedItem = Loader.GetString((string)LocalSettings["Theme"]);
+			OnlyTimeProcesses.Text = (string)LocalSettings["OnlyTimeProcesses"];
+			IgnoredProcesses.Text = (string)LocalSettings["IgnoredProcesses"];
+			PackageVersion version = Package.Current.Id.Version;
+			Version.Text = $"{version.Major}.{version.Minor}.{version.Build}";
+			bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
+			.CallMethodD(() =>
+			{
+				CacheSize.Text = Loader.GetString("CacheFolderSize") + GetFolderSize(LocalCachePath);
+			});
+			if (!isSuccessful)
+			{
+				CacheSize.Text = string.Empty;
+			}
+		}
+
+		private void ThemePick_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			LocalSettings["Theme"] = Themes[(string)ThemePicker.SelectedItem];
+		}
+
+		private void TotalSoundPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			LocalSettings["TotalUsageTimeSound"] = (string)TotalSoundPicker.SelectedItem;
+		}
+
+		private void TotalTest_Click(object sender, RoutedEventArgs e)
+		{
+			Button? button = sender as Button;
+			button!.IsEnabled = false;
+			CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeSoundTest);
 			button.IsEnabled = true;
 		}
 	}

@@ -147,7 +147,7 @@
   <data name="TaskbarIcon.ToolTipText" xml:space="preserve">
     <value>Trackora - Efficiently manage your time</value>
   </data>
-  <data name="UsedTimeReminderTitle" xml:space="preserve">
+  <data name="UsageTimeReminderTitle" xml:space="preserve">
     <value>Usage time reminder</value>
   </data>
   <data name="EndUsingReminderTitle" xml:space="preserve">
@@ -210,7 +210,7 @@
   <data name="DevelopTitle.Text" xml:space="preserve">
     <value>Developer tools</value>
   </data>
-  <data name="NoInfoNames.Header" xml:space="preserve">
+  <data name="OnlyTimeProcesses.Header" xml:space="preserve">
     <value>The name of the process that only records usage time and does not display it on the homepage:</value>
   </data>
   <data name="OK.Content" xml:space="preserve">
@@ -297,7 +297,7 @@
   <data name="Retract" xml:space="preserve">
     <value>Fold up</value>
   </data>
-  <data name="NoTimeNames.Header" xml:space="preserve">
+  <data name="IgnoredProcesses.Header" xml:space="preserve">
     <value>The name of the process that does not record any information:</value>
   </data>
   <data name="ECanNotInitSettings" xml:space="preserve">

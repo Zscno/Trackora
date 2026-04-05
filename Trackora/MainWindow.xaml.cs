@@ -3,7 +3,6 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using System.Threading.Tasks;
 using WinRT.Interop;
 using static Zscno.Trackora.App;
@@ -26,14 +25,12 @@ namespace Zscno.Trackora
 			AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
 			AppWindow.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
 			SetTitleBar(TitleBar);
-			if ((string) LocalSettings["Theme"] == "DarkTheme")
+			AppWindow.TitleBar.ButtonForegroundColor = (string)LocalSettings["Theme"] switch
 			{
-				AppWindow.TitleBar.ButtonForegroundColor = Colors.White;
-			}
-			else if ((string) LocalSettings["Theme"] == "LightTheme")
-			{
-				AppWindow.TitleBar.ButtonForegroundColor = Colors.Black;
-			}
+				"DarkTheme" => Colors.White,
+				"LightTheme" => Colors.Black,
+				_ => AppWindow.TitleBar.ButtonForegroundColor,
+			};
 		}
 
 		[RelayCommand]
@@ -45,7 +42,7 @@ namespace Zscno.Trackora
 				return;
 			}
 
-			if ((MainView.SelectedItem as NavigationViewItem) != Home)
+			if (MainView.SelectedItem as NavigationViewItem != Home)
 			{
 				MainView.SelectedItem = Home;
 			}
@@ -55,25 +52,23 @@ namespace Zscno.Trackora
 				{
 					return;
 				}
-				else
-				{
-					await page.Refresh();
-				}
+
+				await page.LoadControlsThatNeed();
 			}
 
-			IntPtr hwnd = WindowNative.GetWindowHandle(window);
-			if (hwnd == IntPtr.Zero)
+			nint hwnd = WindowNative.GetWindowHandle(window);
+			if (hwnd == nint.Zero)
 			{
 				return;
 			}
-			_ = SystemHelper.ShowWindow(hwnd, SystemHelper.SW_SHOW);
-			_ = SystemHelper.SetForegroundWindow(hwnd);
+			_ = NativeApi.ShowWindow(hwnd, NativeApi.SW_SHOW);
+			_ = NativeApi.SetForegroundWindow(hwnd);
 		}
 
 		private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
 		{
 			args.Cancel = true;
-			SystemHelper.HideWindow(this);
+			NativeApi.HideWindow(this);
 		}
 
 		[RelayCommand]
@@ -84,9 +79,10 @@ namespace Zscno.Trackora
 			Application.Current.Exit();
 		}
 
-		private void NavigationView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+		private void NavigationView_SelectionChanged(NavigationView sender,
+			NavigationViewSelectionChangedEventArgs args)
 		{
-			if (((NavigationViewItem) args.SelectedItem).Name == "Home")
+			if (((NavigationViewItem)args.SelectedItem).Name == "Home")
 			{
 				_ = MainFrame.Navigate(typeof(HomePage));
 				sender.Header = Loader.GetString("HomeHeader");

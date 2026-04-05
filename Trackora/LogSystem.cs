@@ -1,8 +1,7 @@
-﻿using System;
+﻿using Microsoft.UI.Xaml;
+using System;
 using System.IO;
 using System.Text;
-using Windows.Storage;
-using Microsoft.UI.Xaml;
 
 namespace Zscno.Trackora
 {
@@ -47,7 +46,7 @@ namespace Zscno.Trackora
 			string path;
 			try
 			{
-				path = Path.Combine(ApplicationData.Current.LocalCacheFolder.Path, "Logs");
+				path = Path.Join(App.LocalCachePath, "Logs");
 				if (!Directory.Exists(path))
 				{
 					_ = Directory.CreateDirectory(path);
@@ -55,10 +54,10 @@ namespace Zscno.Trackora
 			}
 			catch (Exception ex)
 			{
-				throw new("在准备日志文件目录时触发了异常。", ex);
+				throw new Exception("初始化日志文件路径失败。", ex);
 			}
 
-			LogFilePath = Path.Combine(path, $"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.log");
+			LogFilePath = Path.Join(path, $"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.log");
 		}
 
 		/// <summary>
@@ -73,43 +72,28 @@ namespace Zscno.Trackora
 				return;
 			}
 
-			string levelString = string.Empty;
-			switch (level)
+			string levelString = level switch
 			{
-				case LogLevel.Debug:
-					levelString = "[Debug]";
-					break;
+				LogLevel.Debug => "[Debug]",
+				LogLevel.Info => "[Info]",
+				LogLevel.Warning => "[Warning]",
+				LogLevel.Error => "[Error]",
+				_ => string.Empty,
+			};
 
-				case LogLevel.Info:
-					levelString = "[Info]";
-					break;
-
-				case LogLevel.Warning:
-					levelString = "[Warning]";
-					break;
-
-				case LogLevel.Error:
-					levelString = "[Error]";
-					break;
-			}
-
-			try
+			_ = new SafeCaller()
+			{
+				LogType = CallerLogType.Crash,
+				ShouldExit = true,
+				RemindingMsgResKey = "CannotLaunchApp",
+			}.CallMethodR(() =>
 			{
 				lock (new object())
 				{
-					File.AppendAllText(LogFilePath, DateTime.Now.ToString("[HH:mm:ss.fff]") + levelString + message + "\n", Encoding.UTF8);
+					File.AppendAllText(LogFilePath,
+						DateTime.Now.ToString("[HH:mm:ss.fff]") + levelString + message + "\n", Encoding.UTF8);
 				}
-			}
-			catch (Exception ex)
-			{
-				// 如果日志写入失败，就把异常信息写到文档目录下的崩溃日志里，尝试发送通知提醒用户并退出。
-				File.WriteAllText(
-					Path.Join(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
-					$"{DateTime.Now:yyyy-MM-dd_HH+mm+ss}.crash"), $"{ex}");
-				App.CanSend = ReminderHelper.SendReminder("提示用户无法启动应用", "Error Tip",
-					"We can't launch the app. Contact the author for help please.", true);
-				Application.Current.Exit();
-			}
+			});
 		}
 	}
 }

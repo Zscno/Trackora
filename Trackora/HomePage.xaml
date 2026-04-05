@@ -29,7 +29,7 @@
 				</Image>
 				<StackPanel Grid.Column="1">
 					<TextBlock Text="{x:Bind DisplayName}" TextWrapping="WrapWholeWords"/>
-					<TextBlock Text="{x:Bind UsedTime}"/>
+					<TextBlock Text="{x:Bind UsageTime}"/>
 				</StackPanel>
 			</Grid>
 		</DataTemplate>
@@ -58,7 +58,7 @@
 				</Grid.RowDefinitions>
 
 				<TextBlock
-					Name="TotalUsedTime"
+					Name="TotalUsageTime"
 					Grid.Row="0"
 					FontSize="35"
 					Style="{StaticResource DisplayTextBlockStyle}"/>

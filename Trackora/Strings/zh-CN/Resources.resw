@@ -147,7 +147,7 @@
   <data name="TaskbarIcon.ToolTipText" xml:space="preserve">
     <value>Trackora - 高效管理您的时间</value>
   </data>
-  <data name="UsedTimeReminderTitle" xml:space="preserve">
+  <data name="UsageTimeReminderTitle" xml:space="preserve">
     <value>使用时长提醒</value>
   </data>
   <data name="EndUsingReminderTitle" xml:space="preserve">
@@ -210,7 +210,7 @@
   <data name="DevelopTitle.Text" xml:space="preserve">
     <value>开发者工具</value>
   </data>
-  <data name="NoInfoNames.Header" xml:space="preserve">
+  <data name="OnlyTimeProcesses.Header" xml:space="preserve">
     <value>仅记录使用时长而不显示在主页的进程名称：</value>
   </data>
   <data name="OK.Content" xml:space="preserve">
@@ -297,7 +297,7 @@
   <data name="Retract" xml:space="preserve">
     <value>收起</value>
   </data>
-  <data name="NoTimeNames.Header" xml:space="preserve">
+  <data name="IgnoredProcesses.Header" xml:space="preserve">
     <value>不记录任何信息的进程名称：</value>
   </data>
   <data name="ECanNotInitSettings" xml:space="preserve">

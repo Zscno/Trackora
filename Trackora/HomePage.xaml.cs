@@ -1,7 +1,6 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Zscno.Trackora.App;
 
@@ -14,47 +13,68 @@ namespace Zscno.Trackora
 	/// </summary>
 	public sealed partial class HomePage : Page
 	{
-		private static TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
-		private static bool _isFirstLoad;
+		private static bool _isFirstLoading;
+
+		private static readonly TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 
 		public HomePage()
 		{
 			InitializeComponent();
 		}
 
-		public async Task Refresh()
+		/// <summary>
+		/// 加载需要更新的控件。
+		/// </summary>
+		public async Task LoadControlsThatNeed()
 		{
 			LoadingRing.IsActive = true;
+			EndUsing.SelectedTime = WindowTracker.EndUsingTime == default ||
+									WindowTracker.EndUsingTime <= _timeNow
+				? null
+				: WindowTracker.EndUsingTime;
+			TimePickReminder.Text = string.Empty;
+			TotalUsageTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsageTime);
+			if (!_isFirstLoading)
+			{
+				All.Content = Loader.GetString("All/Content");
+			}
 
-			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
-			All.Content = Loader.GetString("All/Content");
-			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
-				WindowTracker.EndUsingTime <= _timeNow ?
-				null : WindowTracker.EndUsingTime;
-			TimePickReminder.Text = EndUsing.SelectedTime != null &&
-				WindowTracker.EndUsingTime <= _timeNow ?
-				Loader.GetString("PastTime") : string.Empty;
-
-			try
+			bool isSuccessful = await new SafeCaller()
+			{
+				RemindingMsgResKey="ECanNotGetInfo",
+			}.CallMethodD(() =>
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
-					Visibility.Visible : Visibility.Collapsed;
-			}
-			catch (Exception ex)
+				All.Visibility = WindowTracker.ProcessesUsageTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+			});
+			if (!isSuccessful)
 			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
 				All.Visibility = Visibility.Collapsed;
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
 			}
 
 			LoadingRing.IsActive = false;
 		}
 
+		private async void All_Click(object sender, RoutedEventArgs e)
+		{
+			LoadingRing.IsActive = true;
+			All.IsEnabled = false;
+			bool isRetract = (string)All.Content == Loader.GetString("Retract");
+
+			_ = await new SafeCaller() { RemindingMsgResKey="ECanNotGetInfo", }.CallMethodD(() =>
+			{
+				int count = isRetract ? 6 : WindowTracker.ProcessesUsageTime.Count;
+				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
+			});
+			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
+
+			All.IsEnabled = true;
+			LoadingRing.IsActive = false;
+		}
+
 		private void Continuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_isFirstLoad)
+			if (!_isFirstLoading)
 			{
 				LocalSettings["ContinuousUsedRemindTime"] = e.NewTime;
 			}
@@ -76,44 +96,20 @@ namespace Zscno.Trackora
 
 		private async void Page_Loaded(object sender, RoutedEventArgs e)
 		{
-			LoadingRing.IsActive = true;
-			_isFirstLoad = true;
-
-			Total.Time = (TimeSpan) LocalSettings["TotalUsedRemindTime"];
-			Continuous.Time = (TimeSpan) LocalSettings["ContinuousUsedRemindTime"];
-			ResetContinuous.Time = (TimeSpan) LocalSettings["ContinuousUsedResetTime"];
-			EndUsing.SelectedTime = WindowTracker.EndUsingTime == TimeSpan.Zero ||
-				WindowTracker.EndUsingTime <= _timeNow ?
-				null : WindowTracker.EndUsingTime;
-			TimePickReminder.Text = EndUsing.SelectedTime != null &&
-				WindowTracker.EndUsingTime <= _timeNow ?
-				Loader.GetString("PastTime") : string.Empty;
+			_isFirstLoading = true;
 			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
-			TotalUsedTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsedTime);
-
-			try
-			{
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = WindowTracker.WindowsUsedTime.Count > 6 ?
-					Visibility.Visible : Visibility.Collapsed;
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				All.Visibility = Visibility.Collapsed;
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
-			}
-
-			_isFirstLoad = false;
-			LoadingRing.IsActive = false;
+			Total.Time = (TimeSpan)LocalSettings["TotalUsedRemindTime"];
+			Continuous.Time = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
+			ResetContinuous.Time = (TimeSpan)LocalSettings["ContinuousUsedResetTime"];
+			await LoadControlsThatNeed();
+			_isFirstLoading = false;
 		}
 
 		private async void Refresh_Click(object sender, RoutedEventArgs e)
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			await Refresh();
+			await LoadControlsThatNeed();
 			button.IsEnabled = true;
 		}
 
@@ -129,7 +125,7 @@ namespace Zscno.Trackora
 
 		private void ResetContinuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_isFirstLoad)
+			if (!_isFirstLoading)
 			{
 				LocalSettings["ContinuousUsedResetTime"] = e.NewTime;
 			}
@@ -137,37 +133,14 @@ namespace Zscno.Trackora
 
 		private void Total_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
 		{
-			if (!_isFirstLoad)
+			if (!_isFirstLoading)
 			{
 				LocalSettings["TotalUsedRemindTime"] = e.NewTime;
 				if (e.NewTime > e.OldTime)
 				{
-					WindowTracker.HasTotalReminded = false;
+					WindowTracker.IsTotalUsageReminderShown = false;
 				}
 			}
-		}
-
-		private async void All_Click(object sender, RoutedEventArgs e)
-		{
-			LoadingRing.IsActive = true;
-			All.IsEnabled = false;
-			bool isRetract = (string) All.Content == Loader.GetString("Retract");
-
-			try
-			{
-				int count =  isRetract? 6 : WindowTracker.WindowsUsedTime.Count;
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
-			}
-			catch (Exception ex)
-			{
-				LogSystem.WriteLog(LogLevel.Error, ex.ToString());
-				await ReminderHelper.ShowDialog(XamlRoot, Loader.GetString("ErrorOrWarningTitle"),
-					Loader.GetString("ECanNotGetInfo"));
-			}
-			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
-
-			All.IsEnabled = true;
-			LoadingRing.IsActive = false;
 		}
 	}
 }
