@@ -566,7 +566,7 @@ namespace Zscno.Trackora
             }
 
             return (GetIconForWin32(name, path),
-                GetDisplayName(process.ProcessName, process.MainWindowTitle));
+                GetDisplayName(process.ProcessName, process.MainWindowTitle, mainModule.FileVersionInfo.FileDescription));
         }
 
         /// <summary>
