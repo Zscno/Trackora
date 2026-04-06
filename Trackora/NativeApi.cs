@@ -109,7 +109,7 @@ namespace Zscno.Trackora
 		/// <param name="lpszClass">指定窗口类名。</param>
 		/// <param name="lpszWindow">窗口名称（窗口的标题）。</param>
 		/// <returns>如果函数成功，则返回值是具有指定类和窗口名称的窗口的句柄。如果函数失败，则返回值 <see langword="null"/>。</returns>
-		[LibraryImport("user32.dll", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+		[LibraryImport("user32.dll", EntryPoint = "FindWindowExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
 		public static partial nint FindWindowEx(
 			nint hWndParent,
 			nint hWndChildAfter,
