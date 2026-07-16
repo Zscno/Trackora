@@ -92,12 +92,46 @@ namespace Zscno.Trackora
 		/// </summary>
 		public const int SW_SHOWNORMAL = 1;
 
-		/// <summary>
-		/// 将指定的窗口置于 Z 顺序的顶部。如果窗口是顶级窗口，则会激活它。如果窗口是子窗口，则会激活与子窗口关联的顶级父窗口。
+        /// <summary>
+        /// 前景窗口已更改。即使前台窗口已更改为同一线程中的另一个窗口，系统也会发送此事件。服务器应用程序从不发送该事件。<para>对于此事件，WinEventProc 回调函数的 hwnd 参数是前台窗口的句柄，idObject 参数 OBJID_WINDOW，idChild 参数 CHILDID_SELF。</para>
 		/// </summary>
-		/// <param name="hWnd">要置于 Z 顺序顶部的窗口的句柄。</param>
-		/// <returns>如果该函数成功，则返回值为非零值。如果函数失败，则返回值为零。/&gt;。</returns>
-		[LibraryImport("user32.dll")]
+		public const uint EVENT_SYSTEM_FOREGROUND = 0x0003;
+
+		public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
+
+        /// <summary>
+        /// 为一系列事件设置事件挂钩函数。
+        /// </summary>
+        /// <param name="eventMin">指定挂钩函数处理的事件范围中最低事件值的事件 常量 。 此参数可以设置为 EVENT_MIN ，以指示可能的最低事件值。</param>
+        /// <param name="eventMax">指定由挂钩函数处理的事件范围中最高事件值的事件常量。 此参数可以设置为 EVENT_MAX ，以指示可能的最高事件值。</param>
+        /// <param name="hmodWinEventProc">如果在 dwFlags 参数中指定了WINEVENT_INCONTEXT标志，则为包含 <paramref name="lpfnWinEventProc"/> 中的挂钩函数的 DLL 的句柄。 如果挂钩函数不位于 DLL 中，或者指定了WINEVENT_OUTOFCONTEXT标志，则此参数为 <see langword="null"/>。</param>
+        /// <param name="lpfnWinEventProc">指向事件挂钩函数的指针。</param>
+        /// <param name="idProcess">指定挂钩函数从中接收事件的进程的 ID。 指定零从当前桌面上的所有进程接收事件。</param>
+        /// <param name="idThread">指定挂钩函数从中接收事件的线程的 ID。 如果此参数为零，则挂钩函数与当前桌面上的所有现有线程相关联。</param>
+        /// <param name="dwFlags">标记值，用于指定要跳过的挂钩函数和事件的位置。</param>
+        /// <returns>如果成功，则返回一个 <see langword="nint"/> 值，该值标识此事件挂钩实例。 应用程序保存此返回值，以便将其与 UnhookWinEvent 函数一起使用。如果不成功，则返回零。</returns>
+        [LibraryImport("user32.dll", SetLastError = true)]
+        public static partial nint SetWinEventHook(
+			uint eventMin, uint eventMax, 
+			nint hmodWinEventProc, 
+			WinEventDelegate lpfnWinEventProc, 
+			uint idProcess, uint idThread, uint dwFlags);
+
+        /// <summary>
+        /// 删除先前对 <see cref="SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 的调用所创建的事件挂钩函数。
+        /// </summary>
+        /// <param name="hWinEventHook">对 <see cref="SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 的上一次调用中返回的事件挂钩的句柄。</param>
+        /// <returns>如果成功，则返回 <see langword="true"/>;否则，返回 <see langword="false"/>。</returns>
+        [LibraryImport("user32.dll", SetLastError = true)]
+		[return: MarshalAs(UnmanagedType.Bool)]
+		public static partial bool UnhookWinEvent(nint hWinEventHook);
+
+        /// <summary>
+        /// 将指定的窗口置于 Z 顺序的顶部。如果窗口是顶级窗口，则会激活它。如果窗口是子窗口，则会激活与子窗口关联的顶级父窗口。
+        /// </summary>
+        /// <param name="hWnd">要置于 Z 顺序顶部的窗口的句柄。</param>
+        /// <returns>如果该函数成功，则返回值为非零值。如果函数失败，则返回值为零。/&gt;。</returns>
+        [LibraryImport("user32.dll")]
 		[return: MarshalAs(UnmanagedType.Bool)]
 		public static partial bool BringWindowToTop(nint hWnd);
 

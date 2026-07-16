@@ -3,6 +3,7 @@ using Microsoft.Windows.AppLifecycle;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using Windows.ApplicationModel.Resources;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -18,10 +19,12 @@ namespace Zscno.Trackora
 	/// </summary>
 	public partial class App : Application
 	{
-		/// <summary>
-		/// 类似于闹钟的通知所有可以选择的提示音。
-		/// </summary>
-		public static Dictionary<string, string> AlarmSounds { get; } = new()
+		private WindowTracker _tracker;
+
+        /// <summary>
+        /// 类似于闹钟的通知所有可以选择的提示音。
+        /// </summary>
+        public static Dictionary<string, string> AlarmSounds { get; } = new()
 		{
 			{ "Alarm", "ms-winsoundevent:Notification.Looping.Alarm" },
 			{ "Alarm2", "ms-winsoundevent:Notification.Looping.Alarm2" },
@@ -128,7 +131,19 @@ namespace Zscno.Trackora
 				appInstance.Activated += AppInstance_Activated;
 			});
 
-			_ = new SafeCaller()
+			AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+            {
+				if (_tracker is null)
+				{
+					WriteLog(LogLevel.Warning, "窗口跟踪器未初始化，无法释放资源。");
+                }
+				else if (!_tracker.Dispose())
+				{
+					WriteLog(LogLevel.Error, $"释放窗口跟踪器资源失败，错误代码：{Marshal.GetLastWin32Error()}。");
+                }
+            };
+
+            _ = new SafeCaller()
 			{
 				LogMessage = "初始化信息文件路径失败。",
 				ShouldExit = true,
@@ -151,7 +166,9 @@ namespace Zscno.Trackora
 				LogMessage = "设置应用主题失败。",
 				RemindingMsgResKey = "ECanNotSetTheme",
 			}.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
-		}
+
+			_tracker = new WindowTracker();
+        }
 
 		/// <summary>
 		/// 在需要时初始化本地设置的默认值。
@@ -213,8 +230,6 @@ namespace Zscno.Trackora
 					_ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
 				}
 			});
-
-			_ = new WindowTracker();
 
 			AppMainWindow = new MainWindow();
 			AppMainWindow.Activate();

@@ -179,21 +179,30 @@ namespace Zscno.Trackora
             }
         }
 
+        private async void WinEventProc(
+            nint hWinEventHook, uint eventType, nint hwnd, 
+            int idObject, int idChild, uint dwEventThread, 
+            uint dwmsEventTime)
+        {
+            await Task.Run(UpdateScreenTime);
+        }
+
         public WindowTracker()
         {
             _recordFilePath = Path.Join(LocalCachePath,
                 "Record.dat");
+            _delegate = new WinEventDelegate(WinEventProc);
+            _hookHandle = NativeApi.SetWinEventHook(
+                NativeApi.EVENT_SYSTEM_FOREGROUND,
+                NativeApi.EVENT_SYSTEM_FOREGROUND,
+                nint.Zero, _delegate, 0, 0,
+                NativeApi.WINEVENT_OUTOFCONTEXT);
 #if DEBUG
             _jsonOptions.Indented = true;
 #endif
 
-            if (!LocalSettings.TryGetValue("Today", out object? today) ||
-                (DateTimeOffset)today != new DateTimeOffset(DateTime.Now.Date))
-            {
-                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotSetRecord" }
-                .CallMethodR(ResetRecord);
-            }
-            else
+            if (LocalSettings.TryGetValue("Today", out object? today) &&
+                (DateTimeOffset)today == new DateTimeOffset(DateTime.Now.Date))
             {
                 _totalUsageTime = TotalUsageTime;
                 _ = new SafeCaller() { RemindingMsgResKey = "ECanNotGetRecord" }
@@ -201,18 +210,23 @@ namespace Zscno.Trackora
 
                 SendTotalReminderIfNeeded();
             }
+            else
+            {
+                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotSetRecord" }
+                .CallMethodR(ResetRecord);
+            }
 
-            _ = new SafeCaller()
-            {
-                LogMessage = "启动计时器失败。",
-                ShouldExit = true,
-                RemindingMsgResKey = "ECanNotStartTimer",
-            }.CallMethodR(() =>
-            {
-                _timer.Tick += Timer_Tick;
-                _timer.Interval = _oneSecond;
-                _timer.Start();
-            });
+            //_ = new SafeCaller()
+            //{
+            //    LogMessage = "启动计时器失败。",
+            //    ShouldExit = true,
+            //    RemindingMsgResKey = "ECanNotStartTimer",
+            //}.CallMethodR(() =>
+            //{
+            //    _timer.Tick += Timer_Tick;
+            //    _timer.Interval = _oneSecond;
+            //    _timer.Start();
+            //});
         }
 
         /// <summary>
@@ -1066,6 +1080,68 @@ namespace Zscno.Trackora
 
             CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
             _continuousUsageTime = TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// 事件挂钩实例标识。
+        /// </summary>
+        private readonly nint _hookHandle;
+
+        /// <summary>
+        /// 保存委托实例，防止被GC回收。
+        /// </summary>
+        private readonly WinEventDelegate _delegate;
+
+        public bool Dispose()
+        {
+            return NativeApi.UnhookWinEvent(_hookHandle);
+        }
+
+        private void UpdateScreenTime()
+        {
+            if (!TryGetForegroundWindowHandle(out nint handle) ||
+                !TryGetWindowThreadProcessId(handle, out uint processId,
+                    $"获取进程 [{handle}] 的 Id 失败。") ||
+                !TryGetProcessById((int)processId, out Process process,
+                    $"获取进程 [ID={processId}] 的信息失败。"))
+            {
+                NoProcessNow();
+                return;
+            }
+            if (GetNoTimeArr().Contains(process.ProcessName))
+            {
+                NoProcessNow();
+                return;
+            }
+            (bool shouldKeepRecording, Process? p) = GetRealProcess(process.ProcessName, handle);
+            if (!shouldKeepRecording)
+            {
+                NoProcessNow();
+                return;
+            }
+            process = p ?? process;
+            string name = process.ProcessName;
+            if (_lastProcess is not null)
+            {
+                string lastName = _lastProcess.ProcessName;
+                if (name == lastName)
+                {
+                    return;
+                }
+                TimeSpan totalScreenTime = new SafeCaller()
+                {
+                    LogMessage = $"在内存中记录进程 {lastName} 的使用时长失败。",
+                    RemindingMsgResKey = "ECanNotRecordTime",
+                }.CallMethodWithReturnR(() => RecordUsageTimeIntoMemory(lastName)).Result;
+            }
+
+            _lastProcess = process;
+            _lastActivationTime = DateTime.Now;
+            if (!GetNoInfoArr().Contains(name))
+            {
+                _ = Task.Run(RecordProcessInfo);
+            }
+            return;
         }
 
         private async void Timer_Tick(object? sender, object e)
