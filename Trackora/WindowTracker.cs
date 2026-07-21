@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.Graphics.Imaging;
@@ -65,11 +66,6 @@ namespace Zscno.Trackora
         private readonly nint _hookHandle;
 
         /// <summary>
-        /// 以 <see cref="TimeSpan"/> 结构表示的 1 秒钟。
-        /// </summary>
-        private readonly TimeSpan _oneSecond = TimeSpan.FromSeconds(1);
-
-        /// <summary>
         /// 记录当天进程名称和使用时长的文本文件路径。
         /// </summary>
         private readonly string _recordFilePath;
@@ -77,7 +73,7 @@ namespace Zscno.Trackora
         /// <summary>
         /// 计时器。
         /// </summary>
-        private readonly DispatcherTimer _timer = new();
+        private Timer _timer;
 
         /// <summary>
         /// 发送连续使用时长提醒的剩余时间。
@@ -134,8 +130,7 @@ namespace Zscno.Trackora
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
                 nint.Zero, _delegate, 0, 0,
                 NativeApi.WINEVENT_OUTOFCONTEXT);
-            _timer.Interval = _oneSecond;
-            _timer.Tick += Timer_Tick;
+            _timer = new Timer(SendDueReminder, null, Timeout.Infinite, Timeout.Infinite);
 #if DEBUG
             _jsonOptions.Indented = true;
 #endif
@@ -1185,21 +1180,11 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 如果达到了连续使用提醒时长则发送连续使用时长提醒。
+        /// 如果达到了总使用提醒时长或连续使用提醒时长则发送提醒。
         /// </summary>
-        private void SendContinuousReminderIfNeeded()
-        {
-            if (_continuousUsageTime < (TimeSpan)LocalSettings["ContinuousUsedRemindTime"] ||
-                _continuousUsageTime == TimeSpan.Zero)
-            {
-                return;
-            }
-
-            CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
-            _continuousUsageTime = TimeSpan.Zero;
-        }
-
-        private void Timer_Tick(object? sender, object e)
+        /// <remarks>该函数是 <see cref="_timer"/> 的回调函数。</remarks>
+        /// <param name="state"></param>
+        private void SendDueReminder(object? state)
         {
             if (_count == _totalRemainingTime)
             {
@@ -1236,9 +1221,11 @@ namespace Zscno.Trackora
                 process is null || GetNoTimeArr().Contains(process.ProcessName) ||
                 !GetRealProcess(process.ProcessName, handle, out Process? uwpProcess))
             {
-                if (_timer.IsEnabled)
+
+                if (!_timer.Change(Timeout.Infinite, Timeout.Infinite))
                 {
-                    _timer.Stop();
+                    WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
+                    // TODO: 使用事件处理失败情况。
                 }
                 if (_lastProcess == null &&
                     DateTime.Now - _lastActivationTime >= (TimeSpan)LocalSettings["ContinuousUsedResetTime"])
@@ -1266,9 +1253,10 @@ namespace Zscno.Trackora
                         _continuousRemainingTime = (ulong)
                             ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] - _continuousUsageTime).TotalSeconds;
                     }
-                    if (!_timer.IsEnabled)
+                    if (!_timer.Change(1000, 1000))
                     {
-                        _timer.Start();
+                        WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
+                        // TODO: 使用事件处理失败情况。
                     }
                 }
 
@@ -1287,6 +1275,11 @@ namespace Zscno.Trackora
             uint dwmsEventTime)
         {
             await Task.Run(UpdateScreenTime);
+        }
+
+        ~WindowTracker()
+        {
+            _timer.Dispose();
         }
     }
 }
