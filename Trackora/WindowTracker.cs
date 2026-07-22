@@ -73,7 +73,7 @@ namespace Zscno.Trackora
         /// <summary>
         /// 计时器。
         /// </summary>
-        private Timer _timer;
+        private readonly Timer _timer;
 
         /// <summary>
         /// 发送连续使用时长提醒的剩余时间。
@@ -1186,7 +1186,7 @@ namespace Zscno.Trackora
         /// <param name="state"></param>
         private void SendDueReminder(object? state)
         {
-            if (_count == _totalRemainingTime)
+            if (!IsTotalUsageReminderShown && _count == _totalRemainingTime)
             {
                 CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeReminder);
                 IsTotalUsageReminderShown = true;
@@ -1202,6 +1202,9 @@ namespace Zscno.Trackora
 
         private void UpdateScreenTime()
         {
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+
             bool isSuccessful = false;
             if (_lastProcess is not null)
             {
@@ -1211,6 +1214,7 @@ namespace Zscno.Trackora
                     LogMessage = $"在内存中记录进程 {lastName} 的使用时长失败。",
                     RemindingMsgResKey = "ECanNotRecordTime",
                 }.CallMethodR(() => RecordUsageTimeIntoMemory(lastName));
+                WriteLog(LogLevel.Debug, $"当前总使用时长：{TotalUsageTime}，连续使用时长：{_continuousUsageTime}。");
             }
 
             if (!TryGetForegroundWindowHandle(out nint handle) ||
@@ -1221,7 +1225,7 @@ namespace Zscno.Trackora
                 process is null || GetNoTimeArr().Contains(process.ProcessName) ||
                 !GetRealProcess(process.ProcessName, handle, out Process? uwpProcess))
             {
-
+                _count = 0;
                 if (!_timer.Change(Timeout.Infinite, Timeout.Infinite))
                 {
                     WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
@@ -1237,22 +1241,30 @@ namespace Zscno.Trackora
                     _lastProcess = null;
                     _lastActivationTime = DateTime.Now;
                 }
+
+                stopwatch.Stop();
+                WriteLog(LogLevel.Debug, $"更新完成，本次未记录任何进程，用时：{stopwatch.Elapsed}。");
             }
             else
             {
                 if (isSuccessful)
                 {
-                    if ((TimeSpan)LocalSettings["TotalUsedRemindTime"] >= TotalUsageTime &&
-                        !IsTotalUsageReminderShown)
+                    if (!IsTotalUsageReminderShown &&
+                        (TimeSpan)LocalSettings["TotalUsedRemindTime"] >= TotalUsageTime)
                     {
                         _totalRemainingTime = (ulong)
-                            ((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime).TotalSeconds;
+                            ((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime)
+                            .TotalSeconds + 1UL;
+                        WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {_totalRemainingTime} 秒后发送。");
                     }
                     if ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] >= _continuousUsageTime)
                     {
                         _continuousRemainingTime = (ulong)
-                            ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] - _continuousUsageTime).TotalSeconds;
+                            ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] - _continuousUsageTime)
+                            .TotalSeconds + 1UL;
+                        WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {_continuousRemainingTime} 秒后发送。");
                     }
+                    _count = 0;
                     if (!_timer.Change(1000, 1000))
                     {
                         WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
@@ -1266,6 +1278,10 @@ namespace Zscno.Trackora
                 {
                     _ = Task.Run(RecordProcessInfo);
                 }
+
+                stopwatch.Stop();
+                WriteLog(LogLevel.Debug, $"更新完成，本次记录的进程为 {process.ProcessName}，" +
+                    $"用时：{stopwatch.Elapsed}。");
             }
         }
 
