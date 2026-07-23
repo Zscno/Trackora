@@ -30,32 +30,47 @@ namespace Zscno.Trackora
         private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
 
         /// <summary>
-        /// 事件挂钩实例回调函数指针。
+        /// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
         /// </summary>
-        private readonly WinEventDelegate _delegate;
-
-        /// <summary>
-        /// 该句柄映射为事件钩子实例。
-        /// </summary>
-        private readonly nint _hookHandle;
+        private static readonly Dictionary<string, TimeSpan> _processesUsageTime = [];
 
         /// <summary>
         /// Json 序列化时使用的配置。
         /// </summary>
-        private readonly JsonWriterOptions _jsonOptions;
+        private static JsonWriterOptions _jsonOptions;
 
         /// <summary>
-        /// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
+        /// 用于过滤只记录时间的进程名称的字符串数组
         /// </summary>
-        private readonly Dictionary<string, TimeSpan> _processesUsageTime = [];
+        private static string[] _lastNotInfoNamesArr = [];
 
         /// <summary>
-        /// 记录当天进程名称和使用时长的文件路径。
+        /// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
+        /// </summary>
+        private static string _lastOnlyTimeProcessesStr = string.Empty;
+
+        /// <summary>
+        /// 用于触发提醒的总使用时长。
+        /// </summary>
+        private static TimeSpan _totalUsageTime;
+
+        /// <summary>
+        /// 保存委托实例，防止被GC回收。
+        /// </summary>
+        private readonly WinEventDelegate _delegate;
+
+        /// <summary>
+        /// 事件挂钩实例标识。
+        /// </summary>
+        private readonly nint _hookHandle;
+
+        /// <summary>
+        /// 记录当天进程名称和使用时长的文本文件路径。
         /// </summary>
         private readonly string _recordFilePath;
 
         /// <summary>
-        /// 用于发送到期提醒的计时器。
+        /// 计时器。
         /// </summary>
         private readonly Timer _timer;
 
@@ -70,7 +85,7 @@ namespace Zscno.Trackora
         private TimeSpan _continuousUsageTime;
 
         /// <summary>
-        /// 计时器的计数，决定什么时候发送提醒。TODO: 无需使用 ulong。
+        /// 计时器的计数。
         /// </summary>
         private ulong _count;
 
@@ -95,16 +110,6 @@ namespace Zscno.Trackora
         private string _lastIgnoredProcessesStr = string.Empty;
 
         /// <summary>
-        /// 用于过滤只记录时间的进程名称的字符串数组。
-        /// </summary>
-        private string[] _lastNotInfoNamesArr = [];
-
-        /// <summary>
-        /// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
-        /// </summary>
-        private string _lastOnlyTimeProcessesStr = string.Empty;
-
-        /// <summary>
         /// 上一个检测到的被激活的进程。
         /// </summary>
         private Process? _lastProcess;
@@ -115,7 +120,7 @@ namespace Zscno.Trackora
         private ulong _totalRemainingTime;
 
         /// <summary>
-        /// 结束使用的时间（将弃用）。
+        /// 结束使用的时间。
         /// </summary>
         public static TimeSpan EndUsingTime
         {
@@ -130,25 +135,29 @@ namespace Zscno.Trackora
         public static bool IsTotalUsageReminderShown { get; set; }
 
         /// <summary>
-        /// 总使用时长。TODO: 该属性应与当天使用记录存储在一起。
-        /// </summary>
-        public static TimeSpan TotalUsageTime
-        {
-            get => (TimeSpan)LocalSettings["TotalUsageTime"];
-
-            private set { LocalSettings["TotalUsageTime"] = value; }
-        }
-
-        /// <summary>
         /// 用于显示的所有检测到进程的名称及其使用时长（不包含只记录时间的进程）。
         /// </summary>
-        public Dictionary<string, TimeSpan> ProcessesUsageTime
+        public static Dictionary<string, TimeSpan> ProcessesUsageTime
         {
             get
             {
                 return _processesUsageTime
                     .Where(pair => !GetNoInfoArr().Contains(pair.Key))
                     .ToDictionary(pair => pair.Key, pair => pair.Value);
+            }
+        }
+
+        /// <summary>
+        /// 用于显示的总使用时长。
+        /// </summary>
+        public static TimeSpan TotalUsageTime
+        {
+            get => (TimeSpan)LocalSettings["TotalUsageTime"];
+
+            private set
+            {
+                LocalSettings["TotalUsageTime"] = value;
+                _totalUsageTime = value;
             }
         }
 
@@ -170,6 +179,7 @@ namespace Zscno.Trackora
             if (LocalSettings.TryGetValue("Today", out object? today) &&
                 (DateTimeOffset)today == new DateTimeOffset(DateTime.Now.Date))
             {
+                _totalUsageTime = TotalUsageTime;
                 _ = new SafeCaller() { RemindingMsgResKey = "ECanNotGetRecord" }
                 .CallMethodR(GetUsageTimeFromRecordFile);
 
@@ -186,31 +196,34 @@ namespace Zscno.Trackora
         /// 获取本地化时间 / 时长。
         /// </summary>
         /// <param name="time">一个时间 / 时长。</param>
+        /// <param name="isUsedByReminder">指示是否使用用于触发提醒的总时长。</param>
         /// <returns>本地化时间 / 时长字符串。</returns>
-        public static string GetLocalTime(TimeSpan time)
+        public static string GetLocalTime(TimeSpan time, bool isUsedByReminder = false)
         {
+            TimeSpan realTime = isUsedByReminder ? _totalUsageTime : time;
+
             string result;
-            switch (time)
+            switch (realTime)
             {
                 case { Days: 0, Hours: 0, Minutes: 0 }:
                     result = "< 1" + Loader.GetString("Minute");
                     break;
 
                 case { Days: 0, Hours: 0 }:
-                    result = time.Minutes + Loader.GetString("Minute");
+                    result = realTime.Minutes + Loader.GetString("Minute");
                     break;
 
                 default:
-                    if (time.Days == 0) // TODO: 优化判断逻辑。
+                    if (realTime.Days == 0)
                     {
-                        result = time.Hours + Loader.GetString("Hour")
-                            + time.Minutes + Loader.GetString("Minute");
+                        result = realTime.Hours + Loader.GetString("Hour")
+                                                + realTime.Minutes + Loader.GetString("Minute");
                     }
                     else
                     {
-                        result = time.Days + Loader.GetString("Day")
-                            + time.Hours + Loader.GetString("Hour")
-                            + time.Minutes + Loader.GetString("Minute");
+                        result = realTime.Days + Loader.GetString("Day")
+                                               + realTime.Hours + Loader.GetString("Hour")
+                                               + realTime.Minutes + Loader.GetString("Minute");
                     }
 
                     break;
@@ -780,7 +793,7 @@ namespace Zscno.Trackora
         /// </summary>
         private static void SendTotalReminderIfNeeded()
         {
-            if (TotalUsageTime >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] && !IsTotalUsageReminderShown)
+            if (_totalUsageTime >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] && !IsTotalUsageReminderShown)
             {
                 CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeReminder);
                 IsTotalUsageReminderShown = true;
