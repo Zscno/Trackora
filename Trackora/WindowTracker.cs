@@ -219,11 +219,28 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
+        /// 卸载事件挂钩函数并释放计时器资源。
+        /// </summary>
+        public void Dispose()
+        {
+            bool isSuccessful = NativeApi.UnhookWinEvent(_hookHandle);
+            if (isSuccessful)
+            {
+                WriteLog(LogLevel.Info, $"事件挂钩函数卸载成功。");
+            }
+            else
+            {
+                WriteLog(LogLevel.Error, $"事件挂钩函数卸载失败，错误代码：{Marshal.GetLastWin32Error()}。");
+            }
+            _timer.Dispose();
+        }
+
+        /// <summary>
         /// 获取进程名称、图标及使用的时长。
         /// </summary>
         /// <param name="count">需要获取的数量（以使用时长正序排列）。</param>
         /// <returns>使用时长最长的 <paramref name="count"/> 个进程名称、图标和时长。</returns>
-        public static List<ProcessInfo> GetProcessesInfo(int count)
+        public List<ProcessInfo> GetProcessesInfo(int count)
         {
             string[] processNames = ProcessesUsageTime
                 .OrderByDescending(x => x.Value)
@@ -269,23 +286,6 @@ namespace Zscno.Trackora
                 processesInfo.Add(info);
             }
             return processesInfo;
-        }
-
-        /// <summary>
-        /// 卸载事件挂钩函数并释放计时器资源。
-        /// </summary>
-        public void Dispose()
-        {
-            bool isSuccessful = NativeApi.UnhookWinEvent(_hookHandle);
-            if (isSuccessful)
-            {
-                WriteLog(LogLevel.Info, $"事件挂钩函数卸载成功。");
-            }
-            else
-            {
-                WriteLog(LogLevel.Error, $"事件挂钩函数卸载失败，错误代码：{Marshal.GetLastWin32Error()}。");
-            }
-            _timer.Dispose();
         }
 
         /// <summary>
@@ -561,22 +561,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
-        /// </summary>
-        /// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
-        private static HashSet<string> GetNoInfoArr()
-        {
-            string OnlyTimeProcessesStr = (string)LocalSettings["OnlyTimeProcesses"];
-            if (_lastOnlyTimeProcessesStr != OnlyTimeProcessesStr)
-            {
-                _lastNotInfoNamesArr = OnlyTimeProcessesStr.Split(',');
-                _lastOnlyTimeProcessesStr = OnlyTimeProcessesStr;
-            }
-
-            return new HashSet<string>(_lastNotInfoNamesArr);
-        }
-
-        /// <summary>
         /// 获取进程 <paramref name="name"/> 的包信息。
         /// </summary>
         /// <param name="packageFullName">进程 <paramref name="name"/> 的包全名。</param>
@@ -788,22 +772,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 将提供的值转换为 Json <see langword="string"/> 。
-        /// </summary>
-        /// <typeparam name="T">要序列化的值的类型。</typeparam>
-        /// <param name="value">要转换的值。</param>
-        /// <param name="info">要转换的类型的元数据。</param>
-        /// <returns>值的 <see langword="string"/> 表示形式。</returns>
-        private static string SerializeJson<T>(T value, JsonTypeInfo<T> info)
-        {
-            using MemoryStream stream = new();
-            using Utf8JsonWriter writer = new(stream, _jsonOptions);
-            JsonSerializer.Serialize(writer, value, info);
-            writer.Flush();
-            return Encoding.UTF8.GetString(stream.ToArray());
-        }
-
-        /// <summary>
         /// 尝试获取句柄为 <paramref name="parentHandle"/> 的进程的子窗口句柄。
         /// </summary>
         /// <param name="parentHandle">进程句柄。</param>
@@ -922,6 +890,22 @@ namespace Zscno.Trackora
             _currentRecordProcessName = process.ProcessName;
             copyProcess = process;
             return true;
+        }
+
+        /// <summary>
+        /// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
+        /// </summary>
+        /// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
+        private HashSet<string> GetNoInfoArr()
+        {
+            string OnlyTimeProcessesStr = (string)LocalSettings["OnlyTimeProcesses"];
+            if (_lastOnlyTimeProcessesStr != OnlyTimeProcessesStr)
+            {
+                _lastNotInfoNamesArr = OnlyTimeProcessesStr.Split(',');
+                _lastOnlyTimeProcessesStr = OnlyTimeProcessesStr;
+            }
+
+            return new HashSet<string>(_lastNotInfoNamesArr);
         }
 
         /// <summary>
@@ -1196,6 +1180,22 @@ namespace Zscno.Trackora
                 _continuousRemainingTime = (ulong)((TimeSpan)LocalSettings["ContinuousUsedRemindTime"]).TotalSeconds;
             }
             _count++;
+        }
+
+        /// <summary>
+        /// 将提供的值转换为 Json <see langword="string"/> 。
+        /// </summary>
+        /// <typeparam name="T">要序列化的值的类型。</typeparam>
+        /// <param name="value">要转换的值。</param>
+        /// <param name="info">要转换的类型的元数据。</param>
+        /// <returns>值的 <see langword="string"/> 表示形式。</returns>
+        private string SerializeJson<T>(T value, JsonTypeInfo<T> info)
+        {
+            using MemoryStream stream = new();
+            using Utf8JsonWriter writer = new(stream, _jsonOptions);
+            JsonSerializer.Serialize(writer, value, info);
+            writer.Flush();
+            return Encoding.UTF8.GetString(stream.ToArray());
         }
 
         private void UpdateScreenTime()
