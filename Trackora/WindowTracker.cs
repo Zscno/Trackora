@@ -1,5 +1,4 @@
-﻿using Microsoft.UI.Xaml;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -120,37 +119,6 @@ namespace Zscno.Trackora
         /// </summary>
         private ulong _totalRemainingTime;
 
-        public WindowTracker()
-        {
-            _recordFilePath = Path.Join(LocalCachePath,
-                "Record.dat");
-            _delegate = new WinEventDelegate(WinEventProc);
-            _hookHandle = NativeApi.SetWinEventHook(
-                NativeApi.EVENT_SYSTEM_FOREGROUND,
-                NativeApi.EVENT_SYSTEM_FOREGROUND,
-                nint.Zero, _delegate, 0, 0,
-                NativeApi.WINEVENT_OUTOFCONTEXT);
-            _timer = new Timer(SendDueReminder, null, Timeout.Infinite, Timeout.Infinite);
-#if DEBUG
-            _jsonOptions.Indented = true;
-#endif
-
-            if (LocalSettings.TryGetValue("Today", out object? today) &&
-                (DateTimeOffset)today == new DateTimeOffset(DateTime.Now.Date))
-            {
-                _totalUsageTime = TotalUsageTime;
-                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotGetRecord" }
-                .CallMethodR(GetUsageTimeFromRecordFile);
-
-                SendTotalReminderIfNeeded();
-            }
-            else
-            {
-                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotSetRecord" }
-                .CallMethodR(ResetRecord);
-            }
-        }
-
         /// <summary>
         /// 结束使用的时间。
         /// </summary>
@@ -190,6 +158,37 @@ namespace Zscno.Trackora
             {
                 LocalSettings["TotalUsageTime"] = value;
                 _totalUsageTime = value;
+            }
+        }
+
+        public WindowTracker()
+        {
+            _recordFilePath = Path.Join(LocalCachePath,
+                "Record.dat");
+            _delegate = new WinEventDelegate(WinEventProc);
+            _hookHandle = NativeApi.SetWinEventHook(
+                NativeApi.EVENT_SYSTEM_FOREGROUND,
+                NativeApi.EVENT_SYSTEM_FOREGROUND,
+                nint.Zero, _delegate, 0, 0,
+                NativeApi.WINEVENT_OUTOFCONTEXT);
+            _timer = new Timer(SendDueReminder, null, Timeout.Infinite, Timeout.Infinite);
+#if DEBUG
+            _jsonOptions.Indented = true;
+#endif
+
+            if (LocalSettings.TryGetValue("Today", out object? today) &&
+                (DateTimeOffset)today == new DateTimeOffset(DateTime.Now.Date))
+            {
+                _totalUsageTime = TotalUsageTime;
+                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotGetRecord" }
+                .CallMethodR(GetUsageTimeFromRecordFile);
+
+                SendTotalReminderIfNeeded();
+            }
+            else
+            {
+                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotSetRecord" }
+                .CallMethodR(ResetRecord);
             }
         }
 
@@ -285,9 +284,21 @@ namespace Zscno.Trackora
             return processesInfo;
         }
 
-        public bool Dispose()
+        /// <summary>
+        /// 卸载事件挂钩函数并释放计时器资源。
+        /// </summary>
+        public void Dispose()
         {
-            return NativeApi.UnhookWinEvent(_hookHandle);
+            bool isSuccessful = NativeApi.UnhookWinEvent(_hookHandle);
+            if (isSuccessful)
+            {
+                WriteLog(LogLevel.Info, $"事件挂钩函数卸载成功。");
+            }
+            else
+            {
+                WriteLog(LogLevel.Error, $"事件挂钩函数卸载失败，错误代码：{Marshal.GetLastWin32Error()}。");
+            }
+            _timer.Dispose();
         }
 
         /// <summary>
@@ -1291,11 +1302,6 @@ namespace Zscno.Trackora
             uint dwmsEventTime)
         {
             await Task.Run(UpdateScreenTime);
-        }
-
-        ~WindowTracker()
-        {
-            _timer.Dispose();
         }
     }
 }
