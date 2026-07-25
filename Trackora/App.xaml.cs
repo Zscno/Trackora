@@ -1,9 +1,10 @@
 ﻿using Microsoft.UI.Xaml;
+using Microsoft.Win32;
 using Microsoft.Windows.AppLifecycle;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Threading;
 using Windows.ApplicationModel.Resources;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -19,6 +20,11 @@ namespace Zscno.Trackora
     /// </summary>
     public partial class App : Application
     {
+        /// <summary>
+        /// 指示是否正在保存应用程序数据并释放资源，保证 <see cref="SaveAndDispose"/> 方法线程安全。
+        /// </summary>
+        private static int _isSavingAndDisposing = 0;
+
         /// <summary>
         /// 类似于闹钟的通知所有可以选择的提示音。
         /// </summary>
@@ -130,6 +136,7 @@ namespace Zscno.Trackora
                 AppInstance appInstance = AppInstance.GetCurrent();
                 appInstance.Activated += AppInstance_Activated;
             });
+            SystemEvents.SessionEnding += OnSessionEnding;
 
             _ = new SafeCaller()
             {
@@ -156,6 +163,16 @@ namespace Zscno.Trackora
             }.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
 
             Tracker = new WindowTracker();
+        }
+
+        /// <summary>
+        /// 退出应用程序。
+        /// </summary>
+        /// <param name="exitCode">要返回到操作系统的退出代码。使用 0 指示进程已成功完成。</param>
+        internal static void Exit(int exitCode)
+        {
+            SaveAndDispose();
+            Environment.Exit(exitCode);
         }
 
         /// <summary>
@@ -201,6 +218,32 @@ namespace Zscno.Trackora
             // 忽略的进程：桌面管理器，锁屏，线程等待对话框。
             _ = LocalSettings.TryAdd("IgnoredProcesses", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
             _ = LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));
+        }
+
+        /// <summary>
+        /// 当用户正在尝试注销或关闭系统时调用。
+        /// </summary>
+        /// <param name="sender">事件发送者。</param>
+        /// <param name="e">提供 <see cref="SystemEvents.SessionEnding"/> 事件的数据。</param>
+        private static void OnSessionEnding(object? sender, SessionEndingEventArgs e)
+        {
+            SaveAndDispose();
+        }
+
+        /// <summary>
+        /// 保存应用程序数据并释放资源。
+        /// </summary>
+        private static void SaveAndDispose()
+        {
+            if (Interlocked.Exchange(ref _isSavingAndDisposing, 1) == 1)
+            {
+                return;
+            }
+
+            // TODO: 保存当天数据。
+            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(() => AppMainWindow?.DisposeTaskBarIcon());
+            Tracker.Dispose();
+            SystemEvents.SessionEnding -= OnSessionEnding;
         }
 
         /// <summary>

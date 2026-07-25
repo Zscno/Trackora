@@ -67,18 +67,27 @@ namespace Zscno.Trackora
             _ = NativeApi.SetForegroundWindow(hwnd);
         }
 
+        /// <summary>
+        /// 释放任务栏通知区域图标资源。
+        /// </summary>
+        internal void DisposeTaskBarIcon()
+        {
+            TbIcon.Dispose();
+        }
+
+        /// <summary>
+        /// 退出应用程序。
+        /// </summary>
+        [RelayCommand]
+        private static void ExitApplication()
+        {
+            Exit(0);
+        }
+
         private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
         {
             args.Cancel = true;
             NativeApi.HideWindow(this);
-        }
-
-        [RelayCommand]
-        private void ExitApplication()
-        {
-            TbIcon.Dispose();
-            Tracker.Dispose();
-            Environment.Exit(0);
         }
 
         private void NavigationView_SelectionChanged(NavigationView sender,
