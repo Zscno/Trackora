@@ -165,7 +165,7 @@ namespace Zscno.Trackora
         {
             _recordFilePath = Path.Join(LocalCachePath,
                 "Record.dat");
-            _delegate = new WinEventDelegate(WinEventProc);
+            _delegate = new WinEventDelegate(OnForegroundWindowChanged);
             _hookHandle = NativeApi.SetWinEventHook(
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
@@ -1211,15 +1211,33 @@ namespace Zscno.Trackora
             _count++;
         }
 
-        private void UpdateScreenTime()
+        /// <summary>
+        /// 应用程序定义的挂钩函数，系统调用该函数以响应辅助对象生成的事件。挂钩函数根据需要处理事件通知。
+        /// </summary>
+        /// <param name="hWinEventHook">事件挂钩函数的句柄。 此值在安装挂钩函数时由 <see cref="NativeApi.SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 返回，并且特定于挂钩函数的每个实例。</param>
+        /// <param name="eventType">指定发生的事件，在此处为 <see cref="NativeApi.EVENT_SYSTEM_FOREGROUND"/>。</param>
+        /// <param name="hwnd">生成事件的窗口的句柄，在此处为前台窗口的句柄。</param>
+        /// <param name="idObject">标识与事件关联的对象，在此处为 <c>OBJID_WINDOW</c>，指窗口本身，而不是子对象。</param>
+        /// <param name="idChild">标识事件是由对象还是对象的子元素触发的事件，在此处为 <c>CHILDID_SELF</c>，指由对象触发。</param>
+        /// <param name="dwEventThread"></param>
+        /// <param name="dwmsEventTime">指定生成事件的时间（以毫秒为单位）。</param>
+        private void OnForegroundWindowChanged(
+            nint hWinEventHook,
+            uint eventType,
+            nint hwnd,
+            int idObject,
+            int idChild,
+            uint dwEventThread,
+            uint dwmsEventTime)
         {
             Stopwatch stopwatch = new();
             stopwatch.Start();
 
             bool isSuccessful = false;
+            string? lastName = null;
             if (_lastProcess is not null)
             {
-                string lastName = _lastProcess.ProcessName;
+                lastName = _lastProcess.ProcessName;
                 isSuccessful = new SafeCaller()
                 {
                     LogMessage = $"在内存中记录进程 {lastName} 的使用时长失败。",
@@ -1228,15 +1246,12 @@ namespace Zscno.Trackora
                 WriteLog(LogLevel.Debug, $"当前总使用时长：{TotalUsageTime}，连续使用时长：{_continuousUsageTime}。");
             }
 
-            if (!TryGetForegroundWindowHandle(out nint handle) ||
-                !TryGetWindowThreadProcessId
-                (handle, out uint processId, $"获取进程 [{handle}] 的 Id 失败。") ||
+            if (!TryGetWindowThreadProcessId(hwnd, out uint processId, $"获取进程 [{hwnd}] 的 Id 失败。") ||
                 !TryGetProcessById
                 ((int)processId, out Process? process, $"获取进程 [ID={processId}] 的信息失败。") ||
                 process is null || GetNoTimeArr().Contains(process.ProcessName) ||
-                !GetRealProcess(process.ProcessName, handle, out Process? uwpProcess))
+                !GetRealProcess(process.ProcessName, hwnd, out Process? uwpProcess))
             {
-                _count = 0;
                 if (!_timer.Change(Timeout.Infinite, Timeout.Infinite))
                 {
                     WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
@@ -1254,33 +1269,14 @@ namespace Zscno.Trackora
                 }
 
                 stopwatch.Stop();
-                WriteLog(LogLevel.Debug, $"更新完成，本次未记录任何进程，用时：{stopwatch.Elapsed}。");
+                WriteLog(LogLevel.Debug, $"上次记录的进程为 {lastName ?? "null"}" +
+                    $"，本次未记录任何进程，用时：{stopwatch.Elapsed}。");
             }
             else
             {
                 if (isSuccessful)
                 {
-                    if (!IsTotalUsageReminderShown &&
-                        (TimeSpan)LocalSettings["TotalUsedRemindTime"] >= TotalUsageTime)
-                    {
-                        _totalRemainingTime = (ulong)
-                            ((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime)
-                            .TotalSeconds + 1UL;
-                        WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {_totalRemainingTime} 秒后发送。");
-                    }
-                    if ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] >= _continuousUsageTime)
-                    {
-                        _continuousRemainingTime = (ulong)
-                            ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] - _continuousUsageTime)
-                            .TotalSeconds + 1UL;
-                        WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {_continuousRemainingTime} 秒后发送。");
-                    }
-                    _count = 0;
-                    if (!_timer.Change(1000, 1000))
-                    {
-                        WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
-                        // TODO: 使用事件处理失败情况。
-                    }
+                    StartReminderTimer();
                 }
 
                 _lastProcess = uwpProcess ?? process;
@@ -1291,17 +1287,38 @@ namespace Zscno.Trackora
                 }
 
                 stopwatch.Stop();
-                WriteLog(LogLevel.Debug, $"更新完成，本次记录的进程为 {process.ProcessName}，" +
-                    $"用时：{stopwatch.Elapsed}。");
+                WriteLog(LogLevel.Debug, $"上次记录的进程为 {lastName ?? "null"}，" +
+                    $"本次记录的进程为 {process.ProcessName}，用时：{stopwatch.Elapsed}。");
             }
         }
 
-        private async void WinEventProc(
-                                                                                                                                                                                                                                                                                                                                                                                    nint hWinEventHook, uint eventType, nint hwnd,
-            int idObject, int idChild, uint dwEventThread,
-            uint dwmsEventTime)
+        /// <summary>
+        /// 启动发送提醒的计时器。
+        /// </summary>
+        private void StartReminderTimer()
         {
-            await Task.Run(UpdateScreenTime);
+            if (!IsTotalUsageReminderShown &&
+                (TimeSpan)LocalSettings["TotalUsedRemindTime"] >= TotalUsageTime)
+            {
+                _totalRemainingTime = (ulong)
+                    ((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime)
+                    .TotalSeconds + 1UL;
+                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {_totalRemainingTime} 秒后发送。");
+            }
+            if ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] >= _continuousUsageTime)
+            {
+                _continuousRemainingTime = (ulong)
+                    ((TimeSpan)LocalSettings["ContinuousUsedRemindTime"] - _continuousUsageTime)
+                    .TotalSeconds + 1UL;
+                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {_continuousRemainingTime} 秒后发送。");
+            }
+
+            _count = 0;
+            if (!_timer.Change(1000, 1000))
+            {
+                WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
+                // TODO: 使用事件处理失败情况。
+            }
         }
     }
 }
