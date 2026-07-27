@@ -161,8 +161,6 @@ namespace Zscno.Trackora
                 LogMessage = "设置应用主题失败。",
                 RemindingMsgResKey = "ECanNotSetTheme",
             }.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
-
-            Tracker = new WindowTracker();
         }
 
         /// <summary>
@@ -196,8 +194,9 @@ namespace Zscno.Trackora
 
             AppMainWindow = new MainWindow();
             AppMainWindow.Activate();
-
             NativeApi.HideWindow(AppMainWindow);
+
+            Tracker = new WindowTracker();
         }
 
         /// <summary>
