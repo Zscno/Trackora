@@ -56,6 +56,11 @@ namespace Zscno.Trackora
         private static TimeSpan _totalUsageTime;
 
         /// <summary>
+        /// 用于发送连续使用时间的计时器。
+        /// </summary>
+        private readonly Timer _continuousReminderTimer;
+
+        /// <summary>
         /// 保存委托实例，防止被GC回收。
         /// </summary>
         private readonly WinEventDelegate _delegate;
@@ -71,24 +76,14 @@ namespace Zscno.Trackora
         private readonly string _recordFilePath;
 
         /// <summary>
-        /// 计时器。
+        /// 用于发送总使用时间的计时器。
         /// </summary>
-        private readonly Timer _timer;
-
-        /// <summary>
-        /// 发送连续使用时长提醒的剩余时间。
-        /// </summary>
-        private int _continuousRemainingTime;
+        private readonly Timer _totalReminderTimer;
 
         /// <summary>
         /// 连续使用时长。
         /// </summary>
         private TimeSpan _continuousUsageTime;
-
-        /// <summary>
-        /// 计时器的计数。
-        /// </summary>
-        private int _count;
 
         /// <summary>
         /// 当前正在记录信息的进程的名称。
@@ -114,11 +109,6 @@ namespace Zscno.Trackora
         /// 上一个前台进程名称。
         /// </summary>
         private string? _lastProcessName;
-
-        /// <summary>
-        /// 发送总使用时长提醒的剩余时间。
-        /// </summary>
-        private int _totalRemainingTime;
 
         /// <summary>
         /// 结束使用的时间。
@@ -172,7 +162,8 @@ namespace Zscno.Trackora
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
                 nint.Zero, _delegate, 0, 0,
                 NativeApi.WINEVENT_OUTOFCONTEXT);
-            _timer = new Timer(SendDueReminder, null, Timeout.Infinite, Timeout.Infinite);
+            _totalReminderTimer = new Timer(SendDueTotalReminder, null, Timeout.Infinite, Timeout.Infinite);
+            _continuousReminderTimer = new Timer(SendDueContinuousReminder, null, Timeout.Infinite, Timeout.Infinite);
 #if DEBUG
             _jsonOptions.Indented = true;
 #endif
@@ -299,7 +290,8 @@ namespace Zscno.Trackora
             {
                 WriteLog(LogLevel.Error, $"事件挂钩函数卸载失败，错误代码：{Marshal.GetLastWin32Error()}。");
             }
-            _timer.Dispose();
+            _totalReminderTimer.Dispose();
+            _continuousReminderTimer.Dispose();
         }
 
         /// <summary>
@@ -992,7 +984,8 @@ namespace Zscno.Trackora
                 GetNoTimeArr().Contains(process!.ProcessName) ||
                 !GetRealProcess(process.ProcessName, hwnd, out Process? uwpProcess))
             {
-                if (!_timer.Change(Timeout.Infinite, Timeout.Infinite))
+                if (!_totalReminderTimer.Change(Timeout.Infinite, Timeout.Infinite) ||
+                    !_continuousReminderTimer.Change(Timeout.Infinite, Timeout.Infinite))
                 {
                     WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
                     // TODO: 使用事件处理失败情况。
@@ -1017,7 +1010,7 @@ namespace Zscno.Trackora
             {
                 if (isSuccessful)
                 {
-                    StartReminderTimer();
+                    StartReminderTimers();
                 }
 
                 _lastProcessName = uwpProcess?.ProcessName ?? process.ProcessName;
@@ -1212,50 +1205,63 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 如果达到了总使用提醒时长或连续使用提醒时长则发送提醒。
+        /// 发送到期的连续使用时间提醒。
         /// </summary>
-        /// <remarks>该函数是 <see cref="_timer"/> 的回调函数。</remarks>
+        /// <remarks>该函数是 <see cref="_continuousReminderTimer"/> 的回调函数。</remarks>
         /// <param name="state"></param>
-        private void SendDueReminder(object? state)
+        private void SendDueContinuousReminder(object? state)
         {
-            if (!IsTotalUsageReminderShown && _count == _totalRemainingTime)
+            CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
+            _continuousUsageTime = TimeSpan.Zero;
+        }
+
+        /// <summary>
+        /// 发送到期的总使用时间提醒。
+        /// </summary>
+        /// <remarks>该函数是 <see cref="_totalReminderTimer"/> 的回调函数。</remarks>
+        /// <param name="state"></param>
+        private void SendDueTotalReminder(object? state)
+        {
+            if (!IsTotalUsageReminderShown)
             {
                 CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeReminder);
                 IsTotalUsageReminderShown = true;
             }
-            if (_count == _continuousRemainingTime)
-            {
-                CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
-                _continuousUsageTime = TimeSpan.Zero;
-                _continuousRemainingTime = (int)((TimeSpan)LocalSettings["ContinuousUsedRemindTime"]).TotalSeconds;
             }
-            _count++;
-        }
 
         /// <summary>
         /// 启动发送提醒的计时器。
         /// </summary>
-        private void StartReminderTimer()
+        private void StartReminderTimers()
         {
-            TimeSpan totalRemainingTime = (TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime;
-            if (!IsTotalUsageReminderShown && totalRemainingTime >= TimeSpan.Zero)
+            TimeSpan continuousUsageReminderTime = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
+            uint continuousRemainingTime =
+                (uint)(continuousUsageReminderTime - _continuousUsageTime).TotalMilliseconds;
+            if (_continuousReminderTimer.Change(
+                continuousRemainingTime < 0 ? 0 : continuousRemainingTime,
+                (uint)continuousUsageReminderTime.TotalMilliseconds))
+        {
+                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime} 秒后发送。");
+            }
+            else
             {
-                _totalRemainingTime = (int)totalRemainingTime.TotalSeconds + 1;
-                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {_totalRemainingTime} 秒后发送。");
+                WriteLog(LogLevel.Error, "启动连续使用时长提醒计时器失败，可能无法发送提醒。");
+                // TODO: 使用事件处理失败情况。
             }
 
-            TimeSpan continousRemainingTime = (TimeSpan)
-                LocalSettings["ContinuousUsedRemindTime"] - _continuousUsageTime;
-            if (continousRemainingTime >= TimeSpan.Zero)
+            if (IsTotalUsageReminderShown)
             {
-                _continuousRemainingTime = (int)continousRemainingTime.TotalSeconds + 1;
-                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {_continuousRemainingTime} 秒后发送。");
+                return;
             }
-
-            _count = 0;
-            if (!_timer.Change(1000, 1000))
+            uint totalRemainingTime =
+                (uint)((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime).TotalMilliseconds;
+            if (_totalReminderTimer.Change(totalRemainingTime < 0 ? 0 : totalRemainingTime, Timeout.Infinite))
             {
-                WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
+                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime} 秒后发送。");
+            }
+            else
+            {
+                WriteLog(LogLevel.Error, "启动总使用时长提醒计时器失败，可能无法发送提醒。");
                 // TODO: 使用事件处理失败情况。
             }
         }
