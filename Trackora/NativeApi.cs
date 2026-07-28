@@ -1,9 +1,7 @@
 ﻿using Microsoft.UI.Xaml;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.Json.Serialization;
 using WinRT.Interop;
 
 namespace Zscno.Trackora
@@ -267,13 +265,5 @@ namespace Zscno.Trackora
         [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool UnhookWinEvent(nint hWinEventHook);
-    }
-
-    /// <summary>
-    /// 提供有关与 JSON 序列化相关的一组类型的元数据。
-    /// </summary>
-    [JsonSerializable(typeof(List<ProcessInfo>))]
-    internal partial class JsonSerializeMetadata : JsonSerializerContext
-    {
     }
 }
