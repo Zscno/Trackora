@@ -1238,10 +1238,10 @@ namespace Zscno.Trackora
             uint continuousRemainingTime =
                 (uint)(continuousUsageReminderTime - _continuousUsageTime).TotalMilliseconds;
             if (_continuousReminderTimer.Change(
-                continuousRemainingTime < 0 ? 0 : continuousRemainingTime,
+                _continuousUsageTime >= continuousUsageReminderTime ? 0 : continuousRemainingTime,
                 (uint)continuousUsageReminderTime.TotalMilliseconds))
         {
-                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime} 秒后发送。");
+                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d : f2} 秒后发送。");
             }
             else
             {
@@ -1255,9 +1255,11 @@ namespace Zscno.Trackora
             }
             uint totalRemainingTime =
                 (uint)((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime).TotalMilliseconds;
-            if (_totalReminderTimer.Change(totalRemainingTime < 0 ? 0 : totalRemainingTime, Timeout.Infinite))
+            if (_totalReminderTimer.Change(
+                TotalUsageTime >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] ? 0 : totalRemainingTime, 
+                Timeout.Infinite))
             {
-                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime} 秒后发送。");
+                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d : f2} 秒后发送。");
             }
             else
             {
