@@ -148,7 +148,7 @@ namespace Zscno.Trackora
             {
                 SendDueTotalReminder(null);
             }
-            }
+        }
 
         /// <summary>
         /// 获取本地化时间 / 时长。
@@ -807,33 +807,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 检查进程是否可用（不为 null 且不是正在记录的进程）。
-        /// </summary>
-        /// <param name="process">要检查的进程。</param>
-        /// <param name="copyProcess">如果进程可用，该参数是进程的副本；否则是一个新实例。</param>
-        /// <returns>指示进程是否可用。</returns>
-        private bool CheckProcessUsability(Process? process, out Process copyProcess)
-        {
-            if (process is null)
-            {
-                WriteLog(LogLevel.Warning, "要记录的进程为 null ，将跳过。");
-                copyProcess = new Process();
-                return false;
-            }
-
-            if (process.ProcessName == _currentRecordProcessName)
-            {
-                WriteLog(LogLevel.Info, $"已开始记录进程 {process.ProcessName} ，将跳过。");
-                copyProcess = new Process();
-                return false;
-            }
-
-            _currentRecordProcessName = process.ProcessName;
-            copyProcess = process;
-            return true;
-        }
-
-        /// <summary>
         /// 获取用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。
         /// </summary>
         /// <returns>用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。</returns>
@@ -896,7 +869,7 @@ namespace Zscno.Trackora
                 if (!_totalReminderTimer.Change(Timeout.Infinite, Timeout.Infinite) ||
                     !_continuousReminderTimer.Change(Timeout.Infinite, Timeout.Infinite))
                 {
-                    WriteLog(LogLevel.Error, "启动计时器失败，可能无法发送提醒。");
+                    WriteLog(LogLevel.Error, "停止计时器失败，可能无法发送提醒。");
                     // TODO: 使用事件处理失败情况。
                 }
                 if (_lastProcessName == null &&
@@ -912,8 +885,8 @@ namespace Zscno.Trackora
                 }
 
                 //stopwatch.Stop();
-                WriteLog(LogLevel.Debug, $"上次记录的进程为 {_lastProcessName ?? "null"}" +
-                    $"，本次未记录任何进程。");/*，用时：{stopwatch.Elapsed}*/
+                WriteLog(LogLevel.Debug, $"上次记录：{_lastProcessName ?? "null"}，本次记录：null。");
+                //，用时：{stopwatch.Elapsed}
             }
             else
             {
@@ -922,16 +895,19 @@ namespace Zscno.Trackora
                     StartReminderTimers();
                 }
 
-                _lastProcessName = uwpProcess?.ProcessName ?? process.ProcessName;
-                _lastChangedTime = dwmsEventTime;
-                if (!GetNoInfoArr().Contains(process.ProcessName))
+                Process recordedProcess = uwpProcess ?? process;
+
+                if (!GetNoInfoArr().Contains(recordedProcess.ProcessName))
                 {
-                    _ = Task.Run(RecordProcessInfo);
+                    _ = Task.Run(() => RecordProcessInfo(recordedProcess));
                 }
 
                 //stopwatch.Stop();
-                WriteLog(LogLevel.Debug, $"上次记录的进程为 {_lastProcessName ?? "null"}，" +
-                    $"本次记录的进程为 {process.ProcessName}。");/*，用时：{stopwatch.Elapsed}*/
+                WriteLog(LogLevel.Debug, $"上次记录：{_lastProcessName ?? "null"}，" +
+                    $"本次记录：{recordedProcess.ProcessName}。");/*，用时：{stopwatch.Elapsed}*/
+
+                _lastProcessName = recordedProcess.ProcessName;
+                _lastChangedTime = dwmsEventTime;
             }
         }
 
@@ -960,14 +936,14 @@ namespace Zscno.Trackora
         /// <summary>
         /// 记录进程信息到 JSON 文件中。
         /// </summary>
-        private async Task RecordProcessInfo()
+        private async Task RecordProcessInfo(Process process)
         {
-            if (!CheckProcessUsability(_lastProcessName, out Process process))
+            string name = process.ProcessName;
+            if (name == _currentRecordProcessName/*!CheckProcessUsability(_lastProcessName, out process)*/)
             {
                 return;
             }
-
-            string name = process.ProcessName;
+            _currentRecordProcessName = name;
 
             (bool isSuccessful, List<ProcessInfo>? list) = new SafeCaller()
             {
@@ -1050,8 +1026,8 @@ namespace Zscno.Trackora
             {
                 uint appUsageTime =
                     UsageRecordManager.Record.ProcessUsageRecords.TryGetValue(name, out uint pastUsageTime)
-                ? pastUsageTime + currentUsageTime
-                : currentUsageTime;
+                    ? pastUsageTime + currentUsageTime
+                    : currentUsageTime;
                 UsageRecordManager.Record.ProcessUsageRecords[name] = appUsageTime;
             }
         }
@@ -1079,7 +1055,7 @@ namespace Zscno.Trackora
                 CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeReminder);
                 IsTotalUsageReminderShown = true;
             }
-            }
+        }
 
         /// <summary>
         /// 启动发送提醒的计时器。
@@ -1091,8 +1067,8 @@ namespace Zscno.Trackora
             uint continuousRemainingTime = _continuousUsageTime >= continuousUsageReminderTime ?
                 0 : continuousUsageReminderTime - _continuousUsageTime;
             if (_continuousReminderTimer.Change(continuousRemainingTime, continuousUsageReminderTime))
-        {
-                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d : f2} 秒后发送。");
+            {
+                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d:f2} 秒后发送。");
             }
             else
             {
@@ -1110,7 +1086,7 @@ namespace Zscno.Trackora
                 0 : totalUsgaeReminderTime - UsageRecordManager.Record.TotalUsageTime;
             if (_totalReminderTimer.Change(totalRemainingTime, Timeout.Infinite))
             {
-                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d : f2} 秒后发送。");
+                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d:f2} 秒后发送。");
             }
             else
             {
