@@ -65,6 +65,11 @@ namespace Zscno.Trackora
         private readonly Timer _totalReminderTimer;
 
         /// <summary>
+        /// 用于保存使用记录的计时器。
+        /// </summary>
+        private readonly Timer _savingRecordTimer;
+
+        /// <summary>
         /// 连续使用时长。
         /// </summary>
         private uint _continuousUsageTime;
@@ -109,6 +114,20 @@ namespace Zscno.Trackora
         /// </summary>
         public static bool IsTotalUsageReminderShown { get; set; }
 
+        /// <summary>
+        /// 保存最新的使用记录。
+        /// </summary>
+        /// <remarks>该函数是 <see cref="_savingRecordTimer"/> 的回调函数。</remarks>
+        /// <param name="state"></param>
+        private void SaveLatestUsageRecord(object? state)
+        {
+            _ = new SafeCaller()
+            {
+                LogMessage = "保存使用记录失败。",
+                RemindingMsgResKey = "ECanNotSetRecord",
+            }.CallMethodR(() => UsageRecordManager.SaveRecord());
+        }
+
         public WindowTracker()
         {
             _delegate = new WinEventDelegate(OnForegroundWindowChanged);
@@ -119,6 +138,7 @@ namespace Zscno.Trackora
                 NativeApi.WINEVENT_OUTOFCONTEXT);
             _totalReminderTimer = new Timer(SendDueTotalReminder, null, Timeout.Infinite, Timeout.Infinite);
             _continuousReminderTimer = new Timer(SendDueContinuousReminder, null, Timeout.Infinite, Timeout.Infinite);
+            _savingRecordTimer = new Timer(SaveLatestUsageRecord, null, Timeout.Infinite, Timeout.Infinite);
 #if DEBUG
             _jsonOptions.Indented = true;
 #endif
@@ -240,6 +260,7 @@ namespace Zscno.Trackora
             }
             _totalReminderTimer.Dispose();
             _continuousReminderTimer.Dispose();
+            _savingRecordTimer.Dispose();
         }
 
         /// <summary>

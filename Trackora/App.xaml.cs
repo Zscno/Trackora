@@ -245,10 +245,13 @@ namespace Zscno.Trackora
             {
                 return;
             }
-
-            // TODO: 保存当天数据。
             _ = AppMainWindow?.DispatcherQueue.TryEnqueue(() => AppMainWindow?.DisposeTaskBarIcon());
             Tracker.Dispose();
+            _ = new SafeCaller()
+            {
+                LogMessage = "保存使用记录失败。",
+                ShouldRemind = false,
+            }.CallMethodR(() => UsageRecordManager.SaveRecord());
             SystemEvents.SessionEnding -= OnSessionEnding;
         }
 
