@@ -39,7 +39,7 @@ namespace Zscno.Trackora
         internal static void Initialize()
         {
             _ = Directory.CreateDirectory(_recordFolderPath);
-            Record = Json.ReadJsonFile(_recordFolderPath, SourceGenerationContext.Default.UsageRecord);
+            Record = Json.ReadJsonFile(_recordFilePath, SourceGenerationContext.Default.UsageRecord);
         }
 
         /// <summary>
