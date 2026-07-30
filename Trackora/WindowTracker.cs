@@ -881,6 +881,11 @@ namespace Zscno.Trackora
                     LogMessage = $"在内存中记录进程 {_lastProcessName} 的使用时长失败。",
                     RemindingMsgResKey = "ECanNotRecordTime",
                 }.CallMethodR(() => RecordUsageTimeIntoMemory(_lastProcessName, dwmsEventTime));
+                if (!_savingRecordTimer.Change(2000, Timeout.Infinite))
+                {
+                    WriteLog(LogLevel.Error, "启动计时器失败，可能无法及时保存使用记录。");
+                    // TODO: 使用事件处理失败情况。
+                }
                 //WriteLog(LogLevel.Debug, $"当前总使用时长：{TotalUsageTime}，连续使用时长：{_continuousUsageTime}。");
             }
 
