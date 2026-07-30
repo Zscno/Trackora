@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
 
 namespace Zscno.Trackora
 {
@@ -8,9 +8,9 @@ namespace Zscno.Trackora
     internal class UsageRecord
     {
         /// <summary>
-        /// 所有进程的使用记录，包含进程名称和其使用时间。
+        /// 所有进程的使用记录，包含进程名称和其使用时间（以毫秒为单位）。
         /// </summary>
-        internal List<ProcessUsageRecord> ProcessUsageRecords { get; set; } = [];
+        internal ConcurrentDictionary<string, uint> ProcessUsageRecords { get; set; } = [];
 
         /// <summary>
         /// 总使用时间，以毫秒为单位。
