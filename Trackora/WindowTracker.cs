@@ -566,7 +566,7 @@ namespace Zscno.Trackora
                     new(InfoFilePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite);
 
                 return textStream.Length > 0 ?
-                    (JsonSerializer.Deserialize(textStream, JsonSerializeMetadata.Default.ListProcessInfo)
+                    (JsonSerializer.Deserialize(textStream, SourceGenerationContext.Default.ListProcessInfo)
                     ?? []) : [];
             }
             catch (Exception ex)
@@ -923,7 +923,7 @@ namespace Zscno.Trackora
                 RemindingMsgResKey = "ECanNotWriteInfo",
             }.CallMethodR(() => File.WriteAllText(InfoFilePath, SerializeJson(
                 allProcessInfos,
-                JsonSerializeMetadata.Default.ListProcessInfo)));
+                SourceGenerationContext.Default.ListProcessInfo)));
             _currentRecordProcessName = string.Empty;
             if (isSuccessful)
             {
