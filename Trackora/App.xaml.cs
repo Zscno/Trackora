@@ -140,6 +140,13 @@ namespace Zscno.Trackora
 
             _ = new SafeCaller()
             {
+                LogLevel = LogLevel.Warning,
+                LogMessage = "使用记录管理器初始化失败，无法保存使用记录。",
+                RemindingMsgResKey = "", // TODO: 使用专属键。
+            }.CallMethodR(UsageRecordManager.Initialize);
+
+            _ = new SafeCaller()
+            {
                 LogMessage = "初始化信息文件路径失败。",
                 ShouldExit = true,
                 RemindingMsgResKey = "ECanNotInitInfoFilePath",

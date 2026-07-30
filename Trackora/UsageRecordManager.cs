@@ -4,6 +4,9 @@ using System.IO;
 
 namespace Zscno.Trackora
 {
+    /// <summary>
+    /// 使用记录管理器。
+    /// </summary>
     internal static class UsageRecordManager
     {
         /// <summary>

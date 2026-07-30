@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -31,11 +30,6 @@ namespace Zscno.Trackora
         private static readonly string _defaultIconUri = "ms-appx:///Icons/Default.png";
 
         /// <summary>
-        /// 用于记录的所有检测到进程的名称及其使用时长（包含只记录时间的进程）。
-        /// </summary>
-        private static readonly ConcurrentDictionary<string, TimeSpan> _processesUsageTime = [];
-
-        /// <summary>
         /// Json 序列化时使用的配置。
         /// </summary>
         private static JsonWriterOptions _jsonOptions;
@@ -49,11 +43,6 @@ namespace Zscno.Trackora
         /// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
         /// </summary>
         private static string _lastOnlyTimeProcessesStr = string.Empty;
-
-        /// <summary>
-        /// 用于触发提醒的总使用时长。
-        /// </summary>
-        private static TimeSpan _totalUsageTime;
 
         /// <summary>
         /// 用于发送连续使用时间的计时器。
@@ -71,11 +60,6 @@ namespace Zscno.Trackora
         private readonly nint _hookHandle;
 
         /// <summary>
-        /// 记录当天进程名称和使用时长的文本文件路径。
-        /// </summary>
-        private readonly string _recordFilePath;
-
-        /// <summary>
         /// 用于发送总使用时间的计时器。
         /// </summary>
         private readonly Timer _totalReminderTimer;
@@ -83,7 +67,7 @@ namespace Zscno.Trackora
         /// <summary>
         /// 连续使用时长。
         /// </summary>
-        private TimeSpan _continuousUsageTime;
+        private uint _continuousUsageTime;
 
         /// <summary>
         /// 当前正在记录信息的进程的名称。
@@ -125,37 +109,8 @@ namespace Zscno.Trackora
         /// </summary>
         public static bool IsTotalUsageReminderShown { get; set; }
 
-        /// <summary>
-        /// 用于显示的所有检测到进程的名称及其使用时长（不包含只记录时间的进程）。
-        /// </summary>
-        public static Dictionary<string, TimeSpan> ProcessesUsageTime
-        {
-            get
-            {
-                return _processesUsageTime
-                    .Where(pair => !GetNoInfoArr().Contains(pair.Key))
-                    .ToDictionary(pair => pair.Key, pair => pair.Value);
-            }
-        }
-
-        /// <summary>
-        /// 用于显示的总使用时长。
-        /// </summary>
-        public static TimeSpan TotalUsageTime
-        {
-            get => (TimeSpan)LocalSettings["TotalUsageTime"];
-
-            private set
-            {
-                LocalSettings["TotalUsageTime"] = value;
-                _totalUsageTime = value;
-            }
-        }
-
         public WindowTracker()
         {
-            _recordFilePath = Path.Join(LocalCachePath,
-                "Record.dat");
             _delegate = new WinEventDelegate(OnForegroundWindowChanged);
             _hookHandle = NativeApi.SetWinEventHook(
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
@@ -168,21 +123,12 @@ namespace Zscno.Trackora
             _jsonOptions.Indented = true;
 #endif
 
-            if (LocalSettings.TryGetValue("Today", out object? today) &&
-                (DateTimeOffset)today == new DateTimeOffset(DateTime.Now.Date))
+            if (TimeSpan.FromMilliseconds(UsageRecordManager.Record.TotalUsageTime)
+                >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] && !IsTotalUsageReminderShown)
             {
-                _totalUsageTime = TotalUsageTime;
-                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotGetRecord" }
-                .CallMethodR(GetUsageTimeFromRecordFile);
-
-                SendTotalReminderIfNeeded();
+                SendDueTotalReminder(null);
             }
-            else
-            {
-                _ = new SafeCaller() { RemindingMsgResKey = "ECanNotSetRecord" }
-                .CallMethodR(ResetRecord);
             }
-        }
 
         /// <summary>
         /// 获取本地化时间 / 时长。
@@ -192,7 +138,8 @@ namespace Zscno.Trackora
         /// <returns>本地化时间 / 时长字符串。</returns>
         public static string GetLocalTime(TimeSpan time, bool isUsedByReminder = false)
         {
-            TimeSpan realTime = isUsedByReminder ? _totalUsageTime : time;
+            TimeSpan realTime = // TODO: 接收 uint  参数。
+                isUsedByReminder ? TimeSpan.FromMilliseconds(UsageRecordManager.Record.TotalUsageTime) : time;
 
             string result;
             switch (realTime)
@@ -230,7 +177,7 @@ namespace Zscno.Trackora
         /// <returns>使用时长最长的 <paramref name="count"/> 个进程名称、图标和时长。</returns>
         public static List<ProcessInfo> GetProcessesInfo(int count)
         {
-            string[] processNames = ProcessesUsageTime
+            string[] processNames = UsageRecordManager.Record.ProcessUsageRecords
                 .OrderByDescending(x => x.Value)
                 .Take(count)
                 .Select(x => x.Key)
@@ -270,7 +217,8 @@ namespace Zscno.Trackora
                     WriteLog(LogLevel.Warning, $"在记录文件 [Path={InfoFilePath}] 中未找到进程 {name} 的信息。");
                     info = GetDefaultInfo(name);
                 }
-                info.UsageTime = GetLocalTime(ProcessesUsageTime[name]);
+                info.UsageTime = GetLocalTime(
+                    TimeSpan.FromMilliseconds(UsageRecordManager.Record.ProcessUsageRecords[name]));
                 processesInfo.Add(info);
             }
             return processesInfo;
@@ -779,18 +727,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 如果达到了总使用提醒时长且未提醒过则发送总使用时长提醒。
-        /// </summary>
-        private static void SendTotalReminderIfNeeded()
-        {
-            if (_totalUsageTime >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] && !IsTotalUsageReminderShown)
-            {
-                CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeReminder);
-                IsTotalUsageReminderShown = true;
-            }
-        }
-
-        /// <summary>
         /// 将提供的值转换为 Json <see langword="string"/> 。
         /// </summary>
         /// <typeparam name="T">要序列化的值的类型。</typeparam>
@@ -892,59 +828,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 获取记录文件中的记录。如果文件中没有内容就返回空数组。
-        /// </summary>
-        /// <returns>以换行符分隔的数组，包含了进程名称和使用时长。</returns>
-        private string[] GetRecordFileLines()
-        {
-            using FileStream stream = new(_recordFilePath, FileMode.OpenOrCreate,
-                FileAccess.Read, FileShare.ReadWrite);
-            if (stream.Length > 0)
-            {
-                using BinaryReader breader = new(stream, Encoding.UTF8);
-                string text = breader.ReadString();
-                return text.Split("\r\n");
-            }
-
-            return [];
-        }
-
-        /// <summary>
-        /// 从记录文件中获取今天的记录。
-        /// </summary>
-        private void GetUsageTimeFromRecordFile()
-        {
-            try
-            {
-                string[] lines = GetRecordFileLines();
-                foreach (string line in lines)
-                {
-                    if (string.IsNullOrWhiteSpace(line))
-                    {
-                        if (line != lines[^1])
-                        {
-                            WriteLog(LogLevel.Warning, "记录文件中有空行。");
-                        }
-
-                        continue;
-                    }
-                    string[] keyValuePair = line.Split('|');
-                    if (keyValuePair.Length != 2 ||
-                        !double.TryParse(keyValuePair[1], out double result))
-                    {
-                        WriteLog(LogLevel.Warning, $"记录文件中的行格式不正确 [{line}] 。");
-                        continue;
-                    }
-                    _processesUsageTime[keyValuePair[0]] = TimeSpan.FromSeconds(result);
-                }
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"从记录文件[{_recordFilePath}]获取今天的记录失败。", ex);
-            }
-        }
-
-        /// <summary>
         /// 应用程序定义的挂钩函数，系统调用该函数以响应辅助对象生成的事件。挂钩函数根据需要处理事件通知。
         /// </summary>
         /// <param name="hWinEventHook">
@@ -994,7 +877,7 @@ namespace Zscno.Trackora
                     TimeSpan.FromMilliseconds(dwmsEventTime - _lastChangedTime) >=
                     ((TimeSpan)LocalSettings["ContinuousUsedResetTime"])) // TODO: 使用 uint 存在设置里。
                 {
-                    _continuousUsageTime = TimeSpan.Zero;
+                    _continuousUsageTime = 0;
                 }
                 else
                 {
@@ -1128,79 +1011,22 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 在文件中记录进程 <paramref name="name"/> 的总使用时长。
-        /// </summary>
-        /// <param name="name">要记录的进程名称。</param>
-        /// <param name="totalUsageTime">进程的总使用时长。</param>
-        private void RecordUsageTimeIntoFile(string name, TimeSpan totalUsageTime)
-        {
-            try
-            {
-                string[] lines = GetRecordFileLines();
-                StringBuilder writeLines = new();
-                bool isProcessFound = false;
-
-                foreach (string line in lines)
-                {
-                    if (line.StartsWith(name))
-                    {
-                        _ = writeLines.AppendLine($"{name}|{totalUsageTime.TotalSeconds}");
-                        isProcessFound = true;
-                    }
-                    else if (!string.IsNullOrWhiteSpace(line))
-                    {
-                        _ = writeLines.AppendLine(line);
-                    }
-                }
-
-                if (!isProcessFound)
-                {
-                    _ = writeLines.AppendLine($"{name}|{totalUsageTime.TotalSeconds}");
-                }
-
-                using FileStream stream =
-                    new(_recordFilePath, FileMode.Create, FileAccess.Write, FileShare.Read);
-                using BinaryWriter writer = new(stream, Encoding.UTF8);
-                writer.Write(writeLines.ToString());
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"在文件[{_recordFilePath}]中记录进程 {name} 的总使用时长失败。", ex);
-            }
-        }
-
-        /// <summary>
-        /// 在内存中记录进程 <paramref name="name"/> 的单次使用时长和总使用时长。
+        /// 在内存中记录进程 <paramref name="name"/> 的单次使用时长、总使用时长和连续使用时长。
         /// </summary>
         /// <param name="name">要记录的进程名称。</param>
         /// <param name="currentChangedTime">本次前台窗口改变的时间（单位为毫秒）。</param>
         private void RecordUsageTimeIntoMemory(string name, uint currentChangedTime)
         {
-            TimeSpan currentUsageTime = TimeSpan.FromMilliseconds(currentChangedTime - _lastChangedTime);
-            TotalUsageTime += currentUsageTime;
+            uint currentUsageTime = currentChangedTime - _lastChangedTime;
+            UsageRecordManager.Record.TotalUsageTime += currentUsageTime;
             _continuousUsageTime += currentUsageTime;
-            TimeSpan appUsageTime = _processesUsageTime.TryGetValue(name, out TimeSpan pastUsageTime)
+            if (!GetNoInfoArr().Contains(name))
+            {
+                uint appUsageTime =
+                    UsageRecordManager.Record.ProcessUsageRecords.TryGetValue(name, out uint pastUsageTime)
                 ? pastUsageTime + currentUsageTime
                 : currentUsageTime;
-            _processesUsageTime[name] = appUsageTime;
-        }
-
-        /// <summary>
-        /// 如果今天的记录不存在或不是今天，则重置记录。
-        /// </summary>
-        private void ResetRecord()
-        {
-            LocalSettings["Today"] = new DateTimeOffset(DateTime.Now.Date);
-            TotalUsageTime = TimeSpan.Zero;
-            EndUsingTime = TimeSpan.Zero;
-
-            try
-            {
-                File.WriteAllText(_recordFilePath, string.Empty);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception($"重置/创建记录文件[{_recordFilePath}]失败。", ex);
+                UsageRecordManager.Record.ProcessUsageRecords[name] = appUsageTime;
             }
         }
 
@@ -1212,7 +1038,7 @@ namespace Zscno.Trackora
         private void SendDueContinuousReminder(object? state)
         {
             CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
-            _continuousUsageTime = TimeSpan.Zero;
+            _continuousUsageTime = 0;
         }
 
         /// <summary>
@@ -1234,12 +1060,11 @@ namespace Zscno.Trackora
         /// </summary>
         private void StartReminderTimers()
         {
-            TimeSpan continuousUsageReminderTime = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
-            uint continuousRemainingTime =
-                (uint)(continuousUsageReminderTime - _continuousUsageTime).TotalMilliseconds;
-            if (_continuousReminderTimer.Change(
-                _continuousUsageTime >= continuousUsageReminderTime ? 0 : continuousRemainingTime,
-                (uint)continuousUsageReminderTime.TotalMilliseconds))
+            uint continuousUsageReminderTime =
+                (uint)((TimeSpan)LocalSettings["ContinuousUsedRemindTime"]).TotalMilliseconds;
+            uint continuousRemainingTime = _continuousUsageTime >= continuousUsageReminderTime ?
+                0 : continuousUsageReminderTime - _continuousUsageTime;
+            if (_continuousReminderTimer.Change(continuousRemainingTime, continuousUsageReminderTime))
         {
                 WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d : f2} 秒后发送。");
             }
@@ -1253,11 +1078,11 @@ namespace Zscno.Trackora
             {
                 return;
             }
-            uint totalRemainingTime =
-                (uint)((TimeSpan)LocalSettings["TotalUsedRemindTime"] - TotalUsageTime).TotalMilliseconds;
-            if (_totalReminderTimer.Change(
-                TotalUsageTime >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] ? 0 : totalRemainingTime, 
-                Timeout.Infinite))
+            uint totalUsgaeReminderTime =
+                (uint)((TimeSpan)LocalSettings["TotalUsedRemindTime"]).TotalMilliseconds;
+            uint totalRemainingTime = UsageRecordManager.Record.TotalUsageTime >= totalUsgaeReminderTime ?
+                0 : totalUsgaeReminderTime - UsageRecordManager.Record.TotalUsageTime;
+            if (_totalReminderTimer.Change(totalRemainingTime, Timeout.Infinite))
             {
                 WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d : f2} 秒后发送。");
             }

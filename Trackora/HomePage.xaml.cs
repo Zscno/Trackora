@@ -33,7 +33,8 @@ namespace Zscno.Trackora
 				? null
 				: WindowTracker.EndUsingTime;
 			TimePickReminder.Text = string.Empty;
-			TotalUsageTime.Text = WindowTracker.GetLocalTime(WindowTracker.TotalUsageTime);
+			TotalUsageTime.Text = 
+				WindowTracker.GetLocalTime(TimeSpan.FromMilliseconds(UsageRecordManager.Record.TotalUsageTime));
 			if (!_isFirstLoading)
 			{
 				All.Content = Loader.GetString("All/Content");
@@ -45,7 +46,8 @@ namespace Zscno.Trackora
 			}.CallMethodD(() =>
 			{
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = WindowTracker.ProcessesUsageTime.Count > 6 ? Visibility.Visible : Visibility.Collapsed;
+				All.Visibility = UsageRecordManager.Record.ProcessUsageRecords.Count > 6 ?
+					Visibility.Visible : Visibility.Collapsed;
 			});
 			if (!isSuccessful)
 			{
@@ -63,7 +65,7 @@ namespace Zscno.Trackora
 
 			_ = await new SafeCaller() { RemindingMsgResKey="ECanNotGetInfo", }.CallMethodD(() =>
 			{
-				int count = isRetract ? 6 : WindowTracker.ProcessesUsageTime.Count;
+				int count = isRetract ? 6 : UsageRecordManager.Record.ProcessUsageRecords.Count;
 				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
 			});
 			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
