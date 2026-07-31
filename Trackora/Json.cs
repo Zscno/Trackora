@@ -1,4 +1,5 @@
 ﻿using System.IO;
+using System.Collections.Concurrent;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
 
@@ -10,7 +11,7 @@ namespace Zscno.Trackora
     /// <remarks>同时读取和写入时可能引发无法访问的异常。</remarks>
     internal static class Json
     {
-        private static readonly object _writeLock = new();
+        private static readonly ConcurrentDictionary<string, object> _writtingLocks = new();
 
         /// <summary>
         /// 读取 Json 文件。
@@ -36,7 +37,8 @@ namespace Zscno.Trackora
         internal static string WriteJsonFile<T>(string filePath, T value, JsonTypeInfo<T> info)
         {
             string text = JsonSerializer.Serialize(value, info);
-            lock (_writeLock)
+            object writtingLock =  _writtingLocks.GetOrAdd(filePath, new object());
+            lock (writtingLock)
             {
                 File.WriteAllText(filePath, text);
             }
