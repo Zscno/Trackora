@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
 namespace Zscno.Trackora
@@ -10,7 +11,8 @@ namespace Zscno.Trackora
 #if DEBUG
     [JsonSourceGenerationOptions(WriteIndented = true)]
 #endif
-    [JsonSerializable(typeof(List<ProcessInfo>))]
+    [JsonSerializable(typeof(List<ProcessInfo>))] // TODO: 将移除。
+    [JsonSerializable(typeof(ConcurrentDictionary<string, ProcessInfo>))]
     [JsonSerializable(typeof(UsageRecord))]
     internal partial class SourceGenerationContext : JsonSerializerContext
     {

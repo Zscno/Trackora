@@ -100,6 +100,46 @@ namespace Zscno.Trackora
         public const uint WINEVENT_OUTOFCONTEXT = 0x0000;
 
         /// <summary>
+        /// 检索与类关联的图标的句柄。
+        /// </summary>
+        internal const int GCLP_HICON = -14;
+
+        /// <summary>
+        /// 检索与类关联的小图标的句柄。
+        /// </summary>
+        internal const int GCLP_HICONSM = -34;
+
+        /// <summary>
+        /// 检索窗口的大图标。
+        /// </summary>
+        internal const nint ICON_BIG = 1;
+
+        /// <summary>
+        /// 检索窗口的小图标。
+        /// </summary>
+        internal const nint ICON_SMALL = 0;
+
+        /// <summary>
+        /// 检索应用程序提供的小图标。如果应用程序未提供，系统将使用该窗口的系统生成的图标。
+        /// </summary>
+        internal const nint ICON_SMALL2 = 2;
+
+        /// <summary>
+        /// 对于检索有关进程的某些信息是必需的。
+        /// </summary>
+        internal const int PROCESS_QUERY_LIMITED_INFORMATION = 0x1000;
+
+        /// <summary>
+        /// 发送到窗口以检索与窗口关联的大图标或小图标的句柄。系统在 Alt+Tab 对话框中显示大图标，窗口描述文字显示小图标。
+        /// </summary>
+        internal const int WM_GETICON = 0x007f;
+
+        /// <summary>
+        /// 发送到最小化 (图标) 窗口。该窗口即将由用户拖动，但没有为其类定义图标。应用程序可以将句柄返回到图标或光标。当用户拖动图标时，系统将显示此光标或图标。
+        /// </summary>
+        internal const int WM_QUERYDRAGICON = 0x0037;
+
+        /// <summary>
         /// 将指定的窗口置于 Z 顺序的顶部。如果窗口是顶级窗口，则会激活它。如果窗口是子窗口，则会激活与子窗口关联的顶级父窗口。
         /// </summary>
         /// <param name="hWnd">要置于 Z 顺序顶部的窗口的句柄。</param>
@@ -265,5 +305,70 @@ namespace Zscno.Trackora
         [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool UnhookWinEvent(nint hWinEventHook);
+
+        /// <summary>
+        /// 关闭打开的对象句柄。
+        /// </summary>
+        /// <param name="hObject">打开对象的有效句柄。</param>
+        /// <returns>如果该函数成功，则返回值为非零值。如果函数失败，则返回值为零。</returns>
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool CloseHandle(nint hObject);
+
+        /// <summary>
+        /// 获取指定进程的应用程序用户模型 ID 。
+        /// </summary>
+        /// <param name="hProcess">
+        /// 进程的句柄。 此句柄必须具有 <see cref="PROCESS_QUERY_LIMITED_INFORMATION"/> 访问权限。
+        /// </param>
+        /// <param name="applicationUserModelIdLength">
+        /// 输入时， <paramref name="applicationUserModelId"/> 缓冲区的大小（以宽字符为单位）。成功时，使用的缓冲区大小，包括 <see
+        /// langword="null"/> 终止符。
+        /// </param>
+        /// <param name="applicationUserModelId">指向接收应用程序用户模型 ID 的缓冲区的指针。</param>
+        /// <returns>如果该函数成功，则返回 <see cref="ERROR_SUCCESS"/>。否则，该函数将返回错误代码。</returns>
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
+        internal static extern long GetApplicationUserModelId(nint hProcess,
+                                                              ref uint applicationUserModelIdLength,
+                                                              StringBuilder applicationUserModelId);
+
+        /// <summary>
+        /// 从与指定窗口关联的 <c>WNDCLASSEX</c> 结构中检索指定的值。
+        /// </summary>
+        /// <param name="hWnd">窗口的句柄，间接地是窗口所属的类。</param>
+        /// <param name="nIndex">
+        /// 要检索的值。若要从额外的类内存中检索值，请指定要检索的值的正、从零开始的字节偏移量。有效值为零到额外类内存的字节数（减 8）;例如，如果指定了 24
+        /// 个或更多字节的额外类内存，则值 16 将是第三个整数的索引。
+        /// </param>
+        /// <returns></returns>
+        [LibraryImport("user32.dll", EntryPoint = "GetClassLongPtrW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial nint GetClassLongPtr(nint hWnd, int nIndex);
+
+        /// <summary>
+        /// 打开现有的本地进程对象。
+        /// </summary>
+        /// <param name="dwDesiredAccess">对进程对象的访问。针对进程的安全描述符检查此访问权限。此参数可以是一个或多个进程访问权限。</param>
+        /// <param name="bInheritHandle">如果此值为 <see langword="true"/>，则此进程创建的进程将继承句柄。否则，进程不会继承此句柄。</param>
+        /// <param name="dwProcessId">要打开的本地进程的标识符。</param>
+        /// <returns>如果函数成功，则返回值是指定进程的打开句柄。如果函数失败，则返回值为 <see langword="null"/>。</returns>
+        [LibraryImport("kernel32.dll", SetLastError = true)]
+        internal static partial nint OpenProcess(uint dwDesiredAccess,
+                                                 [MarshalAs(UnmanagedType.Bool)] bool bInheritHandle,
+                                                 uint dwProcessId);
+
+        /// <summary>
+        /// 将指定的消息发送到一个或多个窗口。该方法调用指定窗口的窗口过程，在窗口过程处理消息之前不会返回。
+        /// </summary>
+        /// <param name="hWnd">
+        /// 窗口的句柄，其窗口过程将接收消息。
+        /// <para>如果此参数为 <c>HWND_BROADCAST(0xffff)</c>，则消息将发送到系统中的所有顶级窗口，包括禁用或不可见的无所有者窗口、重叠窗口和弹出窗口;但消息不会发送到子窗口。</para>
+        /// 消息发送受 UIPI 约束。进程线程只能将消息发送到完整性级别较低或相等进程的线程的消息队列。
+        /// </param>
+        /// <param name="msg">要发送的消息。</param>
+        /// <param name="wParam">其他的消息特定信息。</param>
+        /// <param name="lParam">其他的消息特定信息。</param>
+        /// <returns>返回值指定消息处理的结果；这取决于发送的消息。</returns>
+        [LibraryImport("user32.dll", EntryPoint = "SendMessageW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        internal static partial nint SendMessage(nint hWnd, uint msg, nint wParam, nint lParam);
     }
 }
