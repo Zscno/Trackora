@@ -316,6 +316,15 @@ namespace Zscno.Trackora
         internal static partial bool CloseHandle(nint hObject);
 
         /// <summary>
+        /// 销毁图标并释放图标占用的任何内存。
+        /// </summary>
+        /// <param name="hIcon">要销毁的图标的句柄。</param>
+        /// <returns>如果该函数成功，则返回值为非零值。如果函数失败，则返回值为零。</returns>
+        [LibraryImport("user32.dll", SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool DestroyIcon(nint hIcon);
+
+        /// <summary>
         /// 获取指定进程的应用程序用户模型 ID 。
         /// </summary>
         /// <param name="hProcess">

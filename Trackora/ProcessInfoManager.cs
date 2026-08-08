@@ -379,7 +379,7 @@ namespace Zscno.Trackora
                 }
             }
 
-            SaveIcon(processName, SystemIcons.Application);
+            SaveIcon(processName, SystemIcons.GetStockIcon(StockIconId.Application));
         }
 
         /// <summary>
@@ -430,7 +430,15 @@ namespace Zscno.Trackora
             if (iconHandle != nint.Zero)
             {
                 //LogSystem.WriteLog(LogLevel.Debug, $"{processName} 窗口大图标获取成功。");
-                icon = Icon.FromHandle(iconHandle);
+                using (Icon iconWithoutOwnerShip = Icon.FromHandle(iconHandle))
+                {
+                    icon = (Icon)iconWithoutOwnerShip.Clone();
+                }
+                if (!NativeApi.DestroyIcon(iconHandle))
+                {
+                    LogSystem.WriteLog(LogLevel.Warning, $"销毁图标失败（{Marshal.GetLastPInvokeError()}）："
+                        + Marshal.GetLastPInvokeErrorMessage());
+                }
                 return true;
             }
             //LogSystem.WriteLog(LogLevel.Debug,
@@ -441,7 +449,15 @@ namespace Zscno.Trackora
             if (iconHandle != nint.Zero)
             {
                 //LogSystem.WriteLog(LogLevel.Debug, $"{processName} 与类关联的图标获取成功。");
-                icon = Icon.FromHandle(iconHandle);
+                using (Icon iconWithoutOwnerShip = Icon.FromHandle(iconHandle))
+                {
+                    icon = (Icon)iconWithoutOwnerShip.Clone();
+                }
+                if (!NativeApi.DestroyIcon(iconHandle))
+                {
+                    LogSystem.WriteLog(LogLevel.Warning, $"销毁图标失败（{Marshal.GetLastPInvokeError()}）："
+                        + Marshal.GetLastPInvokeErrorMessage());
+                }
                 return true;
             }
             //LogSystem.WriteLog(LogLevel.Debug,
