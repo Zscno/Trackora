@@ -20,22 +20,57 @@ namespace Zscno.Trackora
     internal partial class ProcessInfoManager
     {
         /// <summary>
+        /// 默认图标文件路径。
+        /// </summary>
+        private static readonly string _defaultIconFilePath;
+
+        /// <summary>
         /// 图标文件所在文件夹的路径。
         /// </summary>
-        private static readonly string _iconFolderPath =
-            Path.Combine(ApplicationData.GetDefault().LocalCachePath, "Icons");
+        private static readonly string _iconFolderPath;
 
         /// <summary>
         /// 进程信息文件路径。
         /// </summary>
-        private static readonly string _processInfoFilePath =
-            Path.Combine(ApplicationData.GetDefault().LocalCachePath, "ProcessInfo.json");
+        private static readonly string _processInfoFilePath;
 
         /// <summary>
         /// 进程信息映射表，键为进程名。
         /// </summary>
         /// <remarks>若 <see cref="Initialize"/> 方法引发异常，则该属性是一个新实例。</remarks>
         internal static ConcurrentDictionary<string, ProcessInfo> ProcessInfoMap { get; private set; } = new();
+
+        static ProcessInfoManager()
+        {
+            string localCachePath = ApplicationData.GetDefault().LocalCachePath;
+            _iconFolderPath = Path.Combine(localCachePath, "Icons");
+            _defaultIconFilePath = Path.Combine(_iconFolderPath, "Default.png");
+            _processInfoFilePath = Path.Combine(localCachePath, "ProcessInfo.json");
+        }
+
+        /// <summary>
+        /// 尝试获取进程图标文件的 URI。
+        /// </summary>
+        /// <param name="processName">进程名称。</param>
+        /// <returns>图标文件的 URI。</returns>
+        internal static string GetProcessIconFileUri(string processName)
+        {
+            if (!ProcessInfoMap.ContainsKey(processName))
+            {
+                LogSystem.WriteLog(LogLevel.Debug, $"进程信息映射表中不存在 {processName} 的信息。");
+                return new Uri(_defaultIconFilePath).ToString();
+            }
+
+            string iconFilePath = Path.Combine(_iconFolderPath, $"{processName}.png");
+            if (File.Exists(iconFilePath))
+            {
+                return new Uri(iconFilePath).ToString();
+            }
+            else
+            {
+                return new Uri(_defaultIconFilePath).ToString();
+            }
+        }
 
         /// <summary>
         /// 获取进程信息。
@@ -107,6 +142,10 @@ namespace Zscno.Trackora
             ProcessInfoMap = Json.ReadJsonFile(
                 _processInfoFilePath,
                 SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
+            if (File.Exists(_defaultIconFilePath))
+            {
+                SaveIcon("Default", SystemIcons.GetStockIcon(StockIconId.Application));
+            }
         }
 
         /// <summary>
@@ -115,31 +154,6 @@ namespace Zscno.Trackora
         internal static string SaveProcessInfoMap()
         {
             return Json.WriteJsonFile(_processInfoFilePath, ProcessInfoMap, SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
-        }
-
-        /// <summary>
-        /// 尝试获取进程图标文件的 URI。
-        /// </summary>
-        /// <param name="processName">进程名称。</param>
-        /// <param name="iconFileUri">图标文件的 URI。</param>
-        /// <returns>指示是否获取成功。</returns>
-        internal static bool TryGetProcessIconFileUri(string processName,
-                                                      [MaybeNullWhen(false)] out string? iconFileUri)
-        {
-            iconFileUri = null;
-            if (!ProcessInfoMap.ContainsKey(processName))
-            {
-                LogSystem.WriteLog(LogLevel.Debug, $"进程信息映射表中不存在 {processName} 的信息。");
-                return false;
-            }
-            string iconFilePath = Path.Combine(_iconFolderPath, $"{processName}.png");
-            if (!File.Exists(iconFilePath))
-            {
-                LogSystem.WriteLog(LogLevel.Debug, $"进程图标文件不存在：{iconFilePath}");
-                return false;
-            }
-            iconFileUri = new Uri(iconFilePath).ToString();
-            return true;
         }
 
         /// <summary>
@@ -311,7 +325,7 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 以从包徽标、窗口图标、主模块文件图标到默认图标的回退链尝试获取进程图标并保存到 <see cref="_iconFolderPath"/>。
+        /// 以从包徽标、窗口图标到主模块文件图标的回退链尝试获取进程图标并保存到 <see cref="_iconFolderPath"/>。
         /// </summary>
         /// <param name="processName">进程名称。</param>
         /// <param name="package">进程的包信息。</param>
@@ -324,13 +338,13 @@ namespace Zscno.Trackora
         {
             if (package is not null && TryGetPackageIcon(package, out string? iconFilePath))
             {
-                SaveIcon(processName, iconFilePath!);
+                SaveIcon(processName, iconFilePath);
                 return;
             }
 
             if (TryGetWindowIcon(windowHandle, out Icon? icon))
             {
-                SaveIcon(processName, icon!);
+                SaveIcon(processName, icon);
                 return;
             }
 
@@ -350,8 +364,6 @@ namespace Zscno.Trackora
                     return;
                 }
             }
-
-            SaveIcon(processName, SystemIcons.GetStockIcon(StockIconId.Application));
         }
 
         /// <summary>
@@ -385,14 +397,14 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 尝试获取打包应用程序图标，若失败，则 <paramref name="iconPath"/> 为 <see langword="null"/>。
+        /// 尝试获取打包应用程序图标。
         /// </summary>
         /// <param name="package">应用程序的包信息。</param>
-        /// <param name="iconPath">图标文件的路径。</param>
+        /// <param name="iconFilePath">图标文件的路径。</param>
         /// <returns>指示是否获取成功。</returns>
-        private static bool TryGetPackageIcon(Package package,[MaybeNullWhen(false)] out string? iconPath)
+        private static bool TryGetPackageIcon(Package package, [MaybeNullWhen(false)] out string? iconFilePath)
         {
-            iconPath = null;
+            iconFilePath = null;
             try
             {
                 string manifestPath = Path.Combine(package.InstalledLocation.Path, "AppxManifest.xml");
@@ -403,8 +415,8 @@ namespace Zscno.Trackora
                         $"在 {manifestPath} 中未找到 Square44x44Logo 属性。");
                     return false;
                 }
-                iconPath = GetIconFilePath(iconBaseUri, package.InstalledLocation.Path, 100, 32);
-                if (iconPath == null)
+                iconFilePath = GetIconFilePath(iconBaseUri, package.InstalledLocation.Path, 100, 32);
+                if (iconFilePath == null)
                 {
                     LogSystem.WriteLog(LogLevel.Warning,
                         $"在 {package.InstalledLocation.Path} 中未找到符合 [size=32, scale=100] 条件的图标文件。");
