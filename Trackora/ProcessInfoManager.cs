@@ -3,6 +3,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -35,36 +36,6 @@ namespace Zscno.Trackora
         /// </summary>
         /// <remarks>若 <see cref="Initialize"/> 方法引发异常，则该属性是一个新实例。</remarks>
         internal static ConcurrentDictionary<string, ProcessInfo> ProcessInfoMap { get; private set; } = new();
-
-        /// <summary>
-        /// 尝试从字符串的指定位置提取数字。
-        /// </summary>
-        /// <param name="str">要提取数字的字符串。</param>
-        /// <param name="startIndex">开始位置。</param>
-        /// <param name="number">提取到的数字。</param>
-        /// <returns>指示是否成功提取数字。</returns>
-        public static bool TryExtractNumber(string str, int startIndex, out int number)
-        {
-            number = 0;
-            if (string.IsNullOrWhiteSpace(str) || startIndex < 0 || startIndex >= str.Length)
-            {
-                return false;
-            }
-
-            int endIndex = startIndex;
-            while (endIndex < str.Length && char.IsDigit(str[endIndex]))
-            {
-                endIndex++;
-            }
-
-            if (endIndex == startIndex)
-            {
-                return false;
-            }
-
-            ReadOnlySpan<char> numberSpan = str.AsSpan(startIndex, endIndex - startIndex);
-            return int.TryParse(numberSpan, out number);
-        }
 
         /// <summary>
         /// 获取进程信息。
@@ -152,10 +123,11 @@ namespace Zscno.Trackora
         /// <param name="processName">进程名称。</param>
         /// <param name="iconFileUri">图标文件的 URI。</param>
         /// <returns>指示是否获取成功。</returns>
-        internal static bool TryGetProcessIconFileUri(string processName, out string? iconFileUri)
+        internal static bool TryGetProcessIconFileUri(string processName,
+                                                      [MaybeNullWhen(false)] out string? iconFileUri)
         {
             iconFileUri = null;
-            if (!ProcessInfoMap.TryGetValue(processName, out ProcessInfo? processInfo))
+            if (!ProcessInfoMap.ContainsKey(processName))
             {
                 LogSystem.WriteLog(LogLevel.Debug, $"进程信息映射表中不存在 {processName} 的信息。");
                 return false;
@@ -383,12 +355,42 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
+        /// 尝试从字符串的指定位置提取数字。
+        /// </summary>
+        /// <param name="str">要提取数字的字符串。</param>
+        /// <param name="startIndex">开始位置。</param>
+        /// <param name="number">提取到的数字。</param>
+        /// <returns>指示是否成功提取数字。</returns>
+        private static bool TryExtractNumber(string str, int startIndex, out int number)
+        {
+            number = 0;
+            if (string.IsNullOrWhiteSpace(str) || startIndex < 0 || startIndex >= str.Length)
+            {
+                return false;
+            }
+
+            int endIndex = startIndex;
+            while (endIndex < str.Length && char.IsDigit(str[endIndex]))
+            {
+                endIndex++;
+            }
+
+            if (endIndex == startIndex)
+            {
+                return false;
+            }
+
+            ReadOnlySpan<char> numberSpan = str.AsSpan(startIndex, endIndex - startIndex);
+            return int.TryParse(numberSpan, out number);
+        }
+
+        /// <summary>
         /// 尝试获取打包应用程序图标，若失败，则 <paramref name="iconPath"/> 为 <see langword="null"/>。
         /// </summary>
         /// <param name="package">应用程序的包信息。</param>
         /// <param name="iconPath">图标文件的路径。</param>
         /// <returns>指示是否获取成功。</returns>
-        private static bool TryGetPackageIcon(Package package, out string? iconPath)
+        private static bool TryGetPackageIcon(Package package,[MaybeNullWhen(false)] out string? iconPath)
         {
             iconPath = null;
             try
@@ -418,12 +420,12 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 尝试获取应用程序窗口的图标，若失败，则 <paramref name="icon"/> 为 <see langword="null"/>。
+        /// 尝试获取应用程序窗口的图标。
         /// </summary>
         /// <param name="windowHandle">窗口句柄。</param>
         /// <param name="icon">图标的 <see cref="Icon"/> 实例。</param>
         /// <returns>指示是否获取成功。</returns>
-        private static bool TryGetWindowIcon(nint windowHandle, out Icon? icon)
+        private static bool TryGetWindowIcon(nint windowHandle, [MaybeNullWhen(false)] out Icon? icon)
         {
             nint iconHandle =
                 NativeApi.SendMessage(windowHandle, NativeApi.WM_GETICON, NativeApi.ICON_BIG, nint.Zero);
