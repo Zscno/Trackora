@@ -274,7 +274,7 @@ namespace Zscno.Trackora
         /// </summary>
         private void AppInstance_Activated(object? sender, AppActivationArguments e)
         {
-            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { await AppMainWindow.ShowWindow(); });
+            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { AppMainWindow.ShowWindow(); });
         }
     }
 }

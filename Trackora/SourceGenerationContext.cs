@@ -11,7 +11,6 @@ namespace Zscno.Trackora
 #if DEBUG
     [JsonSourceGenerationOptions(WriteIndented = true)]
 #endif
-    [JsonSerializable(typeof(List<ProcessInfo>))] // TODO: 将移除。
     [JsonSerializable(typeof(ConcurrentDictionary<string, ProcessInfo>))]
     [JsonSerializable(typeof(UsageRecord))]
     internal partial class SourceGenerationContext : JsonSerializerContext

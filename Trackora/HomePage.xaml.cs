@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using static Zscno.Trackora.App;
 
@@ -22,39 +23,47 @@ namespace Zscno.Trackora
 			InitializeComponent();
 		}
 
+        /// <summary>
+        /// 加载需要更新的控件。
+        /// </summary>
+        public void LoadControlsThatNeed()
+        {
+            LoadingRing.IsActive = true;
+            EndUsing.SelectedTime = WindowTracker.EndUsingTime == default ||
+                                    WindowTracker.EndUsingTime <= _timeNow
+                ? null
+                : WindowTracker.EndUsingTime;
+            TimePickReminder.Text = string.Empty;
+            TotalUsageTime.Text = Localization.ToLocalizedTimeString(UsageRecordManager.Record.TotalUsageTime);
+            if (!_isFirstLoading)
+            {
+                All.Content = Loader.GetString("All/Content");
+            }
+
+            ProcessesList.ItemsSource = GetProcessDisplayItems();
+
+            LoadingRing.IsActive = false;
+        }
+
 		/// <summary>
-		/// 加载需要更新的控件。
+		/// 获取所有被记录进程的显示信息。
 		/// </summary>
-		public async Task LoadControlsThatNeed()
+		/// <returns>所有被记录进程的显示信息。</returns>
+        private static List<ProcessDisplayItem> GetProcessDisplayItems()
 		{
-			LoadingRing.IsActive = true;
-			EndUsing.SelectedTime = WindowTracker.EndUsingTime == default ||
-									WindowTracker.EndUsingTime <= _timeNow
-				? null
-				: WindowTracker.EndUsingTime;
-			TimePickReminder.Text = string.Empty;
-			TotalUsageTime.Text = 
-				WindowTracker.GetLocalTime(TimeSpan.FromMilliseconds(UsageRecordManager.Record.TotalUsageTime));
-			if (!_isFirstLoading)
+			List<ProcessDisplayItem> processDisplayItems = [];
+			foreach (var processUsageRecord in UsageRecordManager.Record.ProcessUsageRecords)
 			{
-				All.Content = Loader.GetString("All/Content");
+				string name =
+					ProcessInfoManager.ProcessInfoMap.TryGetValue( processUsageRecord.Key, out ProcessInfo? processInfo) ?
+					processInfo.DisplayName : processUsageRecord.Key;
+				string iconFileUri = ProcessInfoManager.GetProcessIconFileUri(processUsageRecord.Key);
+				processDisplayItems.Add(new ProcessDisplayItem(
+                    iconFileUri,
+                    name,
+                    processUsageRecord.Value));
 			}
-
-			bool isSuccessful = await new SafeCaller()
-			{
-				RemindingMsgResKey="ECanNotGetInfo",
-			}.CallMethodD(() =>
-			{
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(6);
-				All.Visibility = UsageRecordManager.Record.ProcessUsageRecords.Count > 6 ?
-					Visibility.Visible : Visibility.Collapsed;
-			});
-			if (!isSuccessful)
-			{
-				All.Visibility = Visibility.Collapsed;
-			}
-
-			LoadingRing.IsActive = false;
+			return processDisplayItems;
 		}
 
 		private async void All_Click(object sender, RoutedEventArgs e)
@@ -103,7 +112,7 @@ namespace Zscno.Trackora
 			Total.Time = (TimeSpan)LocalSettings["TotalUsedRemindTime"];
 			Continuous.Time = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
 			ResetContinuous.Time = (TimeSpan)LocalSettings["ContinuousUsedResetTime"];
-			await LoadControlsThatNeed();
+			LoadControlsThatNeed();
 			_isFirstLoading = false;
 		}
 
@@ -111,7 +120,7 @@ namespace Zscno.Trackora
 		{
 			Button? button = sender as Button;
 			button!.IsEnabled = false;
-			await LoadControlsThatNeed();
+			LoadControlsThatNeed();
 			button.IsEnabled = true;
 		}
 

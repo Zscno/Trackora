@@ -36,7 +36,7 @@ namespace Zscno.Trackora
         }
 
         [RelayCommand]
-        public async Task ShowWindow()
+        public void ShowWindow()
         {
             Window? window = AppMainWindow;
             if (window is null)
@@ -55,7 +55,7 @@ namespace Zscno.Trackora
                     return;
                 }
 
-                await page.LoadControlsThatNeed();
+                page.LoadControlsThatNeed();
             }
 
             nint hwnd = WindowNative.GetWindowHandle(window);
