@@ -140,31 +140,6 @@ namespace Zscno.Trackora
 
             _ = new SafeCaller()
             {
-                LogLevel = LogLevel.Warning,
-                LogMessage = "使用记录管理器初始化失败，无法保存使用记录。",
-                RemindingMsgResKey = "", // TODO: 使用专属键。
-            }.CallMethodR(UsageRecordManager.Initialize);
-
-            _ = new SafeCaller()
-            {
-                LogMessage = "初始化信息文件路径失败。",
-                ShouldExit = true,
-                RemindingMsgResKey = "ECanNotInitInfoFilePath",
-            }.CallMethodR(() => InfoFilePath = Path.Combine(LocalCachePath, "Info.json"));
-
-            _ = new SafeCaller()
-            {
-                LogMessage = "初始化本地设置失败，将使用内存临时存储。",
-                RemindingMsgResKey = "ECanNotInitSettings",
-            }.CallMethodR(() =>
-            {
-                LocalSettings = ApplicationData.Current.LocalSettings.Values;
-            });
-
-            InitLocalSettingsIfNeeded();
-
-            _ = new SafeCaller()
-            {
                 LogMessage = "设置应用主题失败。",
                 RemindingMsgResKey = "ECanNotSetTheme",
             }.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
@@ -186,44 +161,23 @@ namespace Zscno.Trackora
         /// <param name="args">Details about the launch request and process.</param>
         protected override void OnLaunched(LaunchActivatedEventArgs args)
         {
-            _ = new SafeCaller()
-            {
-                LogMessage = "准备 Icons 文件夹失败。",
-                ShouldExit = true,
-                RemindingMsgResKey = "CanNotLaunchApp",
-            }.CallMethodR(() =>
-            {
-                if (!Directory.Exists(Path.Combine(LocalCachePath, "Icons")))
-                {
-                    _ = Directory.CreateDirectory(Path.Combine(LocalCachePath, "Icons"));
-                }
-            });
-
             AppMainWindow = new MainWindow();
             AppMainWindow.Activate();
             NativeApi.HideWindow(AppMainWindow);
 
-            Tracker = new WindowTracker();
-        }
+            _ = new SafeCaller()
+            {
+                LogMessage = "使用记录管理器初始化失败。",
+                RemindingMsgResKey = "", // TODO: 使用专属键。
+            }.CallMethodR(UsageRecordManager.Initialize);
 
-        /// <summary>
-        /// 在需要时初始化本地设置的默认值。
-        /// </summary>
-        private static void InitLocalSettingsIfNeeded()
-        {
-            _ = LocalSettings.TryAdd("TotalUsedRemindTime", TimeSpan.FromHours(2));
-            _ = LocalSettings.TryAdd("ContinuousUsedRemindTime", TimeSpan.FromMinutes(30));
-            _ = LocalSettings.TryAdd("TotalUsageTimeSound", "Default");
-            _ = LocalSettings.TryAdd("ContinuousUsageTimeSound", "Default");
-            _ = LocalSettings.TryAdd("EndUsingTimeSound", "Alarm");
-            _ = LocalSettings.TryAdd("Theme", "SystemTheme");
-            // 仅记录使用时间的进程：开始，搜索，文件/文件夹选取器，uac提示，打开方式选取器，小组件，任务栏上各种视图。
-            _ = LocalSettings.TryAdd("OnlyTimeProcesses",
-                "StartMenuExperienceHost,SearchHost,PickerHost," +
-                "consent,OpenWith,Widgets,ShellExperienceHost");
-            // 忽略的进程：桌面管理器，锁屏，线程等待对话框。
-            _ = LocalSettings.TryAdd("IgnoredProcesses", "dwm,LockApp,ServiceHub.ThreadedWaitDialog");
-            _ = LocalSettings.TryAdd("ContinuousUsedResetTime", TimeSpan.FromMinutes(10));
+            _ = new SafeCaller()
+            {
+                LogMessage = "进程信息管理器初始化失败。",
+                RemindingMsgResKey = "", // TODO: 使用专属键。
+            }.CallMethodR(ProcessInfoManager.Initialize);
+
+            Tracker = new WindowTracker();
         }
 
         /// <summary>

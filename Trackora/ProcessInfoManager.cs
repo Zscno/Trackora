@@ -139,6 +139,7 @@ namespace Zscno.Trackora
         /// <remarks>若引发异常，则 <see cref="ProcessInfoMap"/> 是一个新实例。</remarks>
         internal static void Initialize()
         {
+            _ = Directory.CreateDirectory(_iconFolderPath);
             ProcessInfoMap = Json.ReadJsonFile(
                 _processInfoFilePath,
                 SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
