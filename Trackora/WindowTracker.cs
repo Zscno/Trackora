@@ -105,8 +105,8 @@ namespace Zscno.Trackora
             _continuousReminderTimer = new Timer(SendDueContinuousReminder, null, Timeout.Infinite, Timeout.Infinite);
             _savingRecordTimer = new Timer(SaveLatestUsageRecord, null, Timeout.Infinite, Timeout.Infinite);
 
-            if (TimeSpan.FromMilliseconds(UsageRecordManager.Record.TotalUsageTime)
-                >= (TimeSpan)LocalSettings["TotalUsedRemindTime"] && !IsTotalUsageReminderShown)
+            if (UsageRecordManager.Record.TotalUsageTime >= Settings.TotalThreshold &&
+                !IsTotalUsageReminderShown)
             {
                 SendDueTotalReminder(null);
             }
@@ -339,8 +339,7 @@ namespace Zscno.Trackora
                     // TODO: 使用事件处理失败情况。
                 }
                 if (_lastProcessName == null &&
-                    TimeSpan.FromMilliseconds(dwmsEventTime - _lastChangedTime) >=
-                    ((TimeSpan)LocalSettings["ContinuousUsedResetTime"])) // TODO: 使用 uint 存在设置里。
+                    dwmsEventTime - _lastChangedTime >= Settings.IdleThreshold)
                 {
                     _continuousUsageTime = 0;
                 }
@@ -480,11 +479,9 @@ namespace Zscno.Trackora
         /// </summary>
         private void StartReminderTimers()
         {
-            uint continuousUsageReminderTime =
-                (uint)((TimeSpan)LocalSettings["ContinuousUsedRemindTime"]).TotalMilliseconds;
-            uint continuousRemainingTime = _continuousUsageTime >= continuousUsageReminderTime ?
-                0 : continuousUsageReminderTime - _continuousUsageTime;
-            if (_continuousReminderTimer.Change(continuousRemainingTime, continuousUsageReminderTime))
+            uint continuousRemainingTime = _continuousUsageTime < Settings.SessionThreshold ?
+                Settings.SessionThreshold - _continuousUsageTime : 0;
+            if (_continuousReminderTimer.Change(continuousRemainingTime, Settings.SessionThreshold))
             {
                 WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d:f2} 秒后发送。");
             }
@@ -498,10 +495,8 @@ namespace Zscno.Trackora
             {
                 return;
             }
-            uint totalUsgaeReminderTime =
-                (uint)((TimeSpan)LocalSettings["TotalUsedRemindTime"]).TotalMilliseconds;
-            uint totalRemainingTime = UsageRecordManager.Record.TotalUsageTime >= totalUsgaeReminderTime ?
-                0 : totalUsgaeReminderTime - UsageRecordManager.Record.TotalUsageTime;
+            uint totalRemainingTime = UsageRecordManager.Record.TotalUsageTime < Settings.TotalThreshold ?
+                Settings.TotalThreshold - UsageRecordManager.Record.TotalUsageTime : 0;
             if (_totalReminderTimer.Change(totalRemainingTime, Timeout.Infinite))
             {
                 WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d:f2} 秒后发送。");

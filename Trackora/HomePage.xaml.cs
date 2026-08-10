@@ -87,7 +87,7 @@ namespace Zscno.Trackora
 		{
 			if (!_isFirstLoading)
 			{
-				LocalSettings["ContinuousUsedRemindTime"] = e.NewTime;
+				Settings.SessionThreshold = (uint)e.NewTime.TotalMilliseconds;
 			}
 		}
 
@@ -109,9 +109,9 @@ namespace Zscno.Trackora
 		{
 			_isFirstLoading = true;
 			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
-			Total.Time = (TimeSpan)LocalSettings["TotalUsedRemindTime"];
-			Continuous.Time = (TimeSpan)LocalSettings["ContinuousUsedRemindTime"];
-			ResetContinuous.Time = (TimeSpan)LocalSettings["ContinuousUsedResetTime"];
+			Total.Time = TimeSpan.FromMilliseconds(Settings.TotalThreshold);
+			Continuous.Time = TimeSpan.FromMilliseconds(Settings.SessionThreshold);
+			ResetContinuous.Time = TimeSpan.FromMilliseconds(Settings.IdleThreshold);
 			LoadControlsThatNeed();
 			_isFirstLoading = false;
 		}
@@ -138,7 +138,7 @@ namespace Zscno.Trackora
 		{
 			if (!_isFirstLoading)
 			{
-				LocalSettings["ContinuousUsedResetTime"] = e.NewTime;
+				Settings.IdleThreshold = (uint)e.NewTime.TotalMilliseconds;
 			}
 		}
 
@@ -146,7 +146,7 @@ namespace Zscno.Trackora
 		{
 			if (!_isFirstLoading)
 			{
-				LocalSettings["TotalUsedRemindTime"] = e.NewTime;
+				Settings.TotalThreshold = (uint)e.NewTime.TotalMilliseconds;
 				if (e.NewTime > e.OldTime)
 				{
 					WindowTracker.IsTotalUsageReminderShown = false;
