@@ -12,6 +12,7 @@ namespace Zscno.Trackora
     [JsonSourceGenerationOptions(WriteIndented = true)]
 #endif
     [JsonSerializable(typeof(ConcurrentDictionary<string, ProcessInfo>))]
+    [JsonSerializable(typeof(HashSet<string>))]
     [JsonSerializable(typeof(UsageRecord))]
     internal partial class SourceGenerationContext : JsonSerializerContext
     {

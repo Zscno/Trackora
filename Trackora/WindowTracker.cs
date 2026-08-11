@@ -14,16 +14,6 @@ namespace Zscno.Trackora
     internal class WindowTracker
     {
         /// <summary>
-        /// 用于过滤只记录时间的进程名称的字符串数组
-        /// </summary>
-        private static string[] _lastNotInfoNamesArr = [];
-
-        /// <summary>
-        /// 用于过滤只记录时间的进程名称的字符串（以英文逗号分隔）。
-        /// </summary>
-        private static string _lastOnlyTimeProcessesStr = string.Empty;
-
-        /// <summary>
         /// 用于发送连续使用时间的计时器。
         /// </summary>
         private readonly Timer _continuousReminderTimer;
@@ -62,16 +52,6 @@ namespace Zscno.Trackora
         /// 上次前台窗口改变的时间（单位为毫秒）。
         /// </summary>
         private uint _lastChangedTime;
-
-        /// <summary>
-        /// 用于过滤进程名称的字符串数组。
-        /// </summary>
-        private string[] _lastIgnoredProcessesArr = [];
-
-        /// <summary>
-        /// 用于过滤进程名称的字符串（以英文逗号分隔）。
-        /// </summary>
-        private string _lastIgnoredProcessesStr = string.Empty;
 
         /// <summary>
         /// 上一个前台进程名称。
@@ -150,22 +130,6 @@ namespace Zscno.Trackora
                 return false;
             }
             return true;
-        }
-
-        /// <summary>
-        /// 获取用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。
-        /// </summary>
-        /// <returns>用于过滤只记录时间的进程名称的 <see cref="HashSet{T}"/> 。</returns>
-        private static HashSet<string> GetNoInfoArr()
-        {
-            string OnlyTimeProcessesStr = (string)LocalSettings["OnlyTimeProcesses"];
-            if (_lastOnlyTimeProcessesStr != OnlyTimeProcessesStr)
-            {
-                _lastNotInfoNamesArr = OnlyTimeProcessesStr.Split(',');
-                _lastOnlyTimeProcessesStr = OnlyTimeProcessesStr;
-            }
-
-            return new HashSet<string>(_lastNotInfoNamesArr);
         }
 
         /// <summary>
@@ -273,21 +237,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 获取用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。
-        /// </summary>
-        /// <returns>用于过滤不记录任何信息的进程名称的 <see cref="HashSet{T}"/> 。</returns>
-        private HashSet<string> GetNoTimeArr()
-        {
-            string ignoredProcessesStr = (string)LocalSettings["IgnoredProcesses"];
-            if (_lastIgnoredProcessesStr != ignoredProcessesStr)
-            {
-                _lastIgnoredProcessesArr = ignoredProcessesStr.Split(',');
-                _lastIgnoredProcessesStr = ignoredProcessesStr;
-            }
-            return new HashSet<string>(_lastIgnoredProcessesArr);
-        }
-
-        /// <summary>
         /// 应用程序定义的挂钩函数，系统调用该函数以响应辅助对象生成的事件。挂钩函数根据需要处理事件通知。
         /// </summary>
         /// <param name="hWinEventHook">
@@ -329,7 +278,7 @@ namespace Zscno.Trackora
             }
 
             if (!NativeApi.TryGetProcessByWindowHandle(hwnd, out Process? process) ||
-                GetNoTimeArr().Contains(process!.ProcessName) ||
+                ProcessFilter.IsIgnoredProcess(process!.ProcessName) ||
                 !GetRealProcess(process.ProcessName, hwnd, out Process? uwpProcess))
             {
                 if (!_totalReminderTimer.Change(Timeout.Infinite, Timeout.Infinite) ||
@@ -393,7 +342,7 @@ namespace Zscno.Trackora
             uint currentUsageTime = currentChangedTime - _lastChangedTime;
             UsageRecordManager.Record.TotalUsageTime += currentUsageTime;
             _continuousUsageTime += currentUsageTime;
-            if (!GetNoInfoArr().Contains(name))
+            if (!ProcessFilter.IsTimeOnlyProcess(name))
             {
                 uint appUsageTime =
                     UsageRecordManager.Record.ProcessUsageRecords.TryGetValue(name, out uint pastUsageTime)
@@ -425,7 +374,7 @@ namespace Zscno.Trackora
         private void SaveProcessInfo(nint windowHandle, Process process)
         {
             string processName = process.ProcessName;
-            if (GetNoInfoArr().Contains(processName) ||
+            if (ProcessFilter.IsTimeOnlyProcess(processName) ||
                 ProcessInfoManager.ProcessInfoMap.ContainsKey(processName) ||
                 !_recordingProcessName.TryAdd(processName, 0))
             {
