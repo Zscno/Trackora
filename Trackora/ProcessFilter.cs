@@ -10,7 +10,7 @@ namespace Zscno.Trackora
     internal static class ProcessFilter
     {
         /// <summary>
-        /// 忽略进程名单的文件路径。
+        /// 忽略进程名单文件的路径。
         /// </summary>
         private static readonly string _ignoredProcessListFilePath;
 
@@ -20,7 +20,7 @@ namespace Zscno.Trackora
         private static readonly object _ignoredWriteLock = new();
 
         /// <summary>
-        /// 仅记录时间进程名单的文件路径。
+        /// 仅记录时间进程名单文件的路径。
         /// </summary>
         private static readonly string _timeOnlyProcessListFilePath;
 

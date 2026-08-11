@@ -5,7 +5,7 @@ using System.IO;
 namespace Zscno.Trackora
 {
     /// <summary>
-    /// 使用记录管理器。
+    /// 为获取和保存使用记录提供相关操作。
     /// </summary>
     internal static class UsageRecordManager
     {
@@ -22,7 +22,6 @@ namespace Zscno.Trackora
         /// <summary>
         /// 今天的使用记录。
         /// </summary>
-        /// <remarks>若 <see cref="Initialize"/> 方法引发异常，则该属性是一个新实例。</remarks>
         internal static UsageRecord Record { get; private set; }
 
         static UsageRecordManager()
@@ -33,9 +32,8 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 初始化使用记录管理器。若今天没有记录则新建文件；否则，读取今天的记录文件。
+        /// 确保存放使用记录的文件夹存在并从文件中读取今天的使用记录。
         /// </summary>
-        /// <remarks>若引发异常，则 <see cref="Record"/> 是一个新实例。</remarks>
         internal static void Initialize()
         {
             _ = Directory.CreateDirectory(_recordFolderPath);
@@ -43,7 +41,7 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 保存使用记录到文件。
+        /// 保存使用记录。
         /// </summary>
         internal static string SaveRecord()
         {
