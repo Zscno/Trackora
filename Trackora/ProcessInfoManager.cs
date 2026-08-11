@@ -141,8 +141,8 @@ namespace Zscno.Trackora
         {
             _ = Directory.CreateDirectory(_iconFolderPath);
             ProcessInfoMap = Json.ReadJsonFile(
-                _processInfoFilePath,
-                SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
+                _processInfoFilePath, SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo)
+                ?? new();
             if (File.Exists(_defaultIconFilePath))
             {
                 SaveIcon("Default", SystemIcons.GetStockIcon(StockIconId.Application));
@@ -403,7 +403,7 @@ namespace Zscno.Trackora
         /// <param name="package">应用程序的包信息。</param>
         /// <param name="iconFilePath">图标文件的路径。</param>
         /// <returns>指示是否获取成功。</returns>
-        private static bool TryGetPackageIcon(Package package, [MaybeNullWhen(false)] out string? iconFilePath)
+        private static bool TryGetPackageIcon(Package package, [MaybeNullWhen(false)] out string iconFilePath)
         {
             iconFilePath = null;
             try
@@ -438,7 +438,7 @@ namespace Zscno.Trackora
         /// <param name="windowHandle">窗口句柄。</param>
         /// <param name="icon">图标的 <see cref="Icon"/> 实例。</param>
         /// <returns>指示是否获取成功。</returns>
-        private static bool TryGetWindowIcon(nint windowHandle, [MaybeNullWhen(false)] out Icon? icon)
+        private static bool TryGetWindowIcon(nint windowHandle, [MaybeNullWhen(false)] out Icon icon)
         {
             nint iconHandle =
                 NativeApi.SendMessage(windowHandle, NativeApi.WM_GETICON, NativeApi.ICON_BIG, nint.Zero);
