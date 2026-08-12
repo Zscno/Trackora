@@ -11,6 +11,11 @@ namespace Zscno.Trackora
         /// 显示给用户的名称。
         /// </summary>
         [JsonInclude]
-        internal string DisplayName { get; set; } = string.Empty;
+        internal string DisplayName { get; set; }
+
+        internal ProcessInfo(string displayName)
+        {
+            DisplayName = displayName;
+        }
     }
 }

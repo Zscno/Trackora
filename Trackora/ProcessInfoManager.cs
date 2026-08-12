@@ -129,10 +129,7 @@ namespace Zscno.Trackora
 
             string displayName = GetProcessDisplayName(package, processMainModule, process);
 
-            return new ProcessInfo()
-            {
-                DisplayName = displayName,
-            };
+            return new ProcessInfo(displayName);
         }
 
         /// <summary>
