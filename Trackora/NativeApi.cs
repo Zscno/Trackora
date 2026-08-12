@@ -1,8 +1,5 @@
-﻿using Microsoft.UI.Xaml;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text;
-using WinRT.Interop;
 
 namespace Zscno.Trackora
 {
@@ -151,10 +148,10 @@ namespace Zscno.Trackora
         /// <summary>
         /// 检索其类名称和窗口名称与指定字符串匹配的窗口的句柄。
         /// </summary>
-        /// <param name="hWndParent">要搜索其子窗口的父窗口的句柄。</param>
+        /// <param name="hWndParent">    要搜索其子窗口的父窗口的句柄。</param>
         /// <param name="hWndChildAfter">子窗口的句柄。</param>
-        /// <param name="lpszClass">指定窗口类名。</param>
-        /// <param name="lpszWindow">窗口名称（窗口的标题）。</param>
+        /// <param name="lpszClass">     指定窗口类名。</param>
+        /// <param name="lpszWindow">    窗口名称（窗口的标题）。</param>
         /// <returns>如果函数成功，则返回值是具有指定类和窗口名称的窗口的句柄。如果函数失败，则返回值 <see langword="null"/>。</returns>
         [LibraryImport("user32.dll", EntryPoint = "FindWindowExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         public static partial nint FindWindowEx(
@@ -166,12 +163,9 @@ namespace Zscno.Trackora
         /// <summary>
         /// 检索指定窗口所属的类的名称。
         /// </summary>
-        /// <param name="hWnd">窗口的句柄，以及窗口所属的类的间接句柄。</param>
+        /// <param name="hWnd">       窗口的句柄，以及窗口所属的类的间接句柄。</param>
         /// <param name="lpClassName">类名字符串。</param>
-        /// <param name="nMaxCount">
-        /// <paramref name="lpClassName"/> 缓冲区的长度（以字符为单位）。缓冲区必须足够大，才能包含终止 <see langword="null"/>
-        /// 字符；否则，类名字符串将被截断为 <paramref name="nMaxCount"/>-1 字符。
-        /// </param>
+        /// <param name="nMaxCount">  <paramref name="lpClassName"/> 缓冲区的长度（以字符为单位）。缓冲区必须足够大，才能包含终止 <see langword="null"/> 字符；否则，类名字符串将被截断为 <paramref name="nMaxCount"/>-1 字符。</param>
         /// <returns>如果函数成功，则返回值是复制到缓冲区的字符数，不包括终止 <see langword="null"/> 字符。如果函数失败，则返回值为零。</returns>
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern int GetClassName(nint hWnd, StringBuilder lpClassName, int nMaxCount);
@@ -186,11 +180,9 @@ namespace Zscno.Trackora
         /// <summary>
         /// 获取指定进程的包标识符 (ID)。
         /// </summary>
-        /// <param name="hProcess">
-        /// 具有 <c>PROCESS_QUERY_INFORMATION</c> 或 <c>PROCESS_QUERY_LIMITED_INFORMATION</c> 访问权限的进程句柄。
-        /// </param>
+        /// <param name="hProcess">             具有 <c>PROCESS_QUERY_INFORMATION</c> 或 <c>PROCESS_QUERY_LIMITED_INFORMATION</c> 访问权限的进程句柄。</param>
         /// <param name="packageFullNameLength">输入时， <paramref name="packageFullName"/> 缓冲区的大小（以字节为单位）。输出时，返回包全名的大小（以字节为单位）。</param>
-        /// <param name="packageFullName">包全名。</param>
+        /// <param name="packageFullName">      包全名。</param>
         /// <returns>如果函数成功，则返回 <c>ERROR_SUCCESS</c>。否则，函数将返回错误代码。</returns>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         public static extern long GetPackageFullName(
@@ -201,21 +193,11 @@ namespace Zscno.Trackora
         /// <summary>
         /// 检索创建指定窗口的线程的标识符，以及创建该窗口的进程（可选）的标识符。
         /// </summary>
-        /// <param name="hWnd">窗口的句柄。</param>
+        /// <param name="hWnd">         窗口的句柄。</param>
         /// <param name="lpdwProcessId">指向接收进程标识符的变量的指针。函数会将进程的标识符复制到变量。如果函数失败，则变量的值保持不变。</param>
         /// <returns>如果函数成功，则返回值是创建窗口的线程的标识符。如果窗口句柄无效，则返回值为零。</returns>
         [LibraryImport("user32.dll", SetLastError = true)]
         public static partial uint GetWindowThreadProcessId(nint hWnd, out uint lpdwProcessId);
-
-        /// <summary>
-        /// （自行封装）隐藏窗口。
-        /// </summary>
-        /// <param name="window">要隐藏的窗口。</param>
-        public static void HideWindow(Window window)
-        {
-            nint hwnd = WindowNative.GetWindowHandle(window);
-            _ = ShowWindow(hwnd, SW_HIDE);
-        }
 
         /// <summary>
         /// 将创建指定窗口的线程引入前台并激活窗口。键盘输入将定向到窗口，并为用户更改各种视觉提示。
@@ -229,19 +211,14 @@ namespace Zscno.Trackora
         /// <summary>
         /// 为一系列事件设置事件挂钩函数。
         /// </summary>
-        /// <param name="eventMin">指定挂钩函数处理的事件范围中最低事件值的事件 常量 。 此参数可以设置为 EVENT_MIN ，以指示可能的最低事件值。</param>
-        /// <param name="eventMax">指定由挂钩函数处理的事件范围中最高事件值的事件常量。 此参数可以设置为 EVENT_MAX ，以指示可能的最高事件值。</param>
-        /// <param name="hmodWinEventProc">
-        /// 如果在 dwFlags 参数中指定了WINEVENT_INCONTEXT标志，则为包含 <paramref name="lpfnWinEventProc"/> 中的挂钩函数的
-        /// DLL 的句柄。 如果挂钩函数不位于 DLL 中，或者指定了WINEVENT_OUTOFCONTEXT标志，则此参数为 <see langword="null"/>。
-        /// </param>
+        /// <param name="eventMin">        指定挂钩函数处理的事件范围中最低事件值的事件 常量 。 此参数可以设置为 EVENT_MIN ，以指示可能的最低事件值。</param>
+        /// <param name="eventMax">        指定由挂钩函数处理的事件范围中最高事件值的事件常量。 此参数可以设置为 EVENT_MAX ，以指示可能的最高事件值。</param>
+        /// <param name="hmodWinEventProc">如果在 dwFlags 参数中指定了WINEVENT_INCONTEXT标志，则为包含 <paramref name="lpfnWinEventProc"/> 中的挂钩函数的 DLL 的句柄。 如果挂钩函数不位于 DLL 中，或者指定了WINEVENT_OUTOFCONTEXT标志，则此参数为 <see langword="null"/>。</param>
         /// <param name="lpfnWinEventProc">指向事件挂钩函数的指针。</param>
-        /// <param name="idProcess">指定挂钩函数从中接收事件的进程的 ID。 指定零从当前桌面上的所有进程接收事件。</param>
-        /// <param name="idThread">指定挂钩函数从中接收事件的线程的 ID。 如果此参数为零，则挂钩函数与当前桌面上的所有现有线程相关联。</param>
-        /// <param name="dwFlags">标记值，用于指定要跳过的挂钩函数和事件的位置。</param>
-        /// <returns>
-        /// 如果成功，则返回一个 <see langword="nint"/> 值，该值标识此事件挂钩实例。 应用程序保存此返回值，以便将其与 UnhookWinEvent 函数一起使用。如果不成功，则返回零。
-        /// </returns>
+        /// <param name="idProcess">       指定挂钩函数从中接收事件的进程的 ID。 指定零从当前桌面上的所有进程接收事件。</param>
+        /// <param name="idThread">        指定挂钩函数从中接收事件的线程的 ID。 如果此参数为零，则挂钩函数与当前桌面上的所有现有线程相关联。</param>
+        /// <param name="dwFlags">         标记值，用于指定要跳过的挂钩函数和事件的位置。</param>
+        /// <returns>如果成功，则返回一个 <see langword="nint"/> 值，该值标识此事件挂钩实例。 应用程序保存此返回值，以便将其与 UnhookWinEvent 函数一起使用。如果不成功，则返回零。</returns>
         [LibraryImport("user32.dll", SetLastError = true)]
         public static partial nint SetWinEventHook(
             uint eventMin, uint eventMax,
@@ -252,55 +229,17 @@ namespace Zscno.Trackora
         /// <summary>
         /// 设置指定窗口的显示状态。
         /// </summary>
-        /// <param name="hWnd">窗口的句柄。</param>
-        /// <param name="nCmdShow">
-        /// 控制窗口的显示方式。 如果启动应用程序的程序提供 <c>STARTUPINFO</c> 结构，则应用程序首次调用函数时将忽略此参数。 否则，首次调用函数时，该值应为
-        /// <c>WinMain</c> 函数在其 <c>nCmdShow</c> 参数中获取的值。
-        /// </param>
+        /// <param name="hWnd">    窗口的句柄。</param>
+        /// <param name="nCmdShow">控制窗口的显示方式。 如果启动应用程序的程序提供 <c>STARTUPINFO</c> 结构，则应用程序首次调用函数时将忽略此参数。 否则，首次调用函数时，该值应为 <c>WinMain</c> 函数在其 <c>nCmdShow</c> 参数中获取的值。</param>
         /// <returns>如果窗口以前可见，则返回值为非零值。 如果以前隐藏窗口，则返回值为零。</returns>
         [LibraryImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool ShowWindow(nint hWnd, int nCmdShow);
 
         /// <summary>
-        /// 尝试通过窗口句柄获取对应的 <see cref="Process"/> 组件。
+        /// 删除先前对 <see cref="SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 的调用所创建的事件挂钩函数。
         /// </summary>
-        /// <remarks>当方法返回 <see langword="true"/> 时，<paramref name="process"/> 一定不为 <see langword="null"/>。</remarks>
-        /// <param name="windowHandle">窗口句柄。</param>
-        /// <param name="process">获取到的 <see cref="Process"/> 组件。如果获取失败，则为 <see langword="null"/>。</param>
-        /// <returns>如果获取成功，则返回 <see langword="true"/>；否则，返回 <see langword="false"/>。</returns>
-        public static bool TryGetProcessByWindowHandle(nint windowHandle, out Process? process)
-        {
-            _ = GetWindowThreadProcessId(windowHandle, out uint processId);
-            if (processId == 0u)
-            {
-                LogSystem.WriteLog(LogLevel.Error,
-                    $"获取窗口 [Handle={windowHandle}] 的进程 Id [{processId}] 失败，错误代码：{Marshal.GetLastWin32Error()}。");
-                process = null;
-                return false;
-            }
-
-            (bool isSuccessful, process) = new SafeCaller()
-            {
-                LogMessage = $"获取进程 [Id={processId}] 的 Process 组件失败。",
-                ShouldRemind = false,
-            }.CallMethodWithReturnR(() => Process.GetProcessById((int)processId));
-            if (!isSuccessful)
-            {
-                process = null;
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// 删除先前对 <see cref="SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint,
-        /// uint)"/> 的调用所创建的事件挂钩函数。
-        /// </summary>
-        /// <param name="hWinEventHook">
-        /// 对 <see cref="SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 的上一次调用中返回的事件挂钩的句柄。
-        /// </param>
+        /// <param name="hWinEventHook">对 <see cref="SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 的上一次调用中返回的事件挂钩的句柄。</param>
         /// <returns>如果成功，则返回 <see langword="true"/>;否则，返回 <see langword="false"/>。</returns>
         [LibraryImport("user32.dll", SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -327,14 +266,9 @@ namespace Zscno.Trackora
         /// <summary>
         /// 获取指定进程的应用程序用户模型 ID 。
         /// </summary>
-        /// <param name="hProcess">
-        /// 进程的句柄。 此句柄必须具有 <see cref="PROCESS_QUERY_LIMITED_INFORMATION"/> 访问权限。
-        /// </param>
-        /// <param name="applicationUserModelIdLength">
-        /// 输入时， <paramref name="applicationUserModelId"/> 缓冲区的大小（以宽字符为单位）。成功时，使用的缓冲区大小，包括 <see
-        /// langword="null"/> 终止符。
-        /// </param>
-        /// <param name="applicationUserModelId">指向接收应用程序用户模型 ID 的缓冲区的指针。</param>
+        /// <param name="hProcess">                    进程的句柄。 此句柄必须具有 <see cref="PROCESS_QUERY_LIMITED_INFORMATION"/> 访问权限。</param>
+        /// <param name="applicationUserModelIdLength">输入时， <paramref name="applicationUserModelId"/> 缓冲区的大小（以宽字符为单位）。成功时，使用的缓冲区大小，包括 <see langword="null"/> 终止符。</param>
+        /// <param name="applicationUserModelId">      指向接收应用程序用户模型 ID 的缓冲区的指针。</param>
         /// <returns>如果该函数成功，则返回 <see cref="ERROR_SUCCESS"/>。否则，该函数将返回错误代码。</returns>
         [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
         internal static extern long GetApplicationUserModelId(nint hProcess,
@@ -344,11 +278,8 @@ namespace Zscno.Trackora
         /// <summary>
         /// 从与指定窗口关联的 <c>WNDCLASSEX</c> 结构中检索指定的值。
         /// </summary>
-        /// <param name="hWnd">窗口的句柄，间接地是窗口所属的类。</param>
-        /// <param name="nIndex">
-        /// 要检索的值。若要从额外的类内存中检索值，请指定要检索的值的正、从零开始的字节偏移量。有效值为零到额外类内存的字节数（减 8）;例如，如果指定了 24
-        /// 个或更多字节的额外类内存，则值 16 将是第三个整数的索引。
-        /// </param>
+        /// <param name="hWnd">  窗口的句柄，间接地是窗口所属的类。</param>
+        /// <param name="nIndex">要检索的值。若要从额外的类内存中检索值，请指定要检索的值的正、从零开始的字节偏移量。有效值为零到额外类内存的字节数（减 8）;例如，如果指定了 24 个或更多字节的额外类内存，则值 16 将是第三个整数的索引。</param>
         /// <returns></returns>
         [LibraryImport("user32.dll", EntryPoint = "GetClassLongPtrW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
         internal static partial nint GetClassLongPtr(nint hWnd, int nIndex);
@@ -357,8 +288,8 @@ namespace Zscno.Trackora
         /// 打开现有的本地进程对象。
         /// </summary>
         /// <param name="dwDesiredAccess">对进程对象的访问。针对进程的安全描述符检查此访问权限。此参数可以是一个或多个进程访问权限。</param>
-        /// <param name="bInheritHandle">如果此值为 <see langword="true"/>，则此进程创建的进程将继承句柄。否则，进程不会继承此句柄。</param>
-        /// <param name="dwProcessId">要打开的本地进程的标识符。</param>
+        /// <param name="bInheritHandle"> 如果此值为 <see langword="true"/>，则此进程创建的进程将继承句柄。否则，进程不会继承此句柄。</param>
+        /// <param name="dwProcessId">    要打开的本地进程的标识符。</param>
         /// <returns>如果函数成功，则返回值是指定进程的打开句柄。如果函数失败，则返回值为 <see langword="null"/>。</returns>
         [LibraryImport("kernel32.dll", SetLastError = true)]
         internal static partial nint OpenProcess(uint dwDesiredAccess,
@@ -368,12 +299,12 @@ namespace Zscno.Trackora
         /// <summary>
         /// 将指定的消息发送到一个或多个窗口。该方法调用指定窗口的窗口过程，在窗口过程处理消息之前不会返回。
         /// </summary>
-        /// <param name="hWnd">
+        /// <param name="hWnd">  
         /// 窗口的句柄，其窗口过程将接收消息。
         /// <para>如果此参数为 <c>HWND_BROADCAST(0xffff)</c>，则消息将发送到系统中的所有顶级窗口，包括禁用或不可见的无所有者窗口、重叠窗口和弹出窗口;但消息不会发送到子窗口。</para>
         /// 消息发送受 UIPI 约束。进程线程只能将消息发送到完整性级别较低或相等进程的线程的消息队列。
         /// </param>
-        /// <param name="msg">要发送的消息。</param>
+        /// <param name="msg">   要发送的消息。</param>
         /// <param name="wParam">其他的消息特定信息。</param>
         /// <param name="lParam">其他的消息特定信息。</param>
         /// <returns>返回值指定消息处理的结果；这取决于发送的消息。</returns>

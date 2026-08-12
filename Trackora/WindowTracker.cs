@@ -129,7 +129,7 @@ namespace Zscno.Trackora
                 return null;
             }
 
-            if (!NativeApi.TryGetProcessByWindowHandle(childHandle, out Process? uwpProcess))
+            if (!TryGetProcessByWindowHandle(childHandle, out Process? uwpProcess))
             {
                 return null;
             }
@@ -177,6 +177,32 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
+        /// 尝试通过窗口句柄获取对应的 <see cref="Process"/> 组件。
+        /// </summary>
+        /// <param name="windowHandle">窗口的句柄。</param>
+        /// <param name="process">     获取到的 <see cref="Process"/> 组件。</param>
+        /// <returns>指示是否获取成功。</returns>
+        private static bool TryGetProcessByWindowHandle(nint windowHandle, [MaybeNullWhen(false)] out Process process)
+        {
+            _ = NativeApi.GetWindowThreadProcessId(windowHandle, out uint processId);
+            if (processId == 0u)
+            {
+                WriteLog(LogLevel.Error,
+                    $"获取窗口 [Handle={windowHandle}] 的进程 Id 失败" +
+                    $"（{Marshal.GetLastPInvokeError()}）：{Marshal.GetLastPInvokeErrorMessage()}。");
+                process = null;
+                return false;
+            }
+
+            (bool isSuccessful, process) = new SafeCaller()
+            {
+                LogMessage = $"获取进程 [Id={processId}] 的 Process 组件失败。",
+                ShouldRemind = false,
+            }.CallMethodWithReturnR(() => Process.GetProcessById((int)processId));
+            return process is not null;
+        }
+
+        /// <summary>
         /// 尝试获取需要记录的进程。
         /// </summary>
         /// <param name="windowHandle">进程相关的窗口句柄。</param>
@@ -186,7 +212,7 @@ namespace Zscno.Trackora
         {
             process = null;
 
-            if (!NativeApi.TryGetProcessByWindowHandle(windowHandle, out Process? uncertainProcess))
+            if (!TryGetProcessByWindowHandle(windowHandle, out Process? uncertainProcess))
             {
                 return false;
             }
