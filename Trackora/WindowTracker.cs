@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using static Zscno.Trackora.App;
@@ -14,9 +13,9 @@ namespace Zscno.Trackora
     internal class WindowTracker
     {
         /// <summary>
-        /// 用于发送连续使用时间的计时器。
+        /// 用于发送总使用时间的计时器。
         /// </summary>
-        private readonly Timer _continuousReminderTimer;
+        private readonly Timer _dailyTimer;
 
         /// <summary>
         /// 保存委托实例，防止被GC回收。
@@ -36,27 +35,27 @@ namespace Zscno.Trackora
         /// <summary>
         /// 用于保存使用记录的计时器。
         /// </summary>
-        private readonly Timer _savingRecordTimer;
+        private readonly Timer _saveRecordTimer;
 
         /// <summary>
-        /// 用于发送总使用时间的计时器。
+        /// 用于发送连续使用时间的计时器。
         /// </summary>
-        private readonly Timer _totalReminderTimer;
+        private readonly Timer _sessionTimer;
 
         /// <summary>
-        /// 连续使用时长。
+        /// 上次发生前台窗口改变事件的时间（单位为毫秒）。
         /// </summary>
-        private uint _continuousUsageTime;
-
-        /// <summary>
-        /// 上次前台窗口改变的时间（单位为毫秒）。
-        /// </summary>
-        private uint _lastChangedTime;
+        private uint _lastEventTime;
 
         /// <summary>
         /// 上一个前台进程名称。
         /// </summary>
         private string? _lastProcessName;
+
+        /// <summary>
+        /// 连续使用时长。
+        /// </summary>
+        private uint _sessionDuration;
 
         /// <summary>
         /// 结束使用的时间。
@@ -81,14 +80,16 @@ namespace Zscno.Trackora
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
                 nint.Zero, _delegate, 0, 0,
                 NativeApi.WINEVENT_OUTOFCONTEXT);
-            _totalReminderTimer = new Timer(SendDueTotalReminder, null, Timeout.Infinite, Timeout.Infinite);
-            _continuousReminderTimer = new Timer(SendDueContinuousReminder, null, Timeout.Infinite, Timeout.Infinite);
-            _savingRecordTimer = new Timer(SaveLatestUsageRecord, null, Timeout.Infinite, Timeout.Infinite);
+            _sessionTimer = new Timer(SendDueContinuousReminder, null, Timeout.Infinite, Timeout.Infinite);
+            _saveRecordTimer = new Timer(SaveLatestUsageRecord, null, Timeout.Infinite, Timeout.Infinite);
 
-            if (UsageRecordManager.Record.TotalUsageTime >= Settings.TotalThreshold &&
-                !IsTotalUsageReminderShown)
+            if (UsageRecordManager.Record.TotalUsageTime >= Settings.TotalThreshold && !IsTotalUsageReminderShown)
             {
-                SendDueTotalReminder(null);
+                _dailyTimer = new Timer(SendDueTotalReminder, null, 0, Timeout.Infinite);
+            }
+            else
+            {
+                _dailyTimer = new Timer(SendDueTotalReminder, null, Timeout.Infinite, Timeout.Infinite);
             }
         }
 
@@ -106,76 +107,58 @@ namespace Zscno.Trackora
             {
                 WriteLog(LogLevel.Error, $"事件挂钩函数卸载失败，错误代码：{Marshal.GetLastWin32Error()}。");
             }
-            _totalReminderTimer.Dispose();
-            _continuousReminderTimer.Dispose();
-            _savingRecordTimer.Dispose();
+            _dailyTimer.Dispose();
+            _sessionTimer.Dispose();
+            _saveRecordTimer.Dispose();
         }
 
         /// <summary>
-        /// 排除任务栏和桌面。
+        /// 获取 <c>ApplicationFrameHost</c> 下的 UWP 进程。
         /// </summary>
-        /// <param name="handle">进程句柄。</param>
-        /// <returns>指示是否继续记录进程。</returns>
-        private static bool CheckExplorerProcess(nint handle)
+        /// <remarks></remarks>
+        /// <param name="windowHandle"><c>ApplicationFrameHost</c> 窗口的句柄。</param>
+        /// <returns>获取到的 UWP 进程，若获取失败则返回 <see langword="null"/>。</returns>
+        private static Process? GetUwpProcessOrNull(nint windowHandle)
         {
-            if (!TryGetChildWindowHandle(handle, out nint childHandle,
-                    "获取 explorer 进程的子窗口句柄失败。") ||
-                !TryGetWindowClassName(childHandle, out string className,
-                    $"获取 explorer 子进程 [Handle={childHandle}] 的类名失败。"))
+            if (!NativeApi.TryGetChildWindowHandle(
+                windowHandle, out nint childHandle, "Windows.UI.Core.CoreWindow"))
             {
+                WriteLog(LogLevel.Warning,
+                    $"获取 ApplicationFrameHost 窗口 [Handle={windowHandle}] 的子窗口句柄失败" +
+                    $"（{Marshal.GetLastPInvokeError()}）：{Marshal.GetLastPInvokeErrorMessage()}");
+                return null;
+            }
+
+            if (!NativeApi.TryGetProcessByWindowHandle(childHandle, out Process? uwpProcess))
+            {
+                return null;
+            }
+
+            return uwpProcess;
+        }
+
+        /// <summary>
+        /// 确定指定的 <c>explorer</c> 窗口是否为任务栏和桌面。
+        /// </summary>
+        /// <param name="windowHandle"><c>explorer</c> 窗口的句柄。</param>
+        /// <returns>指示窗口是否是任务栏或桌面。</returns>
+        private static bool IsDesktopOrTaskbar(nint windowHandle)
+        {
+            if (!NativeApi.TryGetWindowClassName(windowHandle, out string? className))
+            {
+                WriteLog(LogLevel.Warning,
+                    $"获取 explorer 窗口 [Handle={windowHandle}] 的类名失败" +
+                    $"（{Marshal.GetLastPInvokeError()}）：{Marshal.GetLastPInvokeErrorMessage()}");
                 return false;
             }
+
+            WriteLog(LogLevel.Info, $"explorer 窗口的类名为{className}。");
             if (className is "Windows.UI.Core.CoreWindow" or "SHELLDLL_DefView")
-            {
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// 排除任务栏和桌面，并获取真正的 UWP 进程。
-        /// </summary>
-        /// <remarks>
-        /// 当返回的 <see langword="bool"/> 值为 <see langword="false"/> 时会调用 <see cref="NoProcessNow"/> 方法。
-        /// </remarks>
-        /// <param name="name">进程名称。</param>
-        /// <param name="handle">进程句柄。</param>
-        /// <param name="uwpProcess">真正的 UWP 进程。</param>
-        /// <returns>指示是否继续记录进程。</returns>
-        private static bool GetRealProcess(string name, nint handle, out Process? uwpProcess)
-        {
-            switch (name)
-            {
-                case "explorer":
-                    uwpProcess = null;
-                    return CheckExplorerProcess(handle);
-
-                case "ApplicationFrameHost":
-                    return GetRealUwpProcess(handle, out uwpProcess);
-
-                default:
-                    uwpProcess = null;
-                    return true;
-            }
-        }
-
-        /// <summary>
-        /// 获取真正的 UWP 进程。
-        /// </summary>
-        /// <param name="handle">进程句柄。</param>
-        /// <param name="uwpProcess">真正的 UWP 进程。</param>
-        /// <returns>指示是否继续记录进程。</returns>
-        private static bool GetRealUwpProcess(nint handle, out Process? uwpProcess)
-        {
-            if (TryGetChildWindowHandle(handle, out nint childHandle,
-                    "获取 UWP 进程子窗口的句柄失败。", "Windows.UI.Core.CoreWindow") &&
-                NativeApi.TryGetProcessByWindowHandle(childHandle, out uwpProcess))
             {
                 return true;
             }
             else
             {
-                uwpProcess = null;
                 return false;
             }
         }
@@ -194,59 +177,63 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 尝试获取句柄为 <paramref name="parentHandle"/> 的进程的子窗口句柄。
+        /// 尝试获取需要记录的进程。
         /// </summary>
-        /// <param name="parentHandle">进程句柄。</param>
-        /// <param name="childHandle">子窗口句柄。</param>
-        /// <param name="className">指定子窗口的类名。</param>
-        /// <param name="logMessage">如果返回值为 <see langword="false"/> ，则将此和错误写入日志。</param>
-        /// <returns>指示 <paramref name="childHandle"/> 是否为 <see cref="nint.Zero"/> 。</returns>
-        private static bool TryGetChildWindowHandle(nint parentHandle, out nint childHandle,
-            string logMessage, string? className = null)
+        /// <param name="windowHandle">进程相关的窗口句柄。</param>
+        /// <param name="process">     获取到的进程。</param>
+        /// <returns>指示是否获取成功。</returns>
+        private static bool TryGetValidProcess(nint windowHandle, [MaybeNullWhen(false)] out Process process)
         {
-            childHandle = NativeApi.FindWindowEx(parentHandle, nint.Zero, className, null);
-            if (childHandle == nint.Zero)
+            process = null;
+
+            if (!NativeApi.TryGetProcessByWindowHandle(windowHandle, out Process? uncertainProcess))
             {
-                WriteLog(LogLevel.Error, $"{logMessage}错误代码：{Marshal.GetLastWin32Error()}。");
                 return false;
             }
 
-            return true;
-        }
+            string uncertainName = uncertainProcess.ProcessName;
 
-        /// <summary>
-        /// 尝试获取窗口的类名。
-        /// </summary>
-        /// <param name="handle">窗口的句柄。</param>
-        /// <param name="className">窗口的类名。</param>
-        /// <param name="logMessage">如果返回值为 <see langword="false"/> ，则将此和错误写入日志。</param>
-        /// <returns>指示是否成功获取窗口类名。</returns>
-        private static bool TryGetWindowClassName(nint handle, out string className, string logMessage)
-        {
-            StringBuilder classNameBuilder = new(256);
-            int classNameLength = NativeApi.GetClassName(handle, classNameBuilder, classNameBuilder.Capacity);
-            if (classNameLength == 0)
+            if (uncertainName == "explorer" && IsDesktopOrTaskbar(windowHandle))
             {
-                WriteLog(LogLevel.Error, $"{logMessage}错误代码：{Marshal.GetLastWin32Error()}。");
-                className = string.Empty;
                 return false;
             }
 
-            className = classNameBuilder.ToString();
+            if (uncertainName == "ApplicationFrameHost")
+            {
+                Process? uwpProcess = GetUwpProcessOrNull(windowHandle);
+                if (uwpProcess is null)
+                {
+                    process = uncertainProcess;
+                }
+                else
+                {
+                    process = uwpProcess;
+                    uncertainProcess.Close();
+                }
+            }
+            else
+            {
+                process = uncertainProcess;
+            }
+
+            if (ProcessFilter.IsIgnoredProcess(process.ProcessName))
+            {
+                process.Close();
+                process = null;
+                return false;
+            }
+
             return true;
         }
 
         /// <summary>
         /// 应用程序定义的挂钩函数，系统调用该函数以响应辅助对象生成的事件。挂钩函数根据需要处理事件通知。
         /// </summary>
-        /// <param name="hWinEventHook">
-        /// 事件挂钩函数的句柄。 此值在安装挂钩函数时由 <see cref="NativeApi.SetWinEventHook(uint, uint, nint,
-        /// WinEventDelegate, uint, uint, uint)"/> 返回，并且特定于挂钩函数的每个实例。
-        /// </param>
-        /// <param name="eventType">指定发生的事件，在此处为 <see cref="NativeApi.EVENT_SYSTEM_FOREGROUND"/>。</param>
-        /// <param name="hwnd">生成事件的窗口的句柄，在此处为前台窗口的句柄。</param>
-        /// <param name="idObject">标识与事件关联的对象，在此处为 <c>OBJID_WINDOW</c>，指窗口本身，而不是子对象。</param>
-        /// <param name="idChild">标识事件是由对象还是对象的子元素触发的事件，在此处为 <c>CHILDID_SELF</c>，指由对象触发。</param>
+        /// <param name="hWinEventHook">事件挂钩函数的句柄。 此值在安装挂钩函数时由 <see cref="NativeApi.SetWinEventHook(uint, uint, nint, WinEventDelegate, uint, uint, uint)"/> 返回，并且特定于挂钩函数的每个实例。</param>
+        /// <param name="eventType">    指定发生的事件，在此处为 <see cref="NativeApi.EVENT_SYSTEM_FOREGROUND"/>。</param>
+        /// <param name="hwnd">         生成事件的窗口的句柄，在此处为前台窗口的句柄。</param>
+        /// <param name="idObject">     标识与事件关联的对象，在此处为 <c>OBJID_WINDOW</c>，指窗口本身，而不是子对象。</param>
+        /// <param name="idChild">      标识事件是由对象还是对象的子元素触发的事件，在此处为 <c>CHILDID_SELF</c>，指由对象触发。</param>
         /// <param name="dwEventThread"></param>
         /// <param name="dwmsEventTime">指定生成事件的时间（以毫秒为单位）。</param>
         private void OnForegroundWindowChanged(
@@ -261,15 +248,17 @@ namespace Zscno.Trackora
             //Stopwatch stopwatch = new();
             //stopwatch.Start();
 
+            uint eventIntervalTime = dwmsEventTime - _lastEventTime;
+
             bool isSuccessful = false;
             if (_lastProcessName != null)
             {
                 isSuccessful = new SafeCaller()
                 {
-                    LogMessage = $"在内存中记录进程 {_lastProcessName} 的使用时长失败。",
+                    LogMessage = $"更新使用时间失败，传入进程为 {_lastProcessName}。",
                     RemindingMsgResKey = "ECanNotRecordTime",
-                }.CallMethodR(() => RecordUsageTimeIntoMemory(_lastProcessName, dwmsEventTime));
-                if (!_savingRecordTimer.Change(2000, Timeout.Infinite))
+                }.CallMethodR(() => UpdateUsageTime(_lastProcessName, eventIntervalTime));
+                if (!_saveRecordTimer.Change(2000, Timeout.Infinite))
                 {
                     WriteLog(LogLevel.Error, "启动计时器失败，可能无法及时保存使用记录。");
                     // TODO: 使用事件处理失败情况。
@@ -277,85 +266,59 @@ namespace Zscno.Trackora
                 //WriteLog(LogLevel.Debug, $"当前总使用时长：{TotalUsageTime}，连续使用时长：{_continuousUsageTime}。");
             }
 
-            if (!NativeApi.TryGetProcessByWindowHandle(hwnd, out Process? process) ||
-                ProcessFilter.IsIgnoredProcess(process!.ProcessName) ||
-                !GetRealProcess(process.ProcessName, hwnd, out Process? uwpProcess))
-            {
-                if (!_totalReminderTimer.Change(Timeout.Infinite, Timeout.Infinite) ||
-                    !_continuousReminderTimer.Change(Timeout.Infinite, Timeout.Infinite))
-                {
-                    WriteLog(LogLevel.Error, "停止计时器失败，可能无法发送提醒。");
-                    // TODO: 使用事件处理失败情况。
-                }
-                if (_lastProcessName == null &&
-                    dwmsEventTime - _lastChangedTime >= Settings.IdleThreshold)
-                {
-                    _continuousUsageTime = 0;
-                }
-                else
-                {
-                    _lastProcessName = null;
-                    _lastChangedTime = dwmsEventTime;
-                }
-
-                //stopwatch.Stop();
-                WriteLog(LogLevel.Debug, $"上次记录：{_lastProcessName ?? "null"}，本次记录：null。");
-                //，用时：{stopwatch.Elapsed}
-            }
-            else
+            if (TryGetValidProcess(hwnd, out Process? process))
             {
                 if (isSuccessful)
                 {
-                    StartReminderTimers();
+                    StartSessionTimer();
+                    StartDailyTimer();
                 }
 
-                Process recordedProcess = uwpProcess ?? process;
-                string processName = recordedProcess.ProcessName;
-
-                if (uwpProcess is not null)
-                {
-                    process.Close();
-                }
+                string processName = process.ProcessName;
 
                 _ = Task.Run(() => _ = new SafeCaller()
                 {
                     LogMessage = $"保存 {processName} 的进程信息失败。",
                     ShouldRemind = false,
-                }.CallMethodR(() => SaveProcessInfo(hwnd, recordedProcess)));
+                }.CallMethodR(() => SaveProcessInfo(hwnd, process)));
 
                 //stopwatch.Stop();
                 WriteLog(LogLevel.Debug, $"上次记录：{_lastProcessName ?? "null"}，" +
                     $"本次记录：{processName}。");/*，用时：{stopwatch.Elapsed}*/
 
                 _lastProcessName = processName;
-                _lastChangedTime = dwmsEventTime;
+                _lastEventTime = dwmsEventTime;
             }
-        }
-
-        /// <summary>
-        /// 在内存中记录进程 <paramref name="name"/> 的单次使用时长、总使用时长和连续使用时长。
-        /// </summary>
-        /// <param name="name">要记录的进程名称。</param>
-        /// <param name="currentChangedTime">本次前台窗口改变的时间（单位为毫秒）。</param>
-        private void RecordUsageTimeIntoMemory(string name, uint currentChangedTime)
-        {
-            uint currentUsageTime = currentChangedTime - _lastChangedTime;
-            UsageRecordManager.Record.TotalUsageTime += currentUsageTime;
-            _continuousUsageTime += currentUsageTime;
-            if (!ProcessFilter.IsTimeOnlyProcess(name))
+            else
             {
-                uint appUsageTime =
-                    UsageRecordManager.Record.ProcessUsageRecords.TryGetValue(name, out uint pastUsageTime)
-                    ? pastUsageTime + currentUsageTime
-                    : currentUsageTime;
-                UsageRecordManager.Record.ProcessUsageRecords[name] = appUsageTime;
+                if (!_dailyTimer.Change(Timeout.Infinite, Timeout.Infinite) ||
+                    !_sessionTimer.Change(Timeout.Infinite, Timeout.Infinite))
+                {
+                    WriteLog(LogLevel.Error, "停止计时器失败，可能无法发送提醒。");
+                    // TODO: 使用事件处理失败情况。
+                }
+
+                if (_lastProcessName == null &&
+                    eventIntervalTime >= Settings.IdleThreshold)
+                {
+                    _sessionDuration = 0;
+                }
+                else
+                {
+                    _lastProcessName = null;
+                    _lastEventTime = dwmsEventTime;
+                }
+
+                //stopwatch.Stop();
+                WriteLog(LogLevel.Debug, $"上次记录：{_lastProcessName ?? "null"}，本次记录：null。");
+                //，用时：{stopwatch.Elapsed}
             }
         }
 
         /// <summary>
         /// 保存最新的使用记录。
         /// </summary>
-        /// <remarks>该函数是 <see cref="_savingRecordTimer"/> 的回调函数。</remarks>
+        /// <remarks>该函数是 <see cref="_saveRecordTimer"/> 的回调函数。</remarks>
         /// <param name="state"></param>
         private void SaveLatestUsageRecord(object? state)
         {
@@ -370,7 +333,7 @@ namespace Zscno.Trackora
         /// 保存指定进程的信息。
         /// </summary>
         /// <param name="windowHandle">窗口句柄。</param>
-        /// <param name="process">进程的 <see cref="Process"/> 组件。</param>
+        /// <param name="process">     进程的 <see cref="Process"/> 组件。</param>
         private void SaveProcessInfo(nint windowHandle, Process process)
         {
             string processName = process.ProcessName;
@@ -401,18 +364,18 @@ namespace Zscno.Trackora
         /// <summary>
         /// 发送到期的连续使用时间提醒。
         /// </summary>
-        /// <remarks>该函数是 <see cref="_continuousReminderTimer"/> 的回调函数。</remarks>
+        /// <remarks>该函数是 <see cref="_sessionTimer"/> 的回调函数。</remarks>
         /// <param name="state"></param>
         private void SendDueContinuousReminder(object? state)
         {
             CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
-            _continuousUsageTime = 0;
+            _sessionDuration = 0;
         }
 
         /// <summary>
         /// 发送到期的总使用时间提醒。
         /// </summary>
-        /// <remarks>该函数是 <see cref="_totalReminderTimer"/> 的回调函数。</remarks>
+        /// <remarks>该函数是 <see cref="_dailyTimer"/> 的回调函数。</remarks>
         /// <param name="state"></param>
         private void SendDueTotalReminder(object? state)
         {
@@ -424,36 +387,62 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 启动发送提醒的计时器。
+        /// 启动总使用时间提醒计时器。
         /// </summary>
-        private void StartReminderTimers()
+        private void StartDailyTimer()
         {
-            uint continuousRemainingTime = _continuousUsageTime < Settings.SessionThreshold ?
-                Settings.SessionThreshold - _continuousUsageTime : 0;
-            if (_continuousReminderTimer.Change(continuousRemainingTime, Settings.SessionThreshold))
-            {
-                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d:f2} 秒后发送。");
-            }
-            else
-            {
-                WriteLog(LogLevel.Error, "启动连续使用时长提醒计时器失败，可能无法发送提醒。");
-                // TODO: 使用事件处理失败情况。
-            }
-
             if (IsTotalUsageReminderShown)
             {
                 return;
             }
+
             uint totalRemainingTime = UsageRecordManager.Record.TotalUsageTime < Settings.TotalThreshold ?
                 Settings.TotalThreshold - UsageRecordManager.Record.TotalUsageTime : 0;
-            if (_totalReminderTimer.Change(totalRemainingTime, Timeout.Infinite))
-            {
-                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d:f2} 秒后发送。");
-            }
-            else
+            if (!_dailyTimer.Change(totalRemainingTime, Timeout.Infinite))
             {
                 WriteLog(LogLevel.Error, "启动总使用时长提醒计时器失败，可能无法发送提醒。");
                 // TODO: 使用事件处理失败情况。
+            }
+            else
+            {
+                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d:f2} 秒后发送。");
+            }
+        }
+
+        /// <summary>
+        /// 启动连续使用时间提醒的计时器。
+        /// </summary>
+        private void StartSessionTimer()
+        {
+            uint continuousRemainingTime = _sessionDuration < Settings.SessionThreshold ?
+                Settings.SessionThreshold - _sessionDuration : 0;
+            if (!_sessionTimer.Change(continuousRemainingTime, Settings.SessionThreshold))
+            {
+                WriteLog(LogLevel.Error, "启动连续使用时长提醒计时器失败，可能无法发送提醒。");
+                // TODO: 使用事件处理失败情况。
+            }
+            else
+            {
+                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d:f2} 秒后发送。");
+            }
+        }
+
+        /// <summary>
+        /// 更新总使用时间、连续使用时间和进程的总使用记录。
+        /// </summary>
+        /// <param name="processName">     要记录的进程名称。</param>
+        /// <param name="processUsageTime">进程的使用时间。</param>
+        private void UpdateUsageTime(string processName, uint processUsageTime)
+        {
+            UsageRecordManager.Record.TotalUsageTime += processUsageTime;
+            _sessionDuration += processUsageTime;
+            if (!ProcessFilter.IsTimeOnlyProcess(processName))
+            {
+                uint appUsageTime =
+                    UsageRecordManager.Record.ProcessUsageRecords.TryGetValue(processName, out uint pastUsageTime)
+                    ? pastUsageTime + processUsageTime
+                    : processUsageTime;
+                UsageRecordManager.Record.ProcessUsageRecords[processName] = appUsageTime;
             }
         }
     }
