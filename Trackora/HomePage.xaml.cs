@@ -57,7 +57,7 @@ namespace Zscno.Trackora
 				string name =
 					ProcessInfoManager.ProcessInfoMap.TryGetValue( processUsageRecord.Key, out ProcessInfo? processInfo) ?
 					processInfo.DisplayName : processUsageRecord.Key;
-				string iconFileUri = ProcessInfoManager.GetProcessIconFileUri(processUsageRecord.Key);
+				string iconFileUri = ProcessInfoManager.GetProcessIconUri(processUsageRecord.Key);
 				processDisplayItems.Add(new ProcessDisplayItem(
                     iconFileUri,
                     name,

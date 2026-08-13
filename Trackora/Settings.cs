@@ -42,7 +42,6 @@ namespace Zscno.Trackora
                 {
                     return (int)value switch
                     {
-                        0 => ElementTheme.Default,
                         1 => ElementTheme.Light,
                         2 => ElementTheme.Dark,
                         _ => ElementTheme.Default,

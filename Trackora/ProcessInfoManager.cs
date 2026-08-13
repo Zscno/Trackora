@@ -57,28 +57,24 @@ namespace Zscno.Trackora
         /// <returns>图标的 URI。</returns>
         internal static string GetProcessIconUri(string processName)
         {
-            if (!ProcessInfoMap.ContainsKey(processName))
-            {
-                LogSystem.WriteLog(LogLevel.Debug, $"进程信息映射表中不存在 {processName} 的信息。");
-                return new Uri(_defaultIconPath).ToString();
-            }
-
             string iconFilePath = Path.Combine(_iconFolderPath, $"{processName}.png");
             if (File.Exists(iconFilePath))
             {
                 return new Uri(iconFilePath).ToString();
             }
-            else
+
+            if (!File.Exists(_defaultIconPath))
             {
-                return new Uri(_defaultIconPath).ToString();
+                SaveIconAsPng("Default", SystemIcons.GetStockIcon(StockIconId.Application));
             }
+            return new Uri(_defaultIconPath).ToString();
         }
 
         /// <summary>
         /// 获取进程信息。
         /// </summary>
-        /// <param name="windowHandle">窗口句柄。</param>
-        /// <param name="process">进程的 <see cref="Process"/> 组件。</param>
+        /// <param name="windowHandle">进程关联的窗口句柄。</param>
+        /// <param name="process">     进程的 <see cref="Process"/> 组件。</param>
         /// <returns>获取到的进程信息。</returns>
         internal static ProcessInfo GetProcessInfo(nint windowHandle, Process process)
         {
@@ -137,14 +133,9 @@ namespace Zscno.Trackora
         /// </summary>
         internal static void Initialize()
         {
-            _ = Directory.CreateDirectory(_iconFolderPath);
             ProcessInfoMap = Json.ReadJsonFile(
                 _processInfoFilePath, SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo)
                 ?? new();
-            if (File.Exists(_defaultIconPath))
-            {
-                SaveIcon("Default", SystemIcons.GetStockIcon(StockIconId.Application));
-            }
         }
 
         /// <summary>
@@ -175,13 +166,12 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 获取图标路径。方法将优先选取 <c>targetsize</c> 图标，选取到的图标大小不会小于 <paramref name="size"/> 或 <paramref
-        /// name="scale"/> 指定的值。
+        /// 获取图标路径。方法将优先选取 <c>targetsize</c> 图标，选取到的图标大小不会小于 <paramref name="size"/> 或 <paramref name="scale"/> 指定的值。
         /// </summary>
         /// <param name="iconBaseUri">图标的基 URI。</param>
-        /// <param name="basePath"><paramref name="iconBaseUri"/> 的基路径。</param>
-        /// <param name="scale">指定最小的可选取缩放比例。</param>
-        /// <param name="size">指定最小的可选取图标大小。</param>
+        /// <param name="basePath">   <paramref name="iconBaseUri"/> 的基路径。</param>
+        /// <param name="scale">      指定最小的可选取缩放比例。</param>
+        /// <param name="size">       指定最小的可选取图标大小。</param>
         /// <returns>获取到的图标路径。</returns>
         private static string? GetIconPath(string iconBaseUri, string basePath, int scale, int size)
         {
@@ -267,9 +257,9 @@ namespace Zscno.Trackora
         /// <summary>
         /// 以从包名、文件描述、窗口标题到进程名称的回退链获取进程的显示名称。
         /// </summary>
-        /// <param name="package">进程的包信息。</param>
+        /// <param name="package">          进程的包信息。</param>
         /// <param name="processMainModule">进程主模块。</param>
-        /// <param name="process">进程的 <see cref="Process"/> 组件。</param>
+        /// <param name="process">          进程的 <see cref="Process"/> 组件。</param>
         /// <returns>进程的显示名称，若都获取失败，则返回 <see langword="null"/>。</returns>
         private static string GetProcessDisplayName(Package? package,
                                                      Lazy<ProcessModule?> processMainModule,
@@ -300,35 +290,37 @@ namespace Zscno.Trackora
         private static partial Regex GetTargetSizeRegex();
 
         /// <summary>
-        /// 保存图标。
+        /// 以指定文件名将指定图标保存到 <see cref="_iconFolderPath"/> 中的 Png 文件。
         /// </summary>
-        /// <param name="processName">图标关联的进程名称。</param>
-        /// <param name="icon">图标的 <see cref="Icon"/> 实例。</param>
-        private static void SaveIcon(string processName, Icon icon)
+        /// <param name="fileNameWithoutExtension">不带扩展名的文件名。</param>
+        /// <param name="icon">                    图标的 <see cref="Icon"/> 实例。</param>
+        private static void SaveIconAsPng(string fileNameWithoutExtension, Icon icon)
         {
-            string iconPath = Path.Combine(_iconFolderPath, $"{processName}.png");
+            _ = Directory.CreateDirectory(_iconFolderPath);
+            string iconPath = Path.Combine(_iconFolderPath, $"{fileNameWithoutExtension}.png");
             using FileStream iconStream = new(iconPath, FileMode.Create, FileAccess.Write, FileShare.Write);
             icon.ToBitmap().Save(iconStream, ImageFormat.Png);
             icon.Dispose();
         }
 
         /// <summary>
-        /// 保存图标。
+        /// 以指定文件名将指定图标保存到 <see cref="_iconFolderPath"/> 中的 Png 文件。
         /// </summary>
-        /// <param name="processName">图标关联的进程名称。</param>
-        /// <param name="iconPath">图标路径。</param>
-        private static void SaveIcon(string processName, string iconPath)
+        /// <param name="fileNameWithoutExtension">不带扩展名的文件名。</param>
+        /// <param name="sourceIconPath">          源图标路径。</param>
+        private static void SaveIconAsPng(string fileNameWithoutExtension, string sourceIconPath)
         {
-            string iconTargetPath = Path.Combine(_iconFolderPath, $"{processName}.png");
-            File.Copy(iconPath, iconTargetPath, true);
+            _ = Directory.CreateDirectory(_iconFolderPath);
+            string targetIconPath = Path.Combine(_iconFolderPath, $"{fileNameWithoutExtension}.png");
+            File.Copy(sourceIconPath, targetIconPath, true);
         }
 
         /// <summary>
         /// 以从包徽标、窗口图标到主模块文件图标的回退链获取进程图标并保存到 <see cref="_iconFolderPath"/>。
         /// </summary>
-        /// <param name="processName">进程名称。</param>
-        /// <param name="package">进程的包信息。</param>
-        /// <param name="windowHandle">窗口句柄。</param>
+        /// <param name="processName">      进程名称。</param>
+        /// <param name="package">          进程的包信息。</param>
+        /// <param name="windowHandle">     窗口句柄。</param>
         /// <param name="processMainModule">进程主模块。</param>
         private static void SaveProcessIcon(string processName,
                                             Package? package,
@@ -337,13 +329,13 @@ namespace Zscno.Trackora
         {
             if (package is not null && TryGetPackageIcon(package, out string? iconFilePath))
             {
-                SaveIcon(processName, iconFilePath);
+                SaveIconAsPng(processName, iconFilePath);
                 return;
             }
 
             if (TryGetWindowIcon(windowHandle, out Icon? icon))
             {
-                SaveIcon(processName, icon);
+                SaveIconAsPng(processName, icon);
                 return;
             }
 
@@ -359,7 +351,7 @@ namespace Zscno.Trackora
                 }
                 if (icon is not null)
                 {
-                    SaveIcon(processName, icon);
+                    SaveIconAsPng(processName, icon);
                     return;
                 }
             }
@@ -368,9 +360,9 @@ namespace Zscno.Trackora
         /// <summary>
         /// 尝试从字符串的指定位置提取数字。
         /// </summary>
-        /// <param name="str">要提取数字的字符串。</param>
+        /// <param name="str">       要提取数字的字符串。</param>
         /// <param name="startIndex">开始位置。</param>
-        /// <param name="number">提取到的数字。</param>
+        /// <param name="number">    提取到的数字。</param>
         /// <returns>指示是否成功提取数字。</returns>
         private static bool TryExtractNumber(string str, int startIndex, out int number)
         {
@@ -398,7 +390,7 @@ namespace Zscno.Trackora
         /// <summary>
         /// 尝试获取打包应用程序图标。
         /// </summary>
-        /// <param name="package">应用程序的包信息。</param>
+        /// <param name="package"> 应用程序的包信息。</param>
         /// <param name="iconPath">图标路径。</param>
         /// <returns>指示是否获取成功。</returns>
         private static bool TryGetPackageIcon(Package package, [MaybeNullWhen(false)] out string iconPath)
@@ -434,7 +426,7 @@ namespace Zscno.Trackora
         /// 尝试获取应用程序窗口的图标。
         /// </summary>
         /// <param name="windowHandle">窗口句柄。</param>
-        /// <param name="icon">图标的 <see cref="Icon"/> 实例。</param>
+        /// <param name="icon">        图标的 <see cref="Icon"/> 实例。</param>
         /// <returns>指示是否获取成功。</returns>
         private static bool TryGetWindowIcon(nint windowHandle, [MaybeNullWhen(false)] out Icon icon)
         {

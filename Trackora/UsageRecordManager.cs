@@ -45,6 +45,7 @@ namespace Zscno.Trackora
         /// </summary>
         internal static string SaveRecord()
         {
+            _ = Directory.CreateDirectory(_recordFolderPath);
             return Json.WriteJsonFile(_recordFilePath, Record, SourceGenerationContext.Default.UsageRecord);
         }
     }
