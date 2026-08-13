@@ -62,16 +62,16 @@ namespace Zscno.Trackora
         /// 获取或设置一个值，当总使用时间达到此值时将发送通知。
         /// </summary>
         /// <remarks>该属性的默认值为 2 小时，以毫秒为单位。</remarks>
-        internal static uint TotalThreshold
+        internal static uint DailyThreshold
         {
             get
             {
-                return _localSettings.Values.TryGetValue("TotalThreshold", out object? value) ?
+                return _localSettings.Values.TryGetValue("DailyThreshold", out object? value) ?
                     (uint)value : (uint)TimeSpan.FromHours(2d).TotalMilliseconds;
             }
             set
             {
-                _localSettings.Values["TotalThreshold"] = value;
+                _localSettings.Values["DailyThreshold"] = value;
             }
         }
 

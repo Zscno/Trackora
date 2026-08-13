@@ -18,6 +18,6 @@ namespace Zscno.Trackora
         /// 总使用时间，以毫秒为单位。
         /// </summary>
         [JsonInclude]
-        internal uint TotalUsageTime { get; set; }
+        internal uint DailyDuration { get; set; }
     }
 }

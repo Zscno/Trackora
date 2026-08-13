@@ -70,7 +70,7 @@ namespace Zscno.Trackora
         /// <summary>
         /// 指示总使用时长提醒是否已经显示。
         /// </summary>
-        public static bool IsTotalUsageReminderShown { get; set; }
+        public static bool IsDailyReminderShown { get; set; }
 
         public WindowTracker()
         {
@@ -83,7 +83,7 @@ namespace Zscno.Trackora
             _sessionTimer = new Timer(SendDueSessionReminder, null, Timeout.Infinite, Timeout.Infinite);
             _saveRecordTimer = new Timer(SaveLatestUsageRecord, null, Timeout.Infinite, Timeout.Infinite);
 
-            if (UsageRecordManager.Record.TotalUsageTime >= Settings.TotalThreshold && !IsTotalUsageReminderShown)
+            if (UsageRecordManager.Record.DailyDuration >= Settings.DailyThreshold && !IsDailyReminderShown)
             {
                 _dailyTimer = new Timer(SendDueDailyReminder, null, 0, Timeout.Infinite);
             }
@@ -411,16 +411,16 @@ namespace Zscno.Trackora
         /// <param name="state"></param>
         private void SendDueDailyReminder(object? state)
         {
-            if (!IsTotalUsageReminderShown)
+            if (!IsDailyReminderShown)
             {
-            ReminderManager.SendNotification(
-                Loader.GetString("UsageTimeReminderTitle"),
-                Loader.GetString("TotalReminderText1") + 
-                Localization.ToLocalizedTimeString(UsageRecordManager.Record.TotalUsageTime) + 
-                Loader.GetString("TotalReminderText2"),
-                Settings.IdleThreshold,
-                false);
-                IsTotalUsageReminderShown = true;
+                ReminderManager.SendNotification(
+                    Loader.GetString("UsageTimeReminderTitle"),
+                    Loader.GetString("TotalReminderText1") +
+                    Localization.ToLocalizedTimeString(UsageRecordManager.Record.DailyDuration) +
+                    Loader.GetString("TotalReminderText2"),
+                    Settings.IdleThreshold,
+                    false);
+                IsDailyReminderShown = true;
             }
         }
 
@@ -429,21 +429,21 @@ namespace Zscno.Trackora
         /// </summary>
         private void StartDailyTimer()
         {
-            if (IsTotalUsageReminderShown)
+            if (IsDailyReminderShown)
             {
                 return;
             }
 
-            uint totalRemainingTime = UsageRecordManager.Record.TotalUsageTime < Settings.TotalThreshold ?
-                Settings.TotalThreshold - UsageRecordManager.Record.TotalUsageTime : 0;
-            if (!_dailyTimer.Change(totalRemainingTime, Timeout.Infinite))
+            uint dailyDueTime = UsageRecordManager.Record.DailyDuration < Settings.DailyThreshold ?
+                Settings.DailyThreshold - UsageRecordManager.Record.DailyDuration : 0;
+            if (!_dailyTimer.Change(dailyDueTime, Timeout.Infinite))
             {
                 WriteLog(LogLevel.Error, "启动总使用时长提醒计时器失败，可能无法发送提醒。");
                 // TODO: 使用事件处理失败情况。
             }
             else
             {
-                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {totalRemainingTime / 1000d:f2} 秒后发送。");
+                WriteLog(LogLevel.Debug, $"总使用时长提醒将在 {dailyDueTime / 1000d:f2} 秒后发送。");
             }
         }
 
@@ -452,16 +452,16 @@ namespace Zscno.Trackora
         /// </summary>
         private void StartSessionTimer()
         {
-            uint continuousRemainingTime = _sessionDuration < Settings.SessionThreshold ?
+            uint sessionDueTime = _sessionDuration < Settings.SessionThreshold ?
                 Settings.SessionThreshold - _sessionDuration : 0;
-            if (!_sessionTimer.Change(continuousRemainingTime, Settings.SessionThreshold))
+            if (!_sessionTimer.Change(sessionDueTime, Settings.SessionThreshold))
             {
                 WriteLog(LogLevel.Error, "启动连续使用时长提醒计时器失败，可能无法发送提醒。");
                 // TODO: 使用事件处理失败情况。
             }
             else
             {
-                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {continuousRemainingTime / 1000d:f2} 秒后发送。");
+                WriteLog(LogLevel.Debug, $"连续使用时长提醒将在 {sessionDueTime / 1000d:f2} 秒后发送。");
             }
         }
 
@@ -472,7 +472,7 @@ namespace Zscno.Trackora
         /// <param name="processUsageTime">进程的使用时间。</param>
         private void UpdateUsageTime(string processName, uint processUsageTime)
         {
-            UsageRecordManager.Record.TotalUsageTime += processUsageTime;
+            UsageRecordManager.Record.DailyDuration += processUsageTime;
             _sessionDuration += processUsageTime;
             if (!ProcessFilter.IsTimeOnlyProcess(processName))
             {

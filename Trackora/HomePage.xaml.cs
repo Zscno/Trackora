@@ -34,7 +34,7 @@ namespace Zscno.Trackora
                 ? null
                 : WindowTracker.EndUsingTime;
             TimePickReminder.Text = string.Empty;
-            TotalUsageTime.Text = Localization.ToLocalizedTimeString(UsageRecordManager.Record.TotalUsageTime);
+            TotalUsageTime.Text = Localization.ToLocalizedTimeString(UsageRecordManager.Record.DailyDuration);
             if (!_isFirstLoading)
             {
                 All.Content = Loader.GetString("All/Content");
@@ -109,7 +109,7 @@ namespace Zscno.Trackora
 		{
 			_isFirstLoading = true;
 			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
-			Total.Time = TimeSpan.FromMilliseconds(Settings.TotalThreshold);
+			Total.Time = TimeSpan.FromMilliseconds(Settings.DailyThreshold);
 			Continuous.Time = TimeSpan.FromMilliseconds(Settings.SessionThreshold);
 			ResetContinuous.Time = TimeSpan.FromMilliseconds(Settings.IdleThreshold);
 			LoadControlsThatNeed();
@@ -146,10 +146,10 @@ namespace Zscno.Trackora
 		{
 			if (!_isFirstLoading)
 			{
-				Settings.TotalThreshold = (uint)e.NewTime.TotalMilliseconds;
+				Settings.DailyThreshold = (uint)e.NewTime.TotalMilliseconds;
 				if (e.NewTime > e.OldTime)
 				{
-					WindowTracker.IsTotalUsageReminderShown = false;
+					WindowTracker.IsDailyReminderShown = false;
 				}
 			}
 		}
