@@ -31,16 +31,6 @@ namespace Zscno.Trackora
         public static MainWindow? AppMainWindow { get; private set; }
 
         /// <summary>
-        /// 指示是否能发出各种通知和提醒。
-        /// </summary>
-        public static bool CanShowReminder { get; set; } = true;
-
-        /// <summary>
-        /// 记录进程信息的文件路径。
-        /// </summary>
-        public static string InfoFilePath { get; private set; } = string.Empty;
-
-        /// <summary>
         /// 用于加载语言资源。
         /// </summary>
         public static ResourceLoader Loader { get; } = new();
@@ -49,11 +39,6 @@ namespace Zscno.Trackora
         /// 本地缓存文件夹路径。
         /// </summary>
         public static string LocalCachePath { get; private set; } = string.Empty;
-
-        /// <summary>
-        /// 应用本地设置。
-        /// </summary>
-        public static IPropertySet LocalSettings { get; private set; } = new PropertySet();
 
         /// <summary>
         /// 所有可选的主题选项。
@@ -68,8 +53,7 @@ namespace Zscno.Trackora
         internal static WindowTracker Tracker { get; private set; } // TODO: 放到静态类型中。
 
         /// <summary>
-        /// Initializes the singleton application object. This is the first line of authored code
-        /// executed, and as such is the logical equivalent of main() or WinMain().
+        /// Initializes the singleton application object. This is the first line of authored code executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
         public App()
         {
@@ -155,7 +139,7 @@ namespace Zscno.Trackora
         /// 当用户正在尝试注销或关闭系统时调用。
         /// </summary>
         /// <param name="sender">事件发送者。</param>
-        /// <param name="e">提供 <see cref="SystemEvents.SessionEnding"/> 事件的数据。</param>
+        /// <param name="e">     提供 <see cref="SystemEvents.SessionEnding"/> 事件的数据。</param>
         private static void OnSessionEnding(object? sender, SessionEndingEventArgs e)
         {
             SaveAndDispose();
