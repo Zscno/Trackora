@@ -80,16 +80,16 @@ namespace Zscno.Trackora
                 NativeApi.EVENT_SYSTEM_FOREGROUND,
                 nint.Zero, _delegate, 0, 0,
                 NativeApi.WINEVENT_OUTOFCONTEXT);
-            _sessionTimer = new Timer(SendDueContinuousReminder, null, Timeout.Infinite, Timeout.Infinite);
+            _sessionTimer = new Timer(SendDueSessionReminder, null, Timeout.Infinite, Timeout.Infinite);
             _saveRecordTimer = new Timer(SaveLatestUsageRecord, null, Timeout.Infinite, Timeout.Infinite);
 
             if (UsageRecordManager.Record.TotalUsageTime >= Settings.TotalThreshold && !IsTotalUsageReminderShown)
             {
-                _dailyTimer = new Timer(SendDueTotalReminder, null, 0, Timeout.Infinite);
+                _dailyTimer = new Timer(SendDueDailyReminder, null, 0, Timeout.Infinite);
             }
             else
             {
-                _dailyTimer = new Timer(SendDueTotalReminder, null, Timeout.Infinite, Timeout.Infinite);
+                _dailyTimer = new Timer(SendDueDailyReminder, null, Timeout.Infinite, Timeout.Infinite);
             }
         }
 
@@ -392,9 +392,15 @@ namespace Zscno.Trackora
         /// </summary>
         /// <remarks>该函数是 <see cref="_sessionTimer"/> 的回调函数。</remarks>
         /// <param name="state"></param>
-        private void SendDueContinuousReminder(object? state)
+        private void SendDueSessionReminder(object? state)
         {
-            CanShowReminder = ReminderHelper.SendReminder(ReminderKind.ContinuousUsageTimeReminder);
+            ReminderManager.SendNotification(
+                Loader.GetString("UsageTimeReminderTitle"),
+                Loader.GetString("ContinuousReminderText1") +
+                Localization.ToLocalizedTimeString(Settings.SessionThreshold) +
+                Loader.GetString("ContinuousReminderText2"),
+                Settings.IdleThreshold,
+                false);
             _sessionDuration = 0;
         }
 
@@ -403,11 +409,17 @@ namespace Zscno.Trackora
         /// </summary>
         /// <remarks>该函数是 <see cref="_dailyTimer"/> 的回调函数。</remarks>
         /// <param name="state"></param>
-        private void SendDueTotalReminder(object? state)
+        private void SendDueDailyReminder(object? state)
         {
             if (!IsTotalUsageReminderShown)
             {
-                CanShowReminder = ReminderHelper.SendReminder(ReminderKind.TotalUsageTimeReminder);
+            ReminderManager.SendNotification(
+                Loader.GetString("UsageTimeReminderTitle"),
+                Loader.GetString("TotalReminderText1") + 
+                Localization.ToLocalizedTimeString(UsageRecordManager.Record.TotalUsageTime) + 
+                Loader.GetString("TotalReminderText2"),
+                Settings.IdleThreshold,
+                false);
                 IsTotalUsageReminderShown = true;
             }
         }

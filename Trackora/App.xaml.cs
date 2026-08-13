@@ -26,23 +26,6 @@ namespace Zscno.Trackora
         private static int _isSavingAndDisposing = 0;
 
         /// <summary>
-        /// 类似于闹钟的通知所有可以选择的提示音。
-        /// </summary>
-        public static Dictionary<string, string> AlarmSounds { get; } = new()
-        {
-            { "Alarm", "ms-winsoundevent:Notification.Looping.Alarm" },
-            { "Alarm2", "ms-winsoundevent:Notification.Looping.Alarm2" },
-            { "Alarm3", "ms-winsoundevent:Notification.Looping.Alarm3" },
-            { "Alarm4", "ms-winsoundevent:Notification.Looping.Alarm4" },
-            { "Alarm5", "ms-winsoundevent:Notification.Looping.Alarm5" },
-            { "Alarm6", "ms-winsoundevent:Notification.Looping.Alarm6" },
-            { "Alarm7", "ms-winsoundevent:Notification.Looping.Alarm7" },
-            { "Alarm8", "ms-winsoundevent:Notification.Looping.Alarm8" },
-            { "Alarm9", "ms-winsoundevent:Notification.Looping.Alarm9" },
-            { "Alarm10", "ms-winsoundevent:Notification.Looping.Alarm10" },
-        };
-
-        /// <summary>
         /// 应用主窗口。
         /// </summary>
         public static MainWindow? AppMainWindow { get; private set; }
@@ -51,18 +34,6 @@ namespace Zscno.Trackora
         /// 指示是否能发出各种通知和提醒。
         /// </summary>
         public static bool CanShowReminder { get; set; } = true;
-
-        /// <summary>
-        /// 一般的通知所有可以选择的提示音。
-        /// </summary>
-        public static Dictionary<string, string> CommonSounds { get; } = new()
-        {
-            { "Default", "ms-winsoundevent:Notification.Default" },
-            { "IM", "ms-winsoundevent:Notification.IM" },
-            { "Mail", "ms-winsoundevent:Notification.Mail" },
-            { "Reminder", "ms-winsoundevent:Notification.Reminder" },
-            { "SMS", "ms-winsoundevent:Notification.SMS" },
-        };
 
         /// <summary>
         /// 记录进程信息的文件路径。
