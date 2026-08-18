@@ -18,7 +18,7 @@ namespace Zscno.Trackora
         ///<inheritdoc cref="IAppDataPathProvider.RecordPath"/>
         public string RecordPath { get; }
 
-        internal AppDataPathProvider()
+        public AppDataPathProvider()
         {
             var appData = ApplicationData.GetDefault();
             LocalCachePath = appData.LocalCachePath;
