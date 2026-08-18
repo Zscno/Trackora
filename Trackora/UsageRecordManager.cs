@@ -1,52 +1,53 @@
-﻿using Microsoft.Windows.Storage;
-using System;
+﻿using System;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Zscno.Trackora
 {
-    /// <summary>
-    /// 为获取和保存使用记录提供相关操作。
-    /// </summary>
-    internal static class UsageRecordManager
+    /// <inheritdoc cref="IUsageRecordManager"/>
+    internal class UsageRecordManager : IUsageRecordManager
     {
-        /// <summary>
-        /// 记录文件路径。
-        /// </summary>
-        private static readonly string _recordFilePath;
+        private readonly string _recordFilePath;
 
-        /// <summary>
-        /// 记录文件所在文件夹的路径。
-        /// </summary>
-        private static readonly string _recordFolderPath;
+        private readonly string _recordFolderPath;
 
-        /// <summary>
-        /// 今天的使用记录。
-        /// </summary>
-        internal static UsageRecord Record { get; private set; }
+        /// <inheritdoc cref="IUsageRecordManager.Record"/>
+        public UsageRecord Record { get; private set; }
 
-        static UsageRecordManager()
+        internal UsageRecordManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
         {
-            _recordFolderPath = Path.Combine(ApplicationData.GetDefault().LocalPath, "Records");
+            _recordFolderPath = pathProvider.RecordPath;
             _recordFilePath = Path.Combine(_recordFolderPath, $"{DateTime.Now: yyyy-MM-dd}.json");
             Record = new UsageRecord();
         }
 
         /// <summary>
-        /// 确保存放使用记录的文件夹存在并从文件中读取今天的使用记录。
+        /// 加载用户今天的使用记录。
         /// </summary>
-        internal static void Initialize()
+        public Task LoadAsync()
         {
-            _ = Directory.CreateDirectory(_recordFolderPath);
-            Record = Json.ReadJsonFile(_recordFilePath, SourceGenerationContext.Default.UsageRecord) ?? new();
+            if (!File.Exists(_recordFilePath))
+            {
+                return Task.CompletedTask;
+            }
+
+            // TODO: Json 类型不应该创建新文件。
+            var record = Json.ReadJsonFile(_recordFilePath, SourceGenerationContext.Default.UsageRecord);
+            if (record is not null)
+            {
+                Record = record;
+            }
+            return Task.CompletedTask;
         }
 
         /// <summary>
-        /// 保存使用记录。
+        /// 保存用户今天的使用记录。
         /// </summary>
-        internal static string SaveRecord()
+        public Task StoreAsync()
         {
             _ = Directory.CreateDirectory(_recordFolderPath);
-            return Json.WriteJsonFile(_recordFilePath, Record, SourceGenerationContext.Default.UsageRecord);
+            _ = Json.WriteJsonFile(_recordFilePath, Record, SourceGenerationContext.Default.UsageRecord);
+            return Task.CompletedTask;
         }
     }
 }
