@@ -6,16 +6,16 @@ namespace Zscno.Trackora
     ///<inheritdoc cref="IAppDataPathProvider"/>
     internal class AppDataPathProvider : IAppDataPathProvider
     {
-        ///<inheritdoc cref="IAppDataPathProvider"/>
+        ///<inheritdoc cref="IAppDataPathProvider.IconPath"/>
         public string IconPath { get; }
 
-        ///<inheritdoc cref="IAppDataPathProvider"/>
+        ///<inheritdoc cref="IAppDataPathProvider.LocalCachePath"/>
         public string LocalCachePath { get; }
 
-        ///<inheritdoc cref="IAppDataPathProvider"/>
+        ///<inheritdoc cref="IAppDataPathProvider.LocalPath"/>
         public string LocalPath { get; }
 
-        ///<inheritdoc cref="IAppDataPathProvider"/>
+        ///<inheritdoc cref="IAppDataPathProvider.RecordPath"/>
         public string RecordPath { get; }
 
         internal AppDataPathProvider()
