@@ -14,7 +14,7 @@ namespace Zscno.Trackora
         /// <inheritdoc cref="IUsageRecordManager.Record"/>
         public UsageRecord Record { get; private set; }
 
-        internal UsageRecordManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
+        public UsageRecordManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
         {
             _recordFolderPath = pathProvider.RecordPath;
             _recordFilePath = Path.Combine(_recordFolderPath, $"{DateTime.Now: yyyy-MM-dd}.json");
