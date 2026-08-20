@@ -1,164 +1,124 @@
-﻿using Microsoft.Windows.Storage;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Zscno.Trackora
 {
-    /// <summary>
-    /// 为筛选应忽略的进程和仅记录时间的进程提供相关操作。
-    /// </summary>
-    internal static class ProcessFilter
+    /// <inheritdoc cref="IProcessFilter"/>
+    internal class ProcessFilter : IProcessFilter
     {
-        /// <summary>
-        /// 忽略进程名单文件的路径。
-        /// </summary>
-        private static readonly string _ignoredProcessListFilePath;
+        private readonly string _ignoredProcessListFilePath;
 
-        /// <summary>
-        /// 写入 <see cref="_ignoredProcesses"/> 时的锁。
-        /// </summary>
-        private static readonly object _ignoredWriteLock = new();
+        private readonly string _timeOnlyProcessListFilePath;
 
-        /// <summary>
-        /// 仅记录时间进程名单文件的路径。
-        /// </summary>
-        private static readonly string _timeOnlyProcessListFilePath;
+        private readonly object _writeLockIgnored;
 
-        /// <summary>
-        /// 写入 <see cref="_timeOnlyProcesses"/> 时的锁。
-        /// </summary>
-        private static readonly object _timeOnlyWriteLock = new();
+        private readonly object _writeLockTimeOnly;
 
-        /// <summary>
-        /// 所有忽略进程的进程名称。
-        /// </summary>
-        private static HashSet<string> _ignoredProcesses;
+        private HashSet<string> _ignoredProcessList;
 
-        /// <summary>
-        /// 所有仅记录时间进程的进程名称。
-        /// </summary>
-        private static HashSet<string> _timeOnlyProcesses;
+        private HashSet<string> _timeOnlyProcessList;
 
-        static ProcessFilter()
+        public ProcessFilter(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
         {
-            _ignoredProcesses = ["dwm", "LockApp", "ServiceHub.ThreadedWaitDialog"];
-            _timeOnlyProcesses = ["StartMenuExperienceHost", "SearchHost", "PickerHost",
+            _ignoredProcessList = ["dwm", "LockApp", "ServiceHub.ThreadedWaitDialog"];
+            _timeOnlyProcessList = ["StartMenuExperienceHost", "SearchHost", "PickerHost",
                 "consent", "OpenWith", "Widgets", "ShellExperienceHost"];
-            string localPath = ApplicationData.GetDefault().LocalPath;
-            _ignoredProcessListFilePath = Path.Combine(localPath, "IgnoredProcesses.json");
-            _timeOnlyProcessListFilePath = Path.Combine(localPath, "TimeOnlyProcesses.json");
+            _ignoredProcessListFilePath = Path.Combine(pathProvider.LocalPath, "IgnoredProcesses.json");
+            _timeOnlyProcessListFilePath = Path.Combine(pathProvider.LocalPath, "TimeOnlyProcesses.json");
+            _writeLockIgnored = new();
+            _writeLockTimeOnly = new();
         }
 
-        /// <summary>
-        /// 添加忽略进程。
-        /// </summary>
-        /// <param name="processName">要添加进程的名称。</param>
-        /// <returns>若进程已添加，则为 <see langword="true"/>；若进程已存在，则为 <see langword="false"/>。</returns>
-        internal static bool AddIgnoredProcess(string processName)
+        public bool AddIgnoredProcess(string processName)
         {
-            lock (_ignoredWriteLock)
+            lock (_writeLockIgnored)
             {
-                return _ignoredProcesses.Add(processName);
+                return _ignoredProcessList.Add(processName);
             }
         }
 
-        /// <summary>
-        /// 添加仅记录时间的进程。
-        /// </summary>
-        /// <param name="processName">要添加进程的名称。</param>
-        /// <returns>若进程已添加，则为 <see langword="true"/>；若进程已存在，则为 <see langword="false"/>。</returns>
-        internal static bool AddOnlyTimeProcess(string processName)
+        public bool AddTimeOnlyProcess(string processName)
         {
-            lock (_timeOnlyWriteLock)
+            lock (_writeLockTimeOnly)
             {
-                return _timeOnlyProcesses.Add(processName);
+                return _timeOnlyProcessList.Add(processName);
             }
         }
 
+        public bool IsIgnoredProcess(string processName)
+        {
+            return _ignoredProcessList.Contains(processName);
+        }
+
+        public bool IsTimeOnlyProcess(string processName)
+        {
+            return _timeOnlyProcessList.Contains(processName);
+        }
+
         /// <summary>
-        /// 从文件中读取忽略进程名单和仅记录时间的进程名单。
+        /// 加载文件中的忽略进程名单和仅记录时间的进程名单。
         /// </summary>
-        internal static void Initialize()
+        public Task LoadAsync()
         {
             HashSet<string>? ignoredProcesses = Json.ReadJsonFile(_ignoredProcessListFilePath, SourceGenerationContext.Default.HashSetString);
             if (ignoredProcesses is not null)
             {
-                _ignoredProcesses = ignoredProcesses;
+                _ignoredProcessList = ignoredProcesses;
             }
 
             HashSet<string>? timeOnlyProcesses = Json.ReadJsonFile(_timeOnlyProcessListFilePath, SourceGenerationContext.Default.HashSetString);
             if (timeOnlyProcesses is not null)
             {
-                _timeOnlyProcesses = timeOnlyProcesses;
+                _timeOnlyProcessList = timeOnlyProcesses;
             }
+
+            return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// 确定指定的进程是否忽略。
-        /// </summary>
-        /// <param name="processName">进程的名称。</param>
-        /// <returns>若忽略，则为 <see langword="true"/>；否则为 <see langword="false"/>。</returns>
-        internal static bool IsIgnoredProcess(string processName)
+        public bool RemoveIgnoredProcess(string processName)
         {
-            return _ignoredProcesses.Contains(processName);
-        }
-
-        /// <summary>
-        /// 确定指定的进程是否仅记录时间。
-        /// </summary>
-        /// <param name="processName">进程的名称。</param>
-        /// <returns>若仅记录时间，则为 <see langword="true"/>；否则为 <see langword="false"/>。</returns>
-        internal static bool IsTimeOnlyProcess(string processName)
-        {
-            return _timeOnlyProcesses.Contains(processName);
-        }
-
-        /// <summary>
-        /// 不忽略指定的进程。
-        /// </summary>
-        /// <param name="processName">进程的名称。</param>
-        /// <returns>若成功找到并删除了进程，则为 <see langword="true"/>；否则为 <see langword="false"/>。</returns>
-        internal static bool RemoveIgnoredProcess(string processName)
-        {
-            lock (_ignoredWriteLock)
+            lock (_writeLockIgnored)
             {
-                return _ignoredProcesses.Remove(processName);
+                return _ignoredProcessList.Remove(processName);
             }
         }
 
-        /// <summary>
-        /// 不再仅记录指定的进程的使用时间，而是记录其完整信息。
-        /// </summary>
-        /// <param name="processName">进程的名称。</param>
-        /// <returns>若成功找到并删除了进程，则为 <see langword="true"/>；否则为 <see langword="false"/>。</returns>
-        internal static bool RemoveTimeOnlyProcess(string processName)
+        public bool RemoveTimeOnlyProcess(string processName)
         {
-            lock (_timeOnlyWriteLock)
+            lock (_writeLockTimeOnly)
             {
-                return _timeOnlyProcesses.Remove(processName);
+                return _timeOnlyProcessList.Remove(processName);
             }
         }
 
-        /// <summary>
-        /// 保存忽略进程名单。
-        /// </summary>
-        internal static string SaveIgnoredProcesses()
+        public Task SaveIgnoredProcessListAsync()
         {
-            return Json.WriteJsonFile(
+            _ = Json.WriteJsonFile(
                 _ignoredProcessListFilePath,
-                _ignoredProcesses,
+                _ignoredProcessList,
                 SourceGenerationContext.Default.HashSetString);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveTimeOnlyProcessListAsync()
+        {
+            _ = Json.WriteJsonFile(
+                _timeOnlyProcessListFilePath,
+                _timeOnlyProcessList,
+                SourceGenerationContext.Default.HashSetString);
+            return Task.CompletedTask;
         }
 
         /// <summary>
-        /// 保存仅记录时间的进程名单。
+        /// 将忽略进程名单和仅记录时间的进程名单保存到文件。
         /// </summary>
-        internal static string SaveTimeOnlyProcesses()
+        public async Task StoreAsync()
         {
-            return Json.WriteJsonFile(
-                _timeOnlyProcessListFilePath,
-                _timeOnlyProcesses,
-                SourceGenerationContext.Default.HashSetString);
+            var saveIgnored = SaveIgnoredProcessListAsync();
+            var saveTimeOnly = SaveTimeOnlyProcessListAsync();
+
+            await Task.WhenAll(saveIgnored, saveTimeOnly);
         }
     }
 }
