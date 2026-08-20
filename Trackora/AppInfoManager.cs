@@ -26,7 +26,6 @@ namespace Zscno.Trackora
 
         private readonly string _iconFolderPath;
 
-        /// <inheritdoc cref="IAppInfoManager.AppInfoMap"/>
         public ConcurrentDictionary<string, ProcessInfo> AppInfoMap { get; private set; }
 
         public AppInfoManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
@@ -105,7 +104,6 @@ namespace Zscno.Trackora
             AppInfoMap[processName] = new ProcessInfo(displayName);
         }
 
-        /// <inheritdoc cref="IAppInfoManager.GetAppIconUri(string)"/>
         public string GetAppIconUri(string processName)
         {
             string iconFilePath = Path.Combine(_iconFolderPath, $"{processName}.png");

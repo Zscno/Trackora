@@ -11,7 +11,6 @@ namespace Zscno.Trackora
 
         private readonly string _recordFolderPath;
 
-        /// <inheritdoc cref="IUsageRecordManager.Record"/>
         public UsageRecord Record { get; private set; }
 
         public UsageRecordManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
