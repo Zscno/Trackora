@@ -26,9 +26,7 @@ namespace Zscno.Trackora
 
         private readonly string _iconFolderPath;
 
-        /// <summary>
-        /// 应用程序信息的映射表，键为进程名。
-        /// </summary>
+        /// <inheritdoc cref="IAppInfoManager.AppInfoMap"/>
         public ConcurrentDictionary<string, ProcessInfo> AppInfoMap { get; private set; }
 
         public AppInfoManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
