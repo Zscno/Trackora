@@ -7,7 +7,7 @@ namespace Zscno.Trackora
     /// <inheritdoc cref="IUsageRecordManager"/>
     internal class UsageRecordManager : IUsageRecordManager
     {
-        private readonly string _recordFilePath;
+        private string _recordFilePath;
 
         private readonly string _recordFolderPath;
 
@@ -27,6 +27,14 @@ namespace Zscno.Trackora
         {
             if (!File.Exists(_recordFilePath))
             {
+                return Task.CompletedTask;
+            }
+
+            string recordFilePath = Path.Combine(_recordFolderPath, $"{DateTime.Now: yyyy-MM-dd}.json");
+            if(recordFilePath!= _recordFilePath)
+            {
+                Record = new UsageRecord();
+                _recordFilePath = recordFilePath;
                 return Task.CompletedTask;
             }
 
