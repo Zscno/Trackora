@@ -11,13 +11,17 @@ namespace Zscno.Trackora
         /// <summary>
         /// 所有进程的使用记录，包含进程名称和其使用时间（以毫秒为单位）。
         /// </summary>
-        [JsonInclude]
-        internal ConcurrentDictionary<string, uint> ProcessUsageRecords { get; set; } = [];
+        public ConcurrentDictionary<string, uint> ProcessUsageRecords { get; set; } = [];
 
         /// <summary>
         /// 总使用时间，以毫秒为单位。
         /// </summary>
-        [JsonInclude]
-        internal uint DailyDuration { get; set; }
+        public uint DailyDuration { get; set; }
+
+        /// <summary>
+        /// 连续使用时间，以毫秒为单位。
+        /// </summary>
+        [JsonIgnore]
+        public uint SessionDuration { get; set; }
     }
 }
