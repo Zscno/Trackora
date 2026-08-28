@@ -1,11 +1,12 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 
 namespace Zscno.Trackora
 {
     /// <summary>
     /// 提供获取和保存忽略进程名单和仅记录时间进程名单的功能。
     /// </summary>
-    internal interface IProcessFilter : IDataLoadable, IDataStorable
+    internal interface IProcessFilter : IDataLoadable, IDataStorable, IDisposable
     {
         /// <summary>
         /// 将指定的进程添加到忽略进程名单。
@@ -58,5 +59,17 @@ namespace Zscno.Trackora
         /// 异步地保存仅记录时间进程名单。
         /// </summary>
         Task SaveTimeOnlyProcessListAsync();
+
+        /// <summary>
+        /// 请求延迟保存仅记录时间进程名单。
+        /// </summary>
+        /// <remarks>仅记录时间进程名单将会延迟 2 秒保存。</remarks>
+        void RequestSaveTimeOnlyProcessList();
+
+        /// <summary>
+        /// 请求延迟保存忽略进程名单。
+        /// </summary>
+        /// <remarks>忽略进程名单将会延迟 2 秒保存。</remarks>
+        void RequestSaveIgnoredProcessList();
     }
 }

@@ -1,12 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Zscno.Trackora
 {
     /// <inheritdoc cref="IProcessFilter"/>
-    internal class ProcessFilter : IProcessFilter
+    internal partial class ProcessFilter : IProcessFilter
     {
+        private readonly DebounceSaver _debounceSaverIgnored;
+
+        private readonly DebounceSaver _debounceSaverTimeOnly;
+
         private readonly string _ignoredProcessListFilePath;
 
         private readonly string _timeOnlyProcessListFilePath;
@@ -17,6 +23,11 @@ namespace Zscno.Trackora
 
         private HashSet<string> _ignoredProcessList;
 
+        /// <summary>
+        /// 指示当前 <see cref="WindowTracker"/> 实例使用的所有资源是否释放。若已释放，则为 1，否则为 0。
+        /// </summary>
+        private int _isDisposed;
+
         private HashSet<string> _timeOnlyProcessList;
 
         public ProcessFilter(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
@@ -26,8 +37,10 @@ namespace Zscno.Trackora
                 "consent", "OpenWith", "Widgets", "ShellExperienceHost"];
             _ignoredProcessListFilePath = Path.Combine(pathProvider.LocalPath, "IgnoredProcesses.json");
             _timeOnlyProcessListFilePath = Path.Combine(pathProvider.LocalPath, "TimeOnlyProcesses.json");
-            _writeLockIgnored = new();
-            _writeLockTimeOnly = new();
+            _writeLockIgnored = new object();
+            _writeLockTimeOnly = new object();
+            _debounceSaverIgnored = new DebounceSaver(SaveIgnoredProcessListAsync, exceptionHandler: OnSaveIgnoredFailed);
+            _debounceSaverTimeOnly = new DebounceSaver(SaveTimeOnlyProcessListAsync, exceptionHandler: OnSaveTimeOnlyFailed);
         }
 
         public bool AddIgnoredProcess(string processName)
@@ -44,6 +57,15 @@ namespace Zscno.Trackora
             {
                 return _timeOnlyProcessList.Add(processName);
             }
+        }
+
+        /// <summary>
+        /// 释放当前 <see cref="ProcessFilter"/> 实例使用的所有资源。
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         public bool IsIgnoredProcess(string processName)
@@ -92,6 +114,16 @@ namespace Zscno.Trackora
             }
         }
 
+        public void RequestSaveIgnoredProcessList()
+        {
+            _debounceSaverIgnored.RequestStore();
+        }
+
+        public void RequestSaveTimeOnlyProcessList()
+        {
+            _debounceSaverTimeOnly.RequestStore();
+        }
+
         public Task SaveIgnoredProcessListAsync()
         {
             _ = Json.WriteJsonFile(
@@ -119,6 +151,34 @@ namespace Zscno.Trackora
             var saveTimeOnly = SaveTimeOnlyProcessListAsync();
 
             await Task.WhenAll(saveIgnored, saveTimeOnly);
+        }
+
+        /// <inheritdoc cref="Dispose()"/>
+        /// <param name="disposing">指示方法调用来自 <see cref="Dispose()"/>（其值是 <see langword="true"/>），还是来自析构函数（其值是 <see langword="false"/>）。</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
+            {
+                if (disposing)
+                {
+                    _debounceSaverIgnored.Dispose();
+                    _debounceSaverTimeOnly.Dispose();
+                }
+            }
+        }
+
+        private static Task OnSaveIgnoredFailed(Exception ex)
+        {
+            LogSystem.WriteLog(LogLevel.Error, $"延迟保存忽略进程名单失败。{ex}");
+            // TODO: 在主页提示用户。
+            return Task.CompletedTask;
+        }
+
+        private static Task OnSaveTimeOnlyFailed(Exception ex)
+        {
+            LogSystem.WriteLog(LogLevel.Error, $"延迟保存仅记录时间进程名单失败。{ex}");
+            // TODO: 在主页提示用户。
+            return Task.CompletedTask;
         }
     }
 }

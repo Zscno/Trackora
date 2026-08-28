@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 
 namespace Zscno.Trackora
@@ -6,7 +7,7 @@ namespace Zscno.Trackora
     /// <summary>
     /// 提供获取和保存应用程序信息的功能。
     /// </summary>
-    internal interface IAppInfoManager : IDataLoadable, IDataStorable
+    internal interface IAppInfoManager : IDataLoadable, IDataStorable, IDebounceStorable, IDisposable
     {
         /// <summary>
         /// 应用程序的信息映射表，键为进程的名称。

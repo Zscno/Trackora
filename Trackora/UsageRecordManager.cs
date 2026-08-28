@@ -8,12 +8,14 @@ namespace Zscno.Trackora
     /// <inheritdoc cref="IUsageRecordManager"/>
     internal partial class UsageRecordManager : IUsageRecordManager
     {
+        private readonly DebounceSaver _debounceSaver;
+
         private readonly string _recordFolderPath;
 
         /// <summary>
-        /// 用于保存使用记录的计时器。
+        /// 指示当前 <see cref="UsageRecordManager"/> 实例使用的所有资源是否释放。若已释放，则为 1，否则为 0。
         /// </summary>
-        private readonly Timer _saveTimer;
+        private int _isDisposed;
 
         private string _recordFilePath;
 
@@ -23,8 +25,8 @@ namespace Zscno.Trackora
         {
             _recordFolderPath = pathProvider.RecordPath;
             _recordFilePath = Path.Combine(_recordFolderPath, $"{DateTime.Now: yyyy-MM-dd}.json");
+            _debounceSaver = new DebounceSaver(StoreAsync, exceptionHandler: OnStoreFailed);
             Record = new UsageRecord();
-            _saveTimer = new Timer(SaveLatest, null, Timeout.Infinite, Timeout.Infinite);
         }
 
         /// <summary>
@@ -32,7 +34,8 @@ namespace Zscno.Trackora
         /// </summary>
         public void Dispose()
         {
-            _saveTimer.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -62,11 +65,13 @@ namespace Zscno.Trackora
             return Task.CompletedTask;
         }
 
-        /// <inheritdoc cref="IUsageRecordManager.RequestSave"/>
-        /// <remarks>该方法应该在使用记录更新后调用，将会延迟 2 秒保存。</remarks>
-        public void RequestSave()
+        /// <summary>
+        /// 请求延迟保存使用记录。
+        /// </summary>
+        /// <remarks>使用记录将会延迟 2 秒保存。</remarks>
+        public void RequestStore()
         {
-            _ = _saveTimer.Change(2000, Timeout.Infinite);
+            _debounceSaver.RequestStore();
         }
 
         /// <summary>
@@ -79,17 +84,26 @@ namespace Zscno.Trackora
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// 保存最新的使用记录。
-        /// </summary>
-        /// <remarks>该函数是 <see cref="_saveTimer"/> 的回调函数。</remarks>
-        private void SaveLatest(object? state)
+        /// <inheritdoc cref="Dispose()"/>
+        /// <param name="disposing">指示方法调用来自 <see cref="Dispose()"/>（其值是 <see langword="true"/>），还是来自析构函数（其值是 <see langword="false"/>）。</param>
+        protected virtual void Dispose(bool disposing)
         {
-            _ = new SafeCaller()
+            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
             {
-                LogMessage = "保存使用记录失败。",
-                RemindingMsgResKey = "ECanNotSetRecord",
-            }.CallMethodR(async () => await StoreAsync());
+                return;
+            }
+
+            if (disposing)
+            {
+                _debounceSaver.Dispose();
+            }
+        }
+
+        private static Task OnStoreFailed(Exception ex)
+        {
+            LogSystem.WriteLog(LogLevel.Error, $"延迟保存使用记录失败。{ex}");
+            // TODO: 在主页提示用户。
+            return Task.CompletedTask;
         }
     }
 }

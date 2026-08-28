@@ -10,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using Windows.ApplicationModel;
@@ -22,9 +23,16 @@ namespace Zscno.Trackora
     {
         private readonly string _appInfoFilePath;
 
+        private readonly DebounceSaver _debounceSaver;
+
         private readonly string _defaultIconPath;
 
         private readonly string _iconFolderPath;
+
+        /// <summary>
+        /// 指示当前 <see cref="AppInfoManager"/> 实例使用的所有资源是否释放。若已释放，则为 1，否则为 0。
+        /// </summary>
+        private int _isDisposed;
 
         public ConcurrentDictionary<string, ProcessInfo> AppInfoMap { get; private set; }
 
@@ -33,6 +41,7 @@ namespace Zscno.Trackora
             _iconFolderPath = pathProvider.IconPath;
             _defaultIconPath = Path.Combine(_iconFolderPath, "Default.png");
             _appInfoFilePath = Path.Combine(pathProvider.LocalCachePath, "ProcessInfo.json");
+            _debounceSaver = new DebounceSaver(StoreAsync, exceptionHandler: OnStoreFailed);
             AppInfoMap = new();
         }
 
@@ -104,6 +113,15 @@ namespace Zscno.Trackora
             AppInfoMap[processName] = new ProcessInfo(displayName);
         }
 
+        /// <summary>
+        /// 释放当前 <see cref="AppInfoManager"/> 实例使用的所有资源。
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
         public string GetAppIconUri(string processName)
         {
             string iconFilePath = Path.Combine(_iconFolderPath, $"{processName}.png");
@@ -139,12 +157,36 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
+        /// 请求延迟保存应用程序的信息。
+        /// </summary>
+        /// <remarks>应用程序的信息将会延迟 2 秒保存。</remarks>
+        public void RequestStore()
+        {
+            _debounceSaver.RequestStore();
+        }
+
+        /// <summary>
         /// 保存已获取的应用程序信息。
         /// </summary>
         public Task StoreAsync()
         {
             _ = Json.WriteJsonFile(_appInfoFilePath, AppInfoMap, SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
             return Task.CompletedTask;
+        }
+
+        /// <inheritdoc cref="Dispose()"/>
+        /// <param name="disposing">指示方法调用来自 <see cref="Dispose()"/>（其值是 <see langword="true"/>），还是来自析构函数（其值是 <see langword="false"/>）。</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                _debounceSaver.Dispose();
+            }
         }
 
         /// <summary>
@@ -251,6 +293,13 @@ namespace Zscno.Trackora
 
         [GeneratedRegex(@"\.targetsize-\d{2,3}\.")]
         private static partial Regex GetTargetSizeRegex();
+
+        private static Task OnStoreFailed(Exception ex)
+        {
+            LogSystem.WriteLog(LogLevel.Error, $"延迟保存应用程序信息失败。{ex}");
+            // TODO: 在主页提示用户。
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// 解析应用程序包清单中的图标路径。
