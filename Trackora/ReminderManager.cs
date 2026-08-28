@@ -29,13 +29,18 @@ namespace Zscno.Trackora
         /// </summary>
         private bool _isDailySent;
 
+        /// <summary>
+        /// 指示当前 <see cref="ReminderManager"/> 实例使用的所有资源是否释放。若已释放，则为 1，否则为 0。
+        /// </summary>
+        private int _isDisposed;
+
         public ReminderManager(ISettings settings, IUsageRecordManager usageRecordManager/*TODO: 接收日志实例。*/)
         {
             _isDailySent = false;
-            _settings = settings;
-            _usageRecordManager = usageRecordManager;
             _dailyTimer = new Timer(SendDueDailyReminder, null, Timeout.Infinite, Timeout.Infinite);
             _sessionTimer = new Timer(SendDueSessionReminder, null, Timeout.Infinite, Timeout.Infinite);
+            _settings = settings;
+            _usageRecordManager = usageRecordManager;
         }
 
         /// <summary>
@@ -43,8 +48,8 @@ namespace Zscno.Trackora
         /// </summary>
         public void Dispose()
         {
-            _dailyTimer.Dispose();
-            _sessionTimer.Dispose();
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         /// <inheritdoc cref="IReminderManager.SendDailyIfNeeded"/>
@@ -90,6 +95,22 @@ namespace Zscno.Trackora
                 _settings.SessionThreshold - _usageRecordManager.Record.SessionDuration : 0;
 
             _ = _sessionTimer.Change(dueTime, _settings.SessionThreshold);
+        }
+
+        /// <inheritdoc cref="Dispose()"/>
+        /// <param name="disposing">指示方法调用来自 <see cref="Dispose()"/>（其值是 <see langword="true"/>），还是来自析构函数（其值是 <see langword="false"/>）。</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
+            {
+                return;
+            }
+
+            if (disposing)
+            {
+                _dailyTimer.Dispose();
+                _sessionTimer.Dispose();
+            }
         }
 
         /// <summary>
