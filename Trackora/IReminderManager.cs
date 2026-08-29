@@ -8,9 +8,16 @@ namespace Zscno.Trackora
     internal interface IReminderManager : IDisposable
     {
         /// <summary>
-        /// 若总使用时间未达到阈值且从未发送过，则发送总使用时间提醒。
+        /// 重置总使用时间提醒的到期时间。
         /// </summary>
-        void SendDailyIfNeeded();
+        /// <remarks>不论先前是否发送过，到期后都会发送总使用时间提醒。</remarks>
+        void ResetDailyDueTime();
+
+        /// <summary>
+        /// 发送已过期的总使用时间提醒。
+        /// </summary>
+        /// <remarks>若总使用时间已经超过阈值，则不论先前是否发送过，都会发送总使用时间提醒。</remarks>
+        void SendOverdueDaily();
 
         /// <summary>
         /// 停止所有提醒（包括总使用时间提醒和连续使用时间提醒）。
@@ -20,6 +27,7 @@ namespace Zscno.Trackora
         /// <summary>
         /// 更新总使用时间提醒的到期时间。
         /// </summary>
+        /// <remarks>若先前发送过，则不会发送总使用时间提醒。</remarks>
         void UpdateDailyDueTime();
 
         /// <summary>

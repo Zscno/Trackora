@@ -88,7 +88,7 @@ namespace Zscno.Trackora
             await _appInfoManager.LoadAsync();
             await _processFilter.LoadAsync();
 
-            _reminderManager.SendDailyIfNeeded();
+            _reminderManager.SendOverdueDaily();
 
             _hookHandle = SafeEventHookHandle.SetEventHook(NativeApi.EVENT_SYSTEM_FOREGROUND, _delegate);
         }

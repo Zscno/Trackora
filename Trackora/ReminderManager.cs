@@ -52,22 +52,22 @@ namespace Zscno.Trackora
             GC.SuppressFinalize(this);
         }
 
-        /// <inheritdoc cref="IReminderManager.SendDailyIfNeeded"/>
-        /// <remarks>该方法只应该在应用程序启动时调用。</remarks>
-        public void SendDailyIfNeeded()
+        public void ResetDailyDueTime()
         {
-            if (_isDailySent)
-            {
-                return;
-            }
+            _isDailySent = false;
 
-            if (_usageRecordManager.Record.DailyDuration < _settings.DailyThreshold)
-            {
-                return;
-            }
+            uint dueTime = _usageRecordManager.Record.DailyDuration < _settings.DailyThreshold ?
+                _settings.DailyThreshold - _usageRecordManager.Record.DailyDuration : 0;
 
-            _ = _dailyTimer.Change(0, Timeout.Infinite);
-            _isDailySent = true;
+            _ = _dailyTimer.Change(dueTime, Timeout.Infinite);
+        }
+
+        public void SendOverdueDaily()
+        {
+            if (_usageRecordManager.Record.DailyDuration >= _settings.DailyThreshold)
+            {
+                _ = _dailyTimer.Change(0, Timeout.Infinite);
+            }
         }
 
         public void StopAll()
@@ -121,7 +121,8 @@ namespace Zscno.Trackora
         /// <param name="content">        通知的文本内容。</param>
         /// <param name="expirationTime"> 通知保留在通知中心的时间（以毫秒为单位）。</param>
         /// <param name="expiresOnReboot">指示通知是否会在重新启动后保留在通知中心。</param>
-        private static void SendNotification(string title,
+        /// <returns>指示是否发送成功。</returns>
+        private static bool SendNotification(string title,
                                               string content,
                                               uint expirationTime,
                                               bool expiresOnReboot)
@@ -138,43 +139,31 @@ namespace Zscno.Trackora
                 notification.Expiration = DateTimeOffset.Now.AddMilliseconds(expirationTime);
                 notification.ExpiresOnReboot = expiresOnReboot;
                 AppNotificationManager.Default.Show(notification);
+                return true;
             }
             catch (Exception ex)
             {
                 LogSystem.WriteLog(LogLevel.Warning,
                     $"通知发送失败。\n\tTitle={title},\n\tContent={content}\n\n{ex}");
+                // TODO: 向上传递或主页 InfoBar。
+                return false;
             }
         }
 
-        /// <summary>
-        /// 发送到期的总使用时间提醒。
-        /// </summary>
-        /// <remarks>该函数是 <see cref="_dailyTimer"/> 的回调函数。</remarks>
         private void SendDueDailyReminder(object? state)
         {
-            if (_isDailySent)
-            {
-                return;
-            }
-
-            SendNotification(
+            _isDailySent = SendNotification(
                 App.Loader.GetString("UsageTimeReminderTitle"),
                 App.Loader.GetString("TotalReminderText1") +
                 Localization.ToLocalizedTimeString(_usageRecordManager.Record.DailyDuration) +
                 App.Loader.GetString("TotalReminderText2"),
                 _settings.IdleThreshold,
                 false);
-
-            _isDailySent = true;
         }
 
-        /// <summary>
-        /// 发送到期的连续使用时间提醒。
-        /// </summary>
-        /// <remarks>该函数是 <see cref="_sessionTimer"/> 的回调函数。</remarks>
         private void SendDueSessionReminder(object? state)
         {
-            SendNotification(
+            _ = SendNotification(
                 App.Loader.GetString("UsageTimeReminderTitle"),
                 App.Loader.GetString("ContinuousReminderText1") +
                 Localization.ToLocalizedTimeString(_settings.SessionThreshold) +

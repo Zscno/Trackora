@@ -147,9 +147,9 @@ namespace Zscno.Trackora
 			if (!_isFirstLoading)
 			{
 				Settings.DailyThreshold = (uint)e.NewTime.TotalMilliseconds;
-				if (e.NewTime > e.OldTime)
+				if (e.OldTime != e.NewTime)
 				{
-					WindowTracker.IsDailyReminderShown = false;
+					_reminderManager.ResetDailyDueTime();
 				}
 			}
 		}
