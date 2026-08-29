@@ -91,8 +91,8 @@ namespace Zscno.Trackora
 
         public void UpdateSessionDueTime()
         {
-            uint dueTime = _usageRecordManager.Record.SessionDuration < _settings.SessionThreshold ?
-                _settings.SessionThreshold - _usageRecordManager.Record.SessionDuration : 0;
+            uint remainder = _usageRecordManager.Record.SessionDuration % _settings.SessionThreshold;
+            uint dueTime = remainder == 0 ? _settings.SessionThreshold : _settings.SessionThreshold - remainder;
 
             _ = _sessionTimer.Change(dueTime, _settings.SessionThreshold);
         }
@@ -170,8 +170,6 @@ namespace Zscno.Trackora
                 App.Loader.GetString("ContinuousReminderText2"),
                 _settings.IdleThreshold,
                 false);
-
-            _usageRecordManager.Record.SessionDuration = 0;
         }
     }
 }
