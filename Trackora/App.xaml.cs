@@ -1,14 +1,13 @@
-﻿using Microsoft.UI.Xaml;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.UI.Xaml;
 using Microsoft.Win32;
 using Microsoft.Windows.AppLifecycle;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using Windows.ApplicationModel.Resources;
-using Windows.Foundation.Collections;
-using Windows.Storage;
-using static Zscno.Trackora.LogSystem;
 
 // To learn more about WinUI, the WinUI project structure, and more about our project templates,
 // see: http://aka.ms/winui-project-info.
@@ -21,9 +20,14 @@ namespace Zscno.Trackora
     public partial class App : Application
     {
         /// <summary>
-        /// 指示是否正在保存应用程序数据并释放资源，保证 <see cref="SaveAndDispose"/> 方法线程安全。
+        /// 指示应用程序是否退出。若已退出，则为 1，否则为 0。
         /// </summary>
-        private static int _isSavingAndDisposing = 0;
+        private static int _isExited = 0;
+
+        /// <summary>
+        /// 应用程序的主机，管理日志及其他服务。
+        /// </summary>
+        private readonly IHost _host;
 
         /// <summary>
         /// 应用主窗口。
@@ -50,8 +54,6 @@ namespace Zscno.Trackora
             { Loader.GetString("SystemTheme"), "SystemTheme" },
         };
 
-        internal static WindowTracker Tracker { get; private set; } // TODO: 放到静态类型中。
-
         /// <summary>
         /// Initializes the singleton application object. This is the first line of authored code executed, and as such is the logical equivalent of main() or WinMain().
         /// </summary>
@@ -59,124 +61,115 @@ namespace Zscno.Trackora
         {
             InitializeComponent();
 
-            _ = new SafeCaller()
-            {
-                LogType = CallerLogType.Crash,
-                LogMessage = "获取本地缓存文件夹路径失败。",
-                ShouldExit = true,
-                RemindingMsgResKey = "CanNotLaunchApp",
-            }.CallMethodR(() =>
-            {
-                LocalCachePath = ApplicationData.Current.LocalCacheFolder.Path;
-            });
-
-            _ = new SafeCaller()
-            {
-                LogType = CallerLogType.Crash,
-                LogMessage = "初始化日志文件失败。",
-                ShouldExit = true,
-                RemindingMsgResKey = "CannotLaunchApp",
-            }.CallMethodR(() =>
-            {
-                InitLogFile();
-            });
-
-            _ = new SafeCaller()
-            {
-                LogMessage = "注册应用实例激活事件失败，将不能保证单实例。",
-                ShouldExit = true,
-                RemindingMsgResKey = "CanNotLaunchApp",
-            }.CallMethodR(() =>
-            {
-                AppInstance appInstance = AppInstance.GetCurrent();
-                appInstance.Activated += AppInstance_Activated;
-            });
+            AppInstance.GetCurrent().Activated += AppInstance_Activated;
             SystemEvents.SessionEnding += OnSessionEnding;
 
-            _ = new SafeCaller()
-            {
-                LogMessage = "设置应用主题失败。",
-                RemindingMsgResKey = "ECanNotSetTheme",
-            }.CallMethodR(() => SetTheme((string)LocalSettings["Theme"]));
+            _host = Host.CreateDefaultBuilder()
+                .UseContentRoot(AppContext.BaseDirectory)
+                .ConfigureServices((context, collection) =>
+                {
+                    _ = collection.AddSingleton<IAppDataPathProvider, AppDataPathProvider>()
+                                  .AddSingleton<IAppInfoManager, AppInfoManager>()
+                                  .AddSingleton<IProcessFilter, ProcessFilter>()
+                                  .AddSingleton<IReminderManager, ReminderManager>()
+                                  .AddSingleton<ISettings, LocalSettings>()
+                                  .AddSingleton<IUsageRecordManager, UsageRecordManager>()
+                                  .AddSingleton<IWindowTracker, WindowTracker>();
+                }).Build();
+
+            //LocalCachePath = ApplicationData.Current.LocalCacheFolder.Path; TODO: 将移除。
         }
 
         /// <summary>
         /// 退出应用程序。
         /// </summary>
         /// <param name="exitCode">要返回到操作系统的退出代码。使用 0 指示进程已成功完成。</param>
-        internal static void Exit(int exitCode)
+        public static async Task Exit(int exitCode)
         {
-            SaveAndDispose();
+            if (Interlocked.CompareExchange(ref _isExited, 1, 0) == 1)
+            {
+                return;
+            }
+
+            var app = Current as App;
+            await app!.StoreDataAsync();
+            app.Dispose();
             Environment.Exit(exitCode);
+        }
+
+        /// <summary>
+        /// 获取 <typeparamref name="T"/> 类型的应用程序服务。
+        /// </summary>
+        /// <typeparam name="T">要获取的服务对象的类型。</typeparam>
+        /// <returns>获取到的 <typeparamref name="T"/> 类型的应用程序服务。</returns>
+        /// <exception cref="ArgumentException"></exception>
+        public static T GetService<T>() where T : class
+        {
+            if ((Current as App)!._host.Services.GetService<T>() is T service)
+            {
+                return service;
+            }
+            else
+            {
+                throw new ArgumentException("请求的类型尚未注册。", nameof(T));
+            }
+        }
+
+        /// <summary>
+        /// 异步地保存所有数据。
+        /// </summary>
+        private async Task StoreDataAsync()
+        {
+            List<Task> tasks = [];
+            foreach (var storable in _host.Services.GetServices<IDataStorable>())
+            {
+                tasks.Add(storable.StoreAsync());
+            }
+            await Task.WhenAll(tasks);
         }
 
         /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs args)
+        protected override async void OnLaunched(LaunchActivatedEventArgs args)
         {
+            // InitLogFile(); TODO: 替换成 ILogger。
+
             AppMainWindow = new MainWindow();
             AppMainWindow.Activate();
             NativeApi.HideWindow(AppMainWindow);
 
-            _ = new SafeCaller()
+            //SetTheme((string)LocalSettings["Theme"]); TODO: 在主窗口修改。
+
+            try
             {
-                LogMessage = "使用记录管理器初始化失败。",
-                RemindingMsgResKey = "", // TODO: 使用专属键。
-            }.CallMethodR(UsageRecordManager.Initialize);
-
-            _ = new SafeCaller()
-            {
-                LogMessage = "进程信息管理器初始化失败。",
-                RemindingMsgResKey = "", // TODO: 使用专属键。
-            }.CallMethodR(ProcessInfoManager.Initialize);
-
-            Tracker = new WindowTracker();
-        }
-
-        /// <summary>
-        /// 当用户正在尝试注销或关闭系统时调用。
-        /// </summary>
-        /// <param name="sender">事件发送者。</param>
-        /// <param name="e">     提供 <see cref="SystemEvents.SessionEnding"/> 事件的数据。</param>
-        private static void OnSessionEnding(object? sender, SessionEndingEventArgs e)
-        {
-            SaveAndDispose();
-        }
-
-        /// <summary>
-        /// 保存应用程序数据并释放资源。
-        /// </summary>
-        private static void SaveAndDispose()
-        {
-            if (Interlocked.Exchange(ref _isSavingAndDisposing, 1) == 1)
-            {
-                return;
+                var windowTracker = _host.Services.GetService<IWindowTracker>();
+                if (windowTracker is not null)
+                {
+                    await windowTracker.StartAsync();
+                }
             }
-            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(() => AppMainWindow?.DisposeTaskBarIcon());
-            Tracker.Dispose();
-            _ = new SafeCaller()
+            catch (Exception ex)
             {
-                LogMessage = "保存使用记录失败。",
-                ShouldRemind = false,
-            }.CallMethodR(() => UsageRecordManager.SaveRecord());
-            SystemEvents.SessionEnding -= OnSessionEnding;
+                LogSystem.WriteLog(LogLevel.Error, $"启动前台窗口跟踪服务失败。{ex}");
+                // TODO: 将异常显示在主页的 InfoBar。
+            }
         }
 
-        /// <summary>
-        /// 设置应用主题。
-        /// </summary>
-        /// <param name="themeName">指定的主题名称。</param>
-        private static void SetTheme(string themeName)
-        {
-            Current.RequestedTheme = themeName switch
-            {
-                "LightTheme" => ApplicationTheme.Light,
-                "DarkTheme" => ApplicationTheme.Dark,
-                _ => Current.RequestedTheme,
-            };
-        }
+        ///// <summary>
+        ///// 设置应用主题。
+        ///// </summary>
+        ///// <param name="themeName">指定的主题名称。</param>
+        //private static void SetTheme(string themeName)
+        //{
+        //    Current.RequestedTheme = themeName switch
+        //    {
+        //        "LightTheme" => ApplicationTheme.Light,
+        //        "DarkTheme" => ApplicationTheme.Dark,
+        //        _ => Current.RequestedTheme,
+        //    };
+        //}
 
         /// <summary>
         /// 在已有应用实例被激活时调用。
@@ -184,6 +177,31 @@ namespace Zscno.Trackora
         private void AppInstance_Activated(object? sender, AppActivationArguments e)
         {
             _ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { AppMainWindow.ShowWindow(); });
+        }
+
+        /// <summary>
+        /// 释放应用程序使用的所有资源。
+        /// </summary>
+        private void Dispose()
+        {
+            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(() => AppMainWindow?.DisposeTaskBarIcon());
+            _host.Dispose();
+            SystemEvents.SessionEnding -= OnSessionEnding;
+        }
+
+        /// <summary>
+        /// 当用户正在尝试注销或关闭系统时调用。
+        /// </summary>
+        private async void OnSessionEnding(object? sender, SessionEndingEventArgs e)
+        {
+            if (Interlocked.CompareExchange(ref _isExited, 1, 0) == 1)
+            {
+                return;
+            }
+
+            var app = Current as App;
+            await app!.StoreDataAsync();
+            app.Dispose();
         }
     }
 }
