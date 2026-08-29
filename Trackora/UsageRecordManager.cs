@@ -21,11 +21,17 @@ namespace Zscno.Trackora
 
         public UsageRecord Record { get; private set; }
 
+        /// <summary>
+        /// 指示内存中的使用记录与文件中的是否不一致。
+        /// </summary>
+        private bool _isDirty;
+
         public UsageRecordManager(IAppDataPathProvider pathProvider/*TODO: 接收日志实例。*/)
         {
             _recordFolderPath = pathProvider.RecordPath;
             _recordFilePath = Path.Combine(_recordFolderPath, $"{DateTime.Now: yyyy-MM-dd}.json");
             _debounceSaver = new DebounceSaver(StoreAsync, exceptionHandler: OnStoreFailed);
+            _isDirty = false;
             Record = new UsageRecord();
         }
 
@@ -79,8 +85,13 @@ namespace Zscno.Trackora
         /// </summary>
         public Task StoreAsync()
         {
-            _ = Directory.CreateDirectory(_recordFolderPath);
-            _ = Json.WriteJsonFile(_recordFilePath, Record, SourceGenerationContext.Default.UsageRecord);
+            if (_isDirty)
+            {
+                _ = Directory.CreateDirectory(_recordFolderPath);
+                _ = Json.WriteJsonFile(_recordFilePath, Record, SourceGenerationContext.Default.UsageRecord);
+                _isDirty = false;
+            }
+
             return Task.CompletedTask;
         }
 

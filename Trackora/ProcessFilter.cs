@@ -24,6 +24,16 @@ namespace Zscno.Trackora
         private HashSet<string> _ignoredProcessList;
 
         /// <summary>
+        /// 指示内存中的忽略进程名单与文件中的是否不一致。
+        /// </summary>
+        private bool _isDirtyIgnored;
+
+        /// <summary>
+        /// 指示内存中仅记录时间进程名单与文件中的是否不一致。
+        /// </summary>
+        private bool _isDirtyTimeOnly;
+
+        /// <summary>
         /// 指示当前 <see cref="WindowTracker"/> 实例使用的所有资源是否释放。若已释放，则为 1，否则为 0。
         /// </summary>
         private int _isDisposed;
@@ -41,13 +51,17 @@ namespace Zscno.Trackora
             _writeLockTimeOnly = new object();
             _debounceSaverIgnored = new DebounceSaver(SaveIgnoredProcessListAsync, exceptionHandler: OnSaveIgnoredFailed);
             _debounceSaverTimeOnly = new DebounceSaver(SaveTimeOnlyProcessListAsync, exceptionHandler: OnSaveTimeOnlyFailed);
+            _isDirtyIgnored = false;
+            _isDirtyTimeOnly = false;
         }
 
         public bool AddIgnoredProcess(string processName)
         {
             lock (_writeLockIgnored)
             {
-                return _ignoredProcessList.Add(processName);
+                bool isSuccessful = _ignoredProcessList.Add(processName);
+                _isDirtyIgnored = isSuccessful;
+                return isSuccessful;
             }
         }
 
@@ -55,7 +69,9 @@ namespace Zscno.Trackora
         {
             lock (_writeLockTimeOnly)
             {
-                return _timeOnlyProcessList.Add(processName);
+                bool isSuccessful = _timeOnlyProcessList.Add(processName);
+                _isDirtyTimeOnly = isSuccessful;
+                return isSuccessful;
             }
         }
 
@@ -102,7 +118,9 @@ namespace Zscno.Trackora
         {
             lock (_writeLockIgnored)
             {
-                return _ignoredProcessList.Remove(processName);
+                bool isSuccessful = _ignoredProcessList.Remove(processName);
+                _isDirtyIgnored = isSuccessful;
+                return isSuccessful;
             }
         }
 
@@ -110,7 +128,9 @@ namespace Zscno.Trackora
         {
             lock (_writeLockTimeOnly)
             {
-                return _timeOnlyProcessList.Remove(processName);
+                bool isSuccessful = _timeOnlyProcessList.Remove(processName);
+                _isDirtyTimeOnly = isSuccessful;
+                return isSuccessful;
             }
         }
 
@@ -126,19 +146,23 @@ namespace Zscno.Trackora
 
         public Task SaveIgnoredProcessListAsync()
         {
-            _ = Json.WriteJsonFile(
-                _ignoredProcessListFilePath,
-                _ignoredProcessList,
-                SourceGenerationContext.Default.HashSetString);
+            if (_isDirtyIgnored)
+            {
+                _ = Json.WriteJsonFile(_ignoredProcessListFilePath, _ignoredProcessList,
+                                       SourceGenerationContext.Default.HashSetString);
+                _isDirtyIgnored = false;
+            }
             return Task.CompletedTask;
         }
 
         public Task SaveTimeOnlyProcessListAsync()
         {
-            _ = Json.WriteJsonFile(
-                _timeOnlyProcessListFilePath,
-                _timeOnlyProcessList,
-                SourceGenerationContext.Default.HashSetString);
+            if (_isDirtyTimeOnly)
+            {
+                _ = Json.WriteJsonFile(_timeOnlyProcessListFilePath, _timeOnlyProcessList,
+                                       SourceGenerationContext.Default.HashSetString);
+                _isDirtyTimeOnly = false;
+            }
             return Task.CompletedTask;
         }
 
@@ -159,11 +183,13 @@ namespace Zscno.Trackora
         {
             if (Interlocked.CompareExchange(ref _isDisposed, 1, 0) == 1)
             {
-                if (disposing)
-                {
-                    _debounceSaverIgnored.Dispose();
-                    _debounceSaverTimeOnly.Dispose();
-                }
+                return;
+            }
+
+            if (disposing)
+            {
+                _debounceSaverIgnored.Dispose();
+                _debounceSaverTimeOnly.Dispose();
             }
         }
 

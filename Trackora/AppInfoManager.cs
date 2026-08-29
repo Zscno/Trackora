@@ -30,6 +30,11 @@ namespace Zscno.Trackora
         private readonly string _iconFolderPath;
 
         /// <summary>
+        /// 指示内存中的应用程序信息与文件中的是否不一致。
+        /// </summary>
+        private bool _isDirty;
+
+        /// <summary>
         /// 指示当前 <see cref="AppInfoManager"/> 实例使用的所有资源是否释放。若已释放，则为 1，否则为 0。
         /// </summary>
         private int _isDisposed;
@@ -42,6 +47,7 @@ namespace Zscno.Trackora
             _defaultIconPath = Path.Combine(_iconFolderPath, "Default.png");
             _appInfoFilePath = Path.Combine(pathProvider.LocalCachePath, "ProcessInfo.json");
             _debounceSaver = new DebounceSaver(StoreAsync, exceptionHandler: OnStoreFailed);
+            _isDirty = false;
             AppInfoMap = new();
         }
 
@@ -109,8 +115,8 @@ namespace Zscno.Trackora
             }
 
             string displayName = GetAppDisplayName(package, processMainModule, process);
-
             AppInfoMap[processName] = new ProcessInfo(displayName);
+            _isDirty = true;
         }
 
         /// <summary>
@@ -170,7 +176,12 @@ namespace Zscno.Trackora
         /// </summary>
         public Task StoreAsync()
         {
-            _ = Json.WriteJsonFile(_appInfoFilePath, AppInfoMap, SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
+            if (_isDirty)
+            {
+                _ = Json.WriteJsonFile(_appInfoFilePath, AppInfoMap,
+                                       SourceGenerationContext.Default.ConcurrentDictionaryStringProcessInfo);
+                _isDirty = false;
+            }
             return Task.CompletedTask;
         }
 
