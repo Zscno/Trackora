@@ -8,6 +8,10 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Resources;
+using Zscno.Trackora.Interfaces;
+using Zscno.Trackora.Services;
+using Zscno.Trackora.Tools;
+using Zscno.Trackora.UI;
 
 // To learn more about WinUI, the WinUI project structure, and more about our project templates,
 // see: http://aka.ms/winui-project-info.
@@ -68,7 +72,7 @@ namespace Zscno.Trackora
                 .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureServices((context, collection) =>
                 {
-                    _ = collection.AddSingleton<IAppDataPathProvider, AppDataPathProvider>()
+                    _ = collection.AddSingleton<IDataPathProvider, DataPathProvider>()
                                   .AddSingleton<IAppInfoManager, AppInfoManager>()
                                   .AddSingleton<IProcessFilter, ProcessFilter>()
                                   .AddSingleton<IReminderManager, ReminderManager>()
@@ -116,19 +120,6 @@ namespace Zscno.Trackora
         }
 
         /// <summary>
-        /// 异步地保存所有数据。
-        /// </summary>
-        private async Task StoreDataAsync()
-        {
-            List<Task> tasks = [];
-            foreach (var storable in _host.Services.GetServices<IDataStorable>())
-            {
-                tasks.Add(storable.StoreAsync());
-            }
-            await Task.WhenAll(tasks);
-        }
-
-        /// <summary>
         /// Invoked when the application is launched.
         /// </summary>
         /// <param name="args">Details about the launch request and process.</param>
@@ -157,6 +148,14 @@ namespace Zscno.Trackora
             }
         }
 
+        /// <summary>
+        /// 在已有应用实例被激活时调用。
+        /// </summary>
+        private void AppInstance_Activated(object? sender, AppActivationArguments e)
+        {
+            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { AppMainWindow.ShowWindow(); });
+        }
+
         ///// <summary>
         ///// 设置应用主题。
         ///// </summary>
@@ -170,14 +169,6 @@ namespace Zscno.Trackora
         //        _ => Current.RequestedTheme,
         //    };
         //}
-
-        /// <summary>
-        /// 在已有应用实例被激活时调用。
-        /// </summary>
-        private void AppInstance_Activated(object? sender, AppActivationArguments e)
-        {
-            _ = AppMainWindow?.DispatcherQueue.TryEnqueue(async () => { AppMainWindow.ShowWindow(); });
-        }
 
         /// <summary>
         /// 释放应用程序使用的所有资源。
@@ -202,6 +193,19 @@ namespace Zscno.Trackora
             var app = Current as App;
             await app!.StoreDataAsync();
             app.Dispose();
+        }
+
+        /// <summary>
+        /// 异步地保存所有数据。
+        /// </summary>
+        private async Task StoreDataAsync()
+        {
+            List<Task> tasks = [];
+            foreach (var storable in _host.Services.GetServices<IDataStorable>())
+            {
+                tasks.Add(storable.StoreAsync());
+            }
+            await Task.WhenAll(tasks);
         }
     }
 }
