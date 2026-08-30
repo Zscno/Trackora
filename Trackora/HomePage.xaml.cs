@@ -1,30 +1,45 @@
-using Microsoft.UI.Xaml;
+ï»¿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
-using static Zscno.Trackora.App;
 
 // To learn more about WinUI, the WinUI project structure, and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace Zscno.Trackora
 {
-	/// <summary>
-	/// An empty page that can be used on its own or navigated to within a Frame.
-	/// </summary>
-	public sealed partial class HomePage : Page
-	{
-		private static bool _isFirstLoading;
+    /// <summary>
+    /// An empty page that can be used on its own or navigated to within a Frame.
+    /// </summary>
+    public sealed partial class HomePage : Page
+    {
+        private static readonly TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
 
-		private static readonly TimeSpan _timeNow = new(DateTime.Now.Hour, DateTime.Now.Minute, 0);
+        private static bool _isFirstLoading;
 
-		public HomePage()
-		{
-			InitializeComponent();
-		}
+        /// <inheritdoc cref="IAppInfoManager"/>
+        private readonly IAppInfoManager _appInfoManager;
+
+        /// <inheritdoc cref="IReminderManager"/>
+        private readonly IReminderManager _reminderManager;
+
+        /// <inheritdoc cref="ISettings"/>
+        private readonly ISettings _settings;
+
+        /// <inheritdoc cref="IUsageRecordManager"/>
+        private readonly IUsageRecordManager _usageRecordManager;
+
+        public HomePage()
+        {
+            InitializeComponent();
+
+            _usageRecordManager = App.GetService<IUsageRecordManager>();
+            _appInfoManager = App.GetService<IAppInfoManager>();
+            _settings = App.GetService<ISettings>();
+            _reminderManager = App.GetService<IReminderManager>();
+        }
 
         /// <summary>
-        /// ¼ÓÔØĞèÒª¸üĞÂµÄ¿Ø¼ş¡£
+        /// åŠ è½½éœ€è¦æ›´æ–°çš„æ§ä»¶ã€‚
         /// </summary>
         public void LoadControlsThatNeed()
         {
@@ -32,10 +47,10 @@ namespace Zscno.Trackora
             EndUsing.SelectedTime = WindowTracker.EndUsingTime == default ||
                                     WindowTracker.EndUsingTime <= _timeNow
                 ? null
-                : WindowTracker.EndUsingTime;
+                : WindowTracker.EndUsingTime; // TODO: å·²å¼ƒç”¨ã€‚
             TimePickReminder.Text = string.Empty;
-            TotalUsageTime.Text = Localization.ToLocalizedTimeString(UsageRecordManager.Record.DailyDuration);
-            if (!_isFirstLoading)
+            TotalUsageTime.Text = Localization.ToLocalizedTimeString(_usageRecordManager.Record.DailyDuration);
+            if (!_isFirstLoading) // TODO: å·²å¼ƒç”¨ã€‚
             {
                 All.Content = Loader.GetString("All/Content");
             }
@@ -45,113 +60,113 @@ namespace Zscno.Trackora
             LoadingRing.IsActive = false;
         }
 
-		/// <summary>
-		/// »ñÈ¡ËùÓĞ±»¼ÇÂ¼½ø³ÌµÄÏÔÊ¾ĞÅÏ¢¡£
-		/// </summary>
-		/// <returns>ËùÓĞ±»¼ÇÂ¼½ø³ÌµÄÏÔÊ¾ĞÅÏ¢¡£</returns>
-        private static List<ProcessDisplayItem> GetProcessDisplayItems()
-		{
-			List<ProcessDisplayItem> processDisplayItems = [];
-			foreach (var processUsageRecord in UsageRecordManager.Record.ProcessUsageRecords)
-			{
-				string name =
-					ProcessInfoManager.ProcessInfoMap.TryGetValue( processUsageRecord.Key, out ProcessInfo? processInfo) ?
-					processInfo.DisplayName : processUsageRecord.Key;
-				string iconFileUri = ProcessInfoManager.GetProcessIconUri(processUsageRecord.Key);
-				processDisplayItems.Add(new ProcessDisplayItem(
+        private async void All_Click(object sender, RoutedEventArgs e) // TODO: å·²å¼ƒç”¨ã€‚
+        {
+            LoadingRing.IsActive = true;
+            All.IsEnabled = false;
+            bool isRetract = (string)All.Content == App.Loader.GetString("Retract");
+
+            _ = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetInfo", }.CallMethodD(() =>
+            {
+                int count = isRetract ? 6 : UsageRecordManager.Record.ProcessUsageRecords.Count;
+                ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
+            });
+            All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
+
+            All.IsEnabled = true;
+            LoadingRing.IsActive = false;
+        }
+
+        private void Continuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
+        {
+            if (!_isFirstLoading)
+            {
+                _settings.SessionThreshold = (uint)e.NewTime.TotalMilliseconds;
+            }
+        }
+
+        private void EndUsing_TimeChanged(object sender, TimePickerValueChangedEventArgs e) // TODO: å·²å¼ƒç”¨ã€‚
+        {
+            if (e.NewTime <= _timeNow)
+            {
+                TimePickReminder.Text = Loader.GetString("PastTime");
+                EndUsing.SelectedTime = null;
+            }
+            else
+            {
+                TimePickReminder.Text = Loader.GetString("RightTime");
+                WindowTracker.EndUsingTime = e.NewTime;
+            }
+        }
+
+        /// <summary>
+        /// è·å–æ‰€æœ‰è¢«è®°å½•è¿›ç¨‹çš„æ˜¾ç¤ºä¿¡æ¯ã€‚
+        /// </summary>
+        /// <returns>æ‰€æœ‰è¢«è®°å½•è¿›ç¨‹çš„æ˜¾ç¤ºä¿¡æ¯ã€‚</returns>
+        private List<ProcessDisplayItem> GetProcessDisplayItems()
+        {
+            List<ProcessDisplayItem> processDisplayItems = [];
+            foreach (var processUsageRecord in _usageRecordManager.Record.ProcessUsageRecords)
+            {
+                string name =
+                    _appInfoManager.AppInfoMap.TryGetValue(processUsageRecord.Key, out ProcessInfo? processInfo) ?
+                    processInfo.DisplayName : processUsageRecord.Key;
+                string iconFileUri = _appInfoManager.GetAppIconUri(processUsageRecord.Key);
+                processDisplayItems.Add(new ProcessDisplayItem(
                     iconFileUri,
                     name,
                     processUsageRecord.Value));
-			}
-			return processDisplayItems;
-		}
+            }
+            return processDisplayItems;
+        }
 
-		private async void All_Click(object sender, RoutedEventArgs e)
-		{
-			LoadingRing.IsActive = true;
-			All.IsEnabled = false;
-			bool isRetract = (string)All.Content == Loader.GetString("Retract");
+        private void Page_Loaded(object sender, RoutedEventArgs e)
+        {
+            _isFirstLoading = true;
+            //CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
+            Total.Time = TimeSpan.FromMilliseconds(_settings.DailyThreshold);
+            Continuous.Time = TimeSpan.FromMilliseconds(_settings.SessionThreshold);
+            ResetContinuous.Time = TimeSpan.FromMilliseconds(_settings.IdleThreshold);
+            LoadControlsThatNeed();
+            _isFirstLoading = false;
+        }
 
-			_ = await new SafeCaller() { RemindingMsgResKey="ECanNotGetInfo", }.CallMethodD(() =>
-			{
-				int count = isRetract ? 6 : UsageRecordManager.Record.ProcessUsageRecords.Count;
-				ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
-			});
-			All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
+        private void Refresh_Click(object sender, RoutedEventArgs e)
+        {
+            Button? button = sender as Button;
+            button!.IsEnabled = false;
+            LoadControlsThatNeed();
+            button.IsEnabled = true;
+        }
 
-			All.IsEnabled = true;
-			LoadingRing.IsActive = false;
-		}
+        private void Reset_Click(object sender, RoutedEventArgs e) // TODO: å·²å¼ƒç”¨ã€‚
+        {
+            Button? button = sender as Button;
+            button!.IsEnabled = false;
+            EndUsing.SelectedTime = null;
+            WindowTracker.EndUsingTime = TimeSpan.Zero;
+            TimePickReminder.Text = string.Empty;
+            button.IsEnabled = true;
+        }
 
-		private void Continuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
-		{
-			if (!_isFirstLoading)
-			{
-				Settings.SessionThreshold = (uint)e.NewTime.TotalMilliseconds;
-			}
-		}
+        private void ResetContinuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
+        {
+            if (!_isFirstLoading)
+            {
+                _settings.IdleThreshold = (uint)e.NewTime.TotalMilliseconds;
+            }
+        }
 
-		private void EndUsing_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
-		{
-			if (e.NewTime <= _timeNow)
-			{
-				TimePickReminder.Text = Loader.GetString("PastTime");
-				EndUsing.SelectedTime = null;
-			}
-			else
-			{
-				TimePickReminder.Text = Loader.GetString("RightTime");
-				WindowTracker.EndUsingTime = e.NewTime;
-			}
-		}
-
-		private async void Page_Loaded(object sender, RoutedEventArgs e)
-		{
-			_isFirstLoading = true;
-			//CachePath.Text = ApplicationData.Current.TemporaryFolder.Path;
-			Total.Time = TimeSpan.FromMilliseconds(Settings.DailyThreshold);
-			Continuous.Time = TimeSpan.FromMilliseconds(Settings.SessionThreshold);
-			ResetContinuous.Time = TimeSpan.FromMilliseconds(Settings.IdleThreshold);
-			LoadControlsThatNeed();
-			_isFirstLoading = false;
-		}
-
-		private async void Refresh_Click(object sender, RoutedEventArgs e)
-		{
-			Button? button = sender as Button;
-			button!.IsEnabled = false;
-			LoadControlsThatNeed();
-			button.IsEnabled = true;
-		}
-
-		private void Reset_Click(object sender, RoutedEventArgs e)
-		{
-			Button? button = sender as Button;
-			button!.IsEnabled = false;
-			EndUsing.SelectedTime = null;
-			WindowTracker.EndUsingTime = TimeSpan.Zero;
-			TimePickReminder.Text = string.Empty;
-			button.IsEnabled = true;
-		}
-
-		private void ResetContinuous_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
-		{
-			if (!_isFirstLoading)
-			{
-				Settings.IdleThreshold = (uint)e.NewTime.TotalMilliseconds;
-			}
-		}
-
-		private void Total_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
-		{
-			if (!_isFirstLoading)
-			{
-				Settings.DailyThreshold = (uint)e.NewTime.TotalMilliseconds;
-				if (e.OldTime != e.NewTime)
-				{
-					_reminderManager.ResetDailyDueTime();
-				}
-			}
-		}
-	}
+        private void Total_TimeChanged(object sender, TimePickerValueChangedEventArgs e)
+        {
+            if (!_isFirstLoading)
+            {
+                _settings.DailyThreshold = (uint)e.NewTime.TotalMilliseconds;
+                if (e.OldTime != e.NewTime)
+                {
+                    _reminderManager.ResetDailyDueTime();
+                }
+            }
+        }
+    }
 }
