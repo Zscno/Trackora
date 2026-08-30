@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Windows.ApplicationModel.Resources;
 using Zscno.Trackora.Interfaces;
 using Zscno.Trackora.Services;
 using Zscno.Trackora.Tools;
@@ -39,11 +38,6 @@ namespace Zscno.Trackora
         public static MainWindow? AppMainWindow { get; private set; }
 
         /// <summary>
-        /// 用于加载语言资源。
-        /// </summary>
-        public static ResourceLoader Loader { get; } = new();
-
-        /// <summary>
         /// 本地缓存文件夹路径。
         /// </summary>
         public static string LocalCachePath { get; private set; } = string.Empty;
@@ -53,9 +47,9 @@ namespace Zscno.Trackora
         /// </summary>
         public static Dictionary<string, string> Themes => new()
         {
-            { Loader.GetString("LightTheme"), "LightTheme" },
-            { Loader.GetString("DarkTheme"), "DarkTheme" },
-            { Loader.GetString("SystemTheme"), "SystemTheme" },
+            { Strings.Resources.LightTheme, "LightTheme" },
+            { Strings.Resources.DarkTheme, "DarkTheme" },
+            { Strings.Resources.SystemTheme, "SystemTheme" },
         };
 
         /// <summary>
@@ -117,6 +111,19 @@ namespace Zscno.Trackora
             {
                 throw new ArgumentException("请求的类型尚未注册。", nameof(T));
             }
+        }
+
+        /// <summary>
+        /// 异步地保存所有数据。
+        /// </summary>
+        private async Task StoreDataAsync()
+        {
+            List<Task> tasks = [];
+            foreach (var storable in _host.Services.GetServices<IDataStorable>())
+            {
+                tasks.Add(storable.StoreAsync());
+            }
+            await Task.WhenAll(tasks);
         }
 
         /// <summary>
@@ -193,19 +200,6 @@ namespace Zscno.Trackora
             var app = Current as App;
             await app!.StoreDataAsync();
             app.Dispose();
-        }
-
-        /// <summary>
-        /// 异步地保存所有数据。
-        /// </summary>
-        private async Task StoreDataAsync()
-        {
-            List<Task> tasks = [];
-            foreach (var storable in _host.Services.GetServices<IDataStorable>())
-            {
-                tasks.Add(storable.StoreAsync());
-            }
-            await Task.WhenAll(tasks);
         }
     }
 }

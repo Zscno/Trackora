@@ -1,4 +1,5 @@
 ﻿using System;
+using Zscno.Trackora.Strings;
 
 namespace Zscno.Trackora.Tools
 {
@@ -14,13 +15,9 @@ namespace Zscno.Trackora.Tools
             TimeSpan timeSpan = TimeSpan.FromMilliseconds(time);
             return timeSpan switch
             {
-                { Days: 0, Hours: 0, Minutes: 0 } => "<1" + App.Loader.GetString("Minute"),
-                { Days: 0, Hours: 0 } => timeSpan.Minutes + App.Loader.GetString("Minute"),
-                { Days: 0 } => timeSpan.Hours + App.Loader.GetString("Hour") +
-                               timeSpan.Minutes + App.Loader.GetString("Minute"),
-                _ => timeSpan.Days + App.Loader.GetString("Day") +
-                     timeSpan.Hours + App.Loader.GetString("Hour") +
-                     timeSpan.Minutes + App.Loader.GetString("Minute"),
+                { Days: 0, Hours: 0, Minutes: 0 } => "<1" + Resources.Minute,
+                { Days: 0, Hours: 0 } => timeSpan.Minutes + Resources.Minute,
+                _ => timeSpan.Hours + Resources.Hour + timeSpan.Minutes + Resources.Minute,
             };
         }
     }

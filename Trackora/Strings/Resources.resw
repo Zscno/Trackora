@@ -118,192 +118,192 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ContinuousTimePicker.Header" xml:space="preserve">
-    <value>Continuous usage time reminder</value>
+    <value>连续使用时长提醒</value>
   </data>
   <data name="ContinuousReminderText1" xml:space="preserve">
-    <value>You have been using the computer continuously for </value>
+    <value>您已连续使用电脑 </value>
   </data>
   <data name="ContinuousReminderText2" xml:space="preserve">
-    <value> . We suggest you take a break.</value>
+    <value> ，建议您休息一会儿。</value>
   </data>
   <data name="ExitApp.Text" xml:space="preserve">
-    <value>Exit the application</value>
+    <value>退出应用</value>
   </data>
   <data name="Hour" xml:space="preserve">
-    <value>h </value>
+    <value>时</value>
   </data>
   <data name="Minute" xml:space="preserve">
-    <value>m</value>
+    <value>分</value>
   </data>
   <data name="Home.Content" xml:space="preserve">
-    <value>Home</value>
+    <value>主页</value>
   </data>
   <data name="Refresh.Content" xml:space="preserve">
-    <value>Refresh</value>
+    <value>刷新</value>
   </data>
   <data name="ShowWindow.Text" xml:space="preserve">
-    <value>Display window</value>
+    <value>显示窗口</value>
   </data>
   <data name="TaskbarIcon.ToolTipText" xml:space="preserve">
-    <value>Trackora - Efficiently manage your time</value>
+    <value>Trackora - 高效管理您的时间</value>
   </data>
   <data name="UsageTimeReminderTitle" xml:space="preserve">
-    <value>Usage time reminder</value>
+    <value>使用时长提醒</value>
   </data>
   <data name="EndUsingReminderTitle" xml:space="preserve">
-    <value>Time's up</value>
+    <value>时间到了</value>
   </data>
   <data name="EndUsingReminderText1" xml:space="preserve">
-    <value>It is now </value>
+    <value>现在是 </value>
   </data>
   <data name="EndUsingReminderText2" xml:space="preserve">
-    <value> , which has reached the designated stop time. Please take a rest immediately.</value>
+    <value> ，已经到了您指定的停止时间，请您立即休息。</value>
   </data>
   <data name="PastTime" xml:space="preserve">
-    <value>The time you selected has already passed. Please select again.</value>
+    <value>您选定的时间已经过去了，请重新选择</value>
   </data>
   <data name="RightTime" xml:space="preserve">
-    <value>This time is correct. We will remind you at that time.</value>
+    <value>这个时间是正确的。我们将会在那时提醒您</value>
   </data>
   <data name="Reset.Content" xml:space="preserve">
-    <value>Reset</value>
+    <value>重置</value>
   </data>
   <data name="HomeHeader" xml:space="preserve">
-    <value>Today's usage time</value>
+    <value>今日使用时长</value>
   </data>
   <data name="SettingsHeader" xml:space="preserve">
-    <value>Settings</value>
+    <value>设置</value>
   </data>
   <data name="ContinuousSoundPicker.Header" xml:space="preserve">
-    <value>Reminder sound for continuous usage time:</value>
+    <value>连续使用时长提醒的提示音：</value>
   </data>
   <data name="EndUsingSoundPicker.Header" xml:space="preserve">
-    <value>Reminder sound for end-of-use time: </value>
+    <value>结束使用时间提醒的提示音：</value>
   </data>
   <data name="EndUsingTimePicker.Header" xml:space="preserve">
-    <value>End-of-use time reminder</value>
+    <value>结束使用时间提醒</value>
   </data>
   <data name="Test.Content" xml:space="preserve">
-    <value>Test</value>
+    <value>测试</value>
   </data>
   <data name="TestContent" xml:space="preserve">
-    <value>Selected reminder sound: </value>
+    <value>选择的提示音：</value>
   </data>
   <data name="ThemePicker.Header" xml:space="preserve">
-    <value>App current theme (restart the application after changing the theme for it to take effect):</value>
+    <value>应用当前主题（更改主题后重启应用生效）：</value>
   </data>
   <data name="LightTheme" xml:space="preserve">
-    <value>Light theme</value>
+    <value>浅色主题</value>
   </data>
   <data name="DarkTheme" xml:space="preserve">
-    <value>Dark theme</value>
+    <value>深色主题</value>
   </data>
   <data name="SystemTheme" xml:space="preserve">
-    <value>Follow system</value>
+    <value>跟随系统</value>
   </data>
   <data name="ThemeTitle.Text" xml:space="preserve">
-    <value>Theme</value>
+    <value>主题</value>
   </data>
   <data name="RingerTitle.Text" xml:space="preserve">
-    <value>Reminder Sounds</value>
+    <value>提示音</value>
   </data>
   <data name="DevelopTitle.Text" xml:space="preserve">
-    <value>Developer tools</value>
+    <value>开发者工具</value>
   </data>
   <data name="OnlyTimeProcesses.Header" xml:space="preserve">
-    <value>The name of the process that only records usage time and does not display it on the homepage:</value>
+    <value>仅记录使用时长而不显示在主页的进程名称：</value>
   </data>
   <data name="OK.Content" xml:space="preserve">
-    <value>OK</value>
+    <value>确定</value>
   </data>
   <data name="ErrorOrWarningTitle" xml:space="preserve">
-    <value>Tip</value>
+    <value>提示</value>
   </data>
   <data name="ECanNotGetRecord" xml:space="preserve">
-    <value>We are unable to get today's records. See the logs for details (see settings page).</value>
+    <value>我们无法获取今天的记录。详细信息请查阅日志（见 设置 页面）。</value>
   </data>
   <data name="ECanNotInitTimer" xml:space="preserve">
-    <value>The core part of the application cannot run. Please contact the author for help.</value>
+    <value>应用的核心部分无法运行，请联系作者以获取帮助。</value>
   </data>
   <data name="ECanNotSetRecord" xml:space="preserve">
-    <value>We are unable to manage today's records. See the logs for details (see settings page).</value>
+    <value>我们无法管理今天的记录。详细信息请查阅日志（见 设置 页面）。</value>
   </data>
   <data name="CanNotSend.Title" xml:space="preserve">
-    <value>Met some problems</value>
+    <value>遇到了一些问题</value>
   </data>
   <data name="CanNotSend.Message" xml:space="preserve">
-    <value>We are unable to send certain notifications. See the logs for details.</value>
+    <value>我们无法发送某些通知。详细信息请查阅日志。</value>
   </data>
   <data name="InputReminder.Text" xml:space="preserve">
-    <value>Separate with ",", and do not modify unless there are special requirements. Do not let two "," be connected together.</value>
+    <value>以英文逗号分隔，无特殊需求不修改。不要让两个逗号连在一起。</value>
   </data>
   <data name="ECanNotRecordTime" xml:space="preserve">
-    <value>We are unable to record the usage time.</value>
+    <value>我们无法记录使用时长。详细信息请查阅日志（见 设置 页面）。</value>
   </data>
   <data name="ResetContinuousTimePicker.Header" xml:space="preserve">
-    <value>Reset duration for continuous usage time</value>
+    <value>连续使用时长的重置时长</value>
   </data>
   <data name="CheckLog.Content" xml:space="preserve">
-    <value>View logs</value>
+    <value>查看日志</value>
   </data>
   <data name="ECanNotGetInfo" xml:space="preserve">
-    <value>We are unable to get the information of process. See the logs for details (see settings page).</value>
+    <value>我们无法获取进程的信息。详细信息请查阅日志（见 设置 页面）。</value>
   </data>
   <data name="TotalReminderText2" xml:space="preserve">
-    <value> today. We suggest you reduce your computer usage.</value>
+    <value> ，建议您减少电脑的使用。</value>
   </data>
   <data name="TotalReminderText1" xml:space="preserve">
-    <value>You have been using the computer for </value>
+    <value>您今天已使用电脑 </value>
   </data>
   <data name="TotalTimePicker.Header" xml:space="preserve">
-    <value>Total usage time reminder</value>
+    <value>总使用时长提醒</value>
   </data>
   <data name="TotalSoundPicker.Header" xml:space="preserve">
-    <value>Reminder sound for total usage time: </value>
+    <value>总使用时长提醒的提示音：</value>
   </data>
   <data name="Cancel" xml:space="preserve">
-    <value>Cancel</value>
+    <value>取消</value>
   </data>
   <data name="ECanNotWriteInfo" xml:space="preserve">
-    <value>We are unable to write the information of process. See the logs for details (see settings page).</value>
+    <value>我们无法写入进程的信息。详细信息请查阅日志（见 设置 页面）。</value>
   </data>
   <data name="AboutTitle.Text" xml:space="preserve">
-    <value>About</value>
+    <value>关于</value>
   </data>
   <data name="CacheFolderSize" xml:space="preserve">
-    <value>Cache folder size: </value>
+    <value>缓存文件夹大小：</value>
   </data>
   <data name="ECanNotGetSize" xml:space="preserve">
-    <value>We are unable to get the cache folder size.</value>
+    <value>我们无法获取缓存文件夹大小。详细信息请查阅日志。</value>
   </data>
   <data name="ECanNotCleanCache" xml:space="preserve">
-    <value>We are unable to clear the cache completely. See the logs for details.</value>
+    <value>我们无法完全清理缓存。详细信息请查阅日志。</value>
   </data>
   <data name="CleanCache.Content" xml:space="preserve">
-    <value>Clear cache</value>
+    <value>清理缓存</value>
   </data>
   <data name="CleanReminder.Text" xml:space="preserve">
-    <value>After clearing the cache, some application information will only be loaded after you use it.</value>
+    <value>清理缓存后某些应用的信息需要您使用时后才会加载出来。</value>
   </data>
   <data name="PersonalizeTitle.Text" xml:space="preserve">
-    <value>Personalize</value>
+    <value>个性化</value>
   </data>
   <data name="ListTitle.Text" xml:space="preserve">
-    <value>Usage time ranking</value>
+    <value>使用时长排名</value>
   </data>
   <data name="All.Content" xml:space="preserve">
-    <value>Show all apps</value>
+    <value>查看所有应用</value>
   </data>
   <data name="Retract" xml:space="preserve">
-    <value>Fold up</value>
+    <value>收起</value>
   </data>
   <data name="IgnoredProcesses.Header" xml:space="preserve">
-    <value>The name of the process that does not record any information:</value>
+    <value>不记录任何信息的进程名称：</value>
   </data>
   <data name="ECanNotInitSettings" xml:space="preserve">
-    <value>We are unable to load the settings. Please contact the author for help.</value>
+    <value>我们无法加载设置，请联系作者以获取帮助。</value>
   </data>
   <data name="ECanNotInitInfoFilePath" xml:space="preserve">
-    <value>We are unable to load the information of process. Please contact the author for help.</value>
+    <value>我们无法加载进程信息，请联系作者以获取帮助。</value>
   </data>
 </root>

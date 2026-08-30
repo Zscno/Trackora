@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml.Controls;
 using System.Threading.Tasks;
 using WinRT.Interop;
 using Zscno.Trackora.Interfaces;
+using Zscno.Trackora.Strings;
 using Zscno.Trackora.Tools;
 using static Zscno.Trackora.App;
 
@@ -101,12 +102,12 @@ namespace Zscno.Trackora.UI
             if (((NavigationViewItem)args.SelectedItem).Name == "Home")
             {
                 _ = MainFrame.Navigate(typeof(HomePage));
-                sender.Header = Loader.GetString("HomeHeader");
+                sender.Header = Resources.HomeHeader;
             }
             else if (args.IsSettingsSelected)
             {
                 _ = MainFrame.Navigate(typeof(SettingsPage));
-                sender.Header = Loader.GetString("SettingsHeader");
+                sender.Header = Resources.SettingsHeader;
             }
         }
     }

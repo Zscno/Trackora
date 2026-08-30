@@ -140,7 +140,7 @@ namespace Zscno.Trackora.UI
             bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
             .CallMethodD(() =>
             {
-                CacheSize.Text = Loader.GetString("CacheFolderSize") + GetFolderSize(LocalCachePath);
+                CacheSize.Text = Strings.Resources.CacheFolderSize + GetFolderSize(LocalCachePath);
             });
             if (!isSuccessful)
             {
@@ -270,7 +270,7 @@ namespace Zscno.Trackora.UI
             bool isSuccessful = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetSize" }
             .CallMethodD(() =>
             {
-                CacheSize.Text = Loader.GetString("CacheFolderSize") + GetFolderSize(LocalCachePath);
+                CacheSize.Text = Strings.Resources.CacheFolderSize + GetFolderSize(LocalCachePath);
             });
             if (!isSuccessful)
             {

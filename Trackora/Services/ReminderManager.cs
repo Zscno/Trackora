@@ -3,6 +3,7 @@ using Microsoft.Windows.AppNotifications.Builder;
 using System;
 using System.Threading;
 using Zscno.Trackora.Interfaces;
+using Zscno.Trackora.Strings;
 using Zscno.Trackora.Tools;
 
 namespace Zscno.Trackora.Services
@@ -155,10 +156,10 @@ namespace Zscno.Trackora.Services
         private void SendDueDailyReminder(object? state)
         {
             _isDailySent = SendNotification(
-                App.Loader.GetString("UsageTimeReminderTitle"),
-                App.Loader.GetString("TotalReminderText1") +
+                Resources.UsageTimeReminderTitle,
+                Resources.TotalReminderText1 +
                 Localization.ToLocalizedTimeString(_usageRecordManager.Record.DailyDuration) +
-                App.Loader.GetString("TotalReminderText2"),
+                Resources.TotalReminderText2,
                 _settings.IdleThreshold,
                 false);
         }
@@ -166,10 +167,10 @@ namespace Zscno.Trackora.Services
         private void SendDueSessionReminder(object? state)
         {
             _ = SendNotification(
-                App.Loader.GetString("UsageTimeReminderTitle"),
-                App.Loader.GetString("ContinuousReminderText1") +
+                Resources.UsageTimeReminderTitle,
+                Resources.ContinuousReminderText1 +
                 Localization.ToLocalizedTimeString(_settings.SessionThreshold) +
-                App.Loader.GetString("ContinuousReminderText2"),
+                Resources.ContinuousReminderText2,
                 _settings.IdleThreshold,
                 false);
         }
