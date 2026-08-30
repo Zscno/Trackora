@@ -3,7 +3,6 @@ using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using System;
 using System.Threading.Tasks;
 using WinRT.Interop;
 using static Zscno.Trackora.App;
@@ -21,16 +20,20 @@ namespace Zscno.Trackora
         public MainWindow()
         {
             InitializeComponent();
+
             AppWindow.Closing += AppWindow_Closing;
+
+            var settings = App.GetService<ISettings>();
+
             ExtendsContentIntoTitleBar = true;
             Title = "Trackora";
             AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
             AppWindow.TitleBar.IconShowOptions = IconShowOptions.ShowIconAndSystemMenu;
             SetTitleBar(TitleBar);
-            AppWindow.TitleBar.ButtonForegroundColor = (string)LocalSettings["Theme"] switch
+            AppWindow.TitleBar.ButtonForegroundColor = settings.Theme switch
             {
-                "DarkTheme" => Colors.White,
-                "LightTheme" => Colors.Black,
+                ElementTheme.Dark => Colors.White,
+                ElementTheme.Light => Colors.Black,
                 _ => AppWindow.TitleBar.ButtonForegroundColor,
             };
         }
@@ -79,9 +82,9 @@ namespace Zscno.Trackora
         /// 退出应用程序。
         /// </summary>
         [RelayCommand]
-        private static void ExitApplication()
+        private static async Task ExitApplication()
         {
-            Exit(0);
+            await Exit(0);
         }
 
         private void AppWindow_Closing(AppWindow sender, AppWindowClosingEventArgs args)
