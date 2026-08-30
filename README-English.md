@@ -34,8 +34,6 @@ When you wish to disable time tracking, you can click on the taskbar or desktop.
 
 - Continuous usage duration reminder. A reminder will be given when you have been continuously using the computer for a specified duration (default is 30 minutes). If you are away for a sufficient period of time (default is 10 minutes), this time will start counting again. You can modify these two intervals on the homepage, or change the notification sound on the settings page.
 
-- End-of-use time reminder. When you want to stop using the computer at a specified time, you can set this time on the homepage, and a reminder will be given when the time is up. You can modify the alert sound on the settings page.
-
 - Set up a program that only records usage duration without displaying it on the homepage. You can find the file name without the extension of the program you want to set up in various ways, add it to the text box on the settings page, and click OK. The default settings are for some system components that do not have icons or names.
 
 - Set programs that are not recorded at all. You can find the file name without the extension of the program you need to set in various ways, add it to the text box on the settings page, and click OK. The default settings are for some system components, such as the lock screen and desktop.

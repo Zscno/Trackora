@@ -47,36 +47,8 @@ namespace Zscno.Trackora.UI
         public void LoadControlsThatNeed()
         {
             LoadingRing.IsActive = true;
-            EndUsing.SelectedTime = WindowTracker.EndUsingTime == default ||
-                                    WindowTracker.EndUsingTime <= _timeNow
-                ? null
-                : WindowTracker.EndUsingTime; // TODO: 已弃用。
-            TimePickReminder.Text = string.Empty;
             TotalUsageTime.Text = Localization.ToLocalizedTimeString(_usageRecordManager.Record.DailyDuration);
-            if (!_isFirstLoading) // TODO: 已弃用。
-            {
-                All.Content = Loader.GetString("All/Content");
-            }
-
             ProcessesList.ItemsSource = GetProcessDisplayItems();
-
-            LoadingRing.IsActive = false;
-        }
-
-        private async void All_Click(object sender, RoutedEventArgs e) // TODO: 已弃用。
-        {
-            LoadingRing.IsActive = true;
-            All.IsEnabled = false;
-            bool isRetract = (string)All.Content == App.Loader.GetString("Retract");
-
-            _ = await new SafeCaller() { RemindingMsgResKey = "ECanNotGetInfo", }.CallMethodD(() =>
-            {
-                int count = isRetract ? 6 : UsageRecordManager.Record.ProcessUsageRecords.Count;
-                ProcessesList.ItemsSource = WindowTracker.GetProcessesInfo(count);
-            });
-            All.Content = isRetract ? Loader.GetString("All/Content") : Loader.GetString("Retract");
-
-            All.IsEnabled = true;
             LoadingRing.IsActive = false;
         }
 
@@ -85,20 +57,6 @@ namespace Zscno.Trackora.UI
             if (!_isFirstLoading)
             {
                 _settings.SessionThreshold = (uint)e.NewTime.TotalMilliseconds;
-            }
-        }
-
-        private void EndUsing_TimeChanged(object sender, TimePickerValueChangedEventArgs e) // TODO: 已弃用。
-        {
-            if (e.NewTime <= _timeNow)
-            {
-                TimePickReminder.Text = Loader.GetString("PastTime");
-                EndUsing.SelectedTime = null;
-            }
-            else
-            {
-                TimePickReminder.Text = Loader.GetString("RightTime");
-                WindowTracker.EndUsingTime = e.NewTime;
             }
         }
 
@@ -139,16 +97,6 @@ namespace Zscno.Trackora.UI
             Button? button = sender as Button;
             button!.IsEnabled = false;
             LoadControlsThatNeed();
-            button.IsEnabled = true;
-        }
-
-        private void Reset_Click(object sender, RoutedEventArgs e) // TODO: 已弃用。
-        {
-            Button? button = sender as Button;
-            button!.IsEnabled = false;
-            EndUsing.SelectedTime = null;
-            WindowTracker.EndUsingTime = TimeSpan.Zero;
-            TimePickReminder.Text = string.Empty;
             button.IsEnabled = true;
         }
 
