@@ -10,17 +10,17 @@ namespace Zscno.Trackora.UI
         /// <summary>
         /// 进程图标文件的 Uri。
         /// </summary>
-        internal string IconFileUri { get; set; }
+        public string IconFileUri { get; set; }
 
         /// <summary>
         /// 进程的友好名称。
         /// </summary>
-        internal string Name { get; set; }
+        public string Name { get; set; }
 
         /// <summary>
         /// 进程的使用时间（已本地化的字符串）。
         /// </summary>
-        internal string UsageTime { get; set; }
+        public string UsageTime { get; set; }
 
         /// <summary>
         /// 初始化一个新的 <see cref="ProcessDisplayItem"/> 实例。
@@ -28,7 +28,7 @@ namespace Zscno.Trackora.UI
         /// <param name="iconFileUri">进程图标的 Uri。</param>
         /// <param name="name">       进程的友好名称。</param>
         /// <param name="usageTime">  进程的使用时间（以毫秒为单位）。</param>
-        internal ProcessDisplayItem(string iconFileUri, string name, uint usageTime)
+        public ProcessDisplayItem(string iconFileUri, string name, uint usageTime)
         {
             IconFileUri = iconFileUri;
             Name = name;

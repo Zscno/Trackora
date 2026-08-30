@@ -41,6 +41,14 @@ namespace Zscno.Trackora.UI
             };
         }
 
+        /// <summary>
+        /// 释放任务栏通知区域图标资源。
+        /// </summary>
+        public void DisposeTaskBarIcon()
+        {
+            TbIcon.Dispose();
+        }
+
         [RelayCommand]
         public void ShowWindow()
         {
@@ -71,14 +79,6 @@ namespace Zscno.Trackora.UI
             }
             _ = NativeApi.ShowWindow(hwnd, NativeApi.SW_SHOW);
             _ = NativeApi.SetForegroundWindow(hwnd);
-        }
-
-        /// <summary>
-        /// 释放任务栏通知区域图标资源。
-        /// </summary>
-        internal void DisposeTaskBarIcon()
-        {
-            TbIcon.Dispose();
         }
 
         /// <summary>

@@ -11,7 +11,7 @@ namespace Zscno.Trackora.Tools
         /// 隐藏指定的窗口。
         /// </summary>
         /// <param name="window">窗口的 <see cref="Window"/> 实例。</param>
-        internal static void HideWindow(Window window)
+        public static void HideWindow(Window window)
         {
             nint hwnd = WindowNative.GetWindowHandle(window);
             _ = ShowWindow(hwnd, SW_HIDE);
@@ -24,7 +24,7 @@ namespace Zscno.Trackora.Tools
         /// <param name="childHandle"> 获取到的子窗口句柄。</param>
         /// <param name="className">   指定要获取子窗口的类名。</param>
         /// <returns>指示是否获取成功。</returns>
-        internal static bool TryGetChildWindowHandle(nint parentHandle, out nint childHandle, string? className = null)
+        public static bool TryGetChildWindowHandle(nint parentHandle, out nint childHandle, string? className = null)
         {
             childHandle = FindWindowEx(parentHandle, nint.Zero, className, null);
             if (childHandle == nint.Zero)
@@ -43,7 +43,7 @@ namespace Zscno.Trackora.Tools
         /// <param name="windowHandle">指定窗口的句柄。</param>
         /// <param name="className">   获取到的窗口类名。</param>
         /// <returns>指示是否获取成功。</returns>
-        internal static bool TryGetWindowClassName(nint windowHandle, [MaybeNullWhen(false)] out string className)
+        public static bool TryGetWindowClassName(nint windowHandle, [MaybeNullWhen(false)] out string className)
         {
             StringBuilder classNameBuilder = new(256);
             int classNameLength = GetClassName(windowHandle, classNameBuilder, classNameBuilder.Capacity);
