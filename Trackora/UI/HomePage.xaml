@@ -5,8 +5,8 @@
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 	xmlns:local="using:Zscno.Trackora.UI"
-	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-	Loaded="Page_Loaded"
+	xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" d:DataContext="{d:DesignInstance Type=local:HomeViewModel}"
+    Loaded="Page_Loaded"
 	mc:Ignorable="d">
 
     <Page.Resources>
@@ -59,7 +59,8 @@
 					Name="TotalUsageTime"
 					Grid.Row="0"
 					FontSize="35"
-					Style="{StaticResource DisplayTextBlockStyle}"/>
+					Style="{StaticResource DisplayTextBlockStyle}"
+                    Text="{x:Bind dailyDuration, Mode=OneWay}"/>
                 <Button
 					x:Uid="Refresh"
 					Grid.Row="0"
@@ -72,21 +73,24 @@
 					Grid.Row="1"
 					ClockIdentifier="24HourClock"
 					MinuteIncrement="5"
-					TimeChanged="Total_TimeChanged"/>
+					TimeChanged="Total_TimeChanged"
+                    Time="{x:Bind dailyThreshold}"/>
                 <TimePicker
 					Name="Continuous"
 					x:Uid="ContinuousTimePicker"
 					Grid.Row="2"
 					ClockIdentifier="24HourClock"
 					MinuteIncrement="5"
-					TimeChanged="Continuous_TimeChanged"/>
+					TimeChanged="Continuous_TimeChanged"
+                    Time="{x:Bind sessionThreshold}"/>
                 <TimePicker
 					Name="ResetContinuous"
 					x:Uid="ResetContinuousTimePicker"
 					Grid.Row="3"
 					ClockIdentifier="24HourClock"
 					MinuteIncrement="1"
-					TimeChanged="ResetContinuous_TimeChanged"/>
+					TimeChanged="ResetContinuous_TimeChanged"
+                    Time="{x:Bind idleThreshold}"/>
             </Grid>
         </ScrollViewer>
 
@@ -111,7 +115,9 @@
                 <ListView
 					Name="ProcessesList"
 					ItemTemplate="{StaticResource ProcessesList}"
-					SelectionMode="None"/>
+					SelectionMode="None"
+                    ShowsScrollingPlaceholders="True"
+                    ItemsSource="{x:Bind appList, Mode=OneWay}"/>
             </ScrollViewer>
         </Grid>
     </Grid>

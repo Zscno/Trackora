@@ -52,33 +52,14 @@ namespace Zscno.Trackora.UI
         [RelayCommand]
         public void ShowWindow()
         {
-            Window? window = AppMainWindow;
-            if (window is null)
-            {
-                return;
-            }
+            MainView.SelectedItem = Home;
 
-            if (MainView.SelectedItem as NavigationViewItem != Home)
+            nint windowHandle = WindowNative.GetWindowHandle(this);
+            if (windowHandle != nint.Zero)
             {
-                MainView.SelectedItem = Home;
+                _ = NativeApi.ShowWindow(windowHandle, NativeApi.SW_SHOW);
+                _ = NativeApi.SetForegroundWindow(windowHandle);
             }
-            else
-            {
-                if (MainFrame.Content is not HomePage page)
-                {
-                    return;
-                }
-
-                page.LoadControlsThatNeed();
-            }
-
-            nint hwnd = WindowNative.GetWindowHandle(window);
-            if (hwnd == nint.Zero)
-            {
-                return;
-            }
-            _ = NativeApi.ShowWindow(hwnd, NativeApi.SW_SHOW);
-            _ = NativeApi.SetForegroundWindow(hwnd);
         }
 
         /// <summary>
